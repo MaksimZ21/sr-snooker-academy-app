@@ -128,3 +128,9 @@
     @apply font-sans;
   }
 }
+
+@layer base {
+  :root {
+    --font-sans: var(--font-heebo);
+  }
+}

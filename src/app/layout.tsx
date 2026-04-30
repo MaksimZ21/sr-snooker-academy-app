@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Heebo } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -9,6 +9,11 @@ const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-heebo" });
 export const metadata: Metadata = {
   title: "אקדמיית סנוקר",
   description: "אפליקציית ניהול אקדמיה",
+  manifest: "/manifest.webmanifest",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0f172a",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

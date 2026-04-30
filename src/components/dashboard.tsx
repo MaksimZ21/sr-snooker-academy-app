@@ -40,11 +40,13 @@ export function Dashboard({
     return d >= now;
   });
   const next = nextIdx >= 0 ? sessions[nextIdx] : null;
-  let previous: Session | null = null;
-  if (nextIdx === -1) {
-    previous = sessions[sessions.length - 1] ?? null;
+  let secondary: { session: Session; label: string } | null = null;
+  if (nextIdx === -1 && sessions.length > 0) {
+    secondary = { session: sessions[sessions.length - 1], label: "המפגש הקודם" };
   } else if (nextIdx > 0) {
-    previous = sessions[nextIdx - 1];
+    secondary = { session: sessions[nextIdx - 1], label: "המפגש הקודם" };
+  } else if (nextIdx === 0 && sessions.length > 1) {
+    secondary = { session: sessions[nextIdx + 1], label: "מאוחר יותר היום" };
   }
 
   return (
@@ -65,16 +67,17 @@ export function Dashboard({
         )}
       </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-sm text-muted-foreground">המפגש הקודם</h2>
-        {isLoading ? (
+      {isLoading ? (
+        <section className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-24" />
           <Skeleton className="h-24 w-full rounded-xl" />
-        ) : previous ? (
-          <SessionCard session={previous} basePath={basePath} />
-        ) : (
-          <div className="text-sm text-muted-foreground">אין מפגש קודם</div>
-        )}
-      </section>
+        </section>
+      ) : secondary ? (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm text-muted-foreground">{secondary.label}</h2>
+          <SessionCard session={secondary.session} basePath={basePath} />
+        </section>
+      ) : null}
     </div>
   );
 }

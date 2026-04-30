@@ -1,5 +1,6 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Guideline } from "@/lib/sheets/schemas";
 
 export function GuidelinesPanel({ trainingType }: { trainingType: string }) {
@@ -13,7 +14,15 @@ export function GuidelinesPanel({ trainingType }: { trainingType: string }) {
     staleTime: 5 * 60_000,
   });
 
-  if (isLoading) return <div className="p-4">טוען...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-3 mt-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full rounded" />
+        ))}
+      </div>
+    );
+  }
   const filtered = (data?.guidelines ?? []).filter(
     (g) => !g.training_type || g.training_type === trainingType,
   );

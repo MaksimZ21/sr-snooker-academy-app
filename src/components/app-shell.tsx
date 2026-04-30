@@ -16,7 +16,10 @@ export function AppShell({
   return (
     <div className="min-h-dvh flex flex-col md:flex-row">
       <aside className="hidden md:flex md:w-56 border-l p-4 flex-col gap-1">
-        <div className="font-bold text-lg mb-4">אקדמיית סנוקר</div>
+        <div className="mb-4">
+          <div className="text-lg font-bold text-brand">אקדמיית סנוקר</div>
+          <div className="text-xs text-muted-foreground">ניהול אקדמיה</div>
+        </div>
         {items.map((it) => (
           <NavLink key={it.href} item={it} active={pathname === it.href} />
         ))}

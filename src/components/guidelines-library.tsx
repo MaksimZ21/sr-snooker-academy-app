@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Guideline } from "@/lib/sheets/schemas";
 
 export function GuidelinesLibrary() {
@@ -16,7 +17,15 @@ export function GuidelinesLibrary() {
     staleTime: 5 * 60_000,
   });
 
-  if (isLoading) return <div className="p-4">טוען...</div>;
+  if (isLoading) {
+    return (
+      <div className="p-4 flex flex-col gap-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full rounded" />
+        ))}
+      </div>
+    );
+  }
   const filtered = (data?.guidelines ?? [])
     .filter((g) => g.title.includes(q) || g.category.includes(q))
     .sort((a, b) => a.category.localeCompare(b.category) || a.order - b.order);

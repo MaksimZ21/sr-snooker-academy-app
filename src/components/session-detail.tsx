@@ -6,6 +6,7 @@ import { AttendancePanel } from "./attendance-panel";
 import { NotesPanel } from "./notes-panel";
 import { SyllabusPanel } from "./syllabus-panel";
 import { GuidelinesPanel } from "./guidelines-panel";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatHebrewDate } from "@/lib/date";
 
 type Detail = {
@@ -32,7 +33,22 @@ export function SessionDetail({
     refetchInterval: 30_000,
   });
 
-  if (isLoading || !data) return <div className="p-4">טוען...</div>;
+  if (isLoading || !data) {
+    return (
+      <div className="p-4 flex flex-col gap-4">
+        <header className="flex flex-col gap-2">
+          <Skeleton className="h-7 w-32" />
+          <Skeleton className="h-4 w-48" />
+        </header>
+        <Skeleton className="h-9 w-full rounded-md" />
+        <div className="flex flex-col gap-3 mt-2">
+          <Skeleton className="h-16 w-full rounded-md" />
+          <Skeleton className="h-16 w-full rounded-md" />
+          <Skeleton className="h-16 w-full rounded-md" />
+        </div>
+      </div>
+    );
+  }
   const { session, students, attendance, notesByStudent } = data;
 
   return (

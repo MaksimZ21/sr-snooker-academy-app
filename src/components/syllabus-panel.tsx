@@ -1,5 +1,6 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Image = { id: string; name: string; thumbnailUrl: string; fullUrl: string };
 
@@ -14,7 +15,15 @@ export function SyllabusPanel({ sessionId }: { sessionId: string }) {
     staleTime: 5 * 60_000,
   });
 
-  if (isLoading) return <div className="p-4">טוען...</div>;
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="w-full h-32 rounded" />
+        ))}
+      </div>
+    );
+  }
   const images = data?.images ?? [];
   if (images.length === 0)
     return <div className="p-4 text-muted-foreground">אין תמונות עדיין</div>;

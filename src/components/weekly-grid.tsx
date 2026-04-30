@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
 import { addDays, format, parseISO } from "date-fns";
 import { SessionCard } from "./session-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Session } from "@/lib/sheets/schemas";
 
 export function WeeklyGrid({
@@ -57,17 +58,25 @@ export function WeeklyGrid({
               <div className="text-xs text-muted-foreground">
                 {iso.slice(8, 10)}.{iso.slice(5, 7)}
               </div>
-              {ses.length === 0 && (
-                <div className="text-xs text-muted-foreground">—</div>
+              {isLoading ? (
+                <>
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                </>
+              ) : (
+                <>
+                  {ses.length === 0 && (
+                    <div className="text-xs text-muted-foreground">—</div>
+                  )}
+                  {ses.map((s) => (
+                    <SessionCard key={s.id} session={s} basePath={basePath} />
+                  ))}
+                </>
               )}
-              {ses.map((s) => (
-                <SessionCard key={s.id} session={s} basePath={basePath} />
-              ))}
             </div>
           );
         })}
       </div>
-      {isLoading && <div className="text-sm text-muted-foreground">טוען...</div>}
     </div>
   );
 }

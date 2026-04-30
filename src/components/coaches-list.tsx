@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Coach = { email: string; name: string; phone: string; active: boolean };
 
@@ -16,7 +17,15 @@ export function CoachesList() {
     staleTime: 5 * 60_000,
   });
 
-  if (isLoading) return <div className="p-4">טוען...</div>;
+  if (isLoading) {
+    return (
+      <div className="p-4 flex flex-col gap-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="p-4 flex flex-col gap-3">
       <p className="text-sm text-muted-foreground">

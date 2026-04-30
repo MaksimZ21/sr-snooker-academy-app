@@ -18,10 +18,12 @@ type Detail = {
 
 export function SessionDetail({
   sessionId,
-  readOnly,
+  canEditAttendance,
+  canEditNotes,
 }: {
   sessionId: string;
-  readOnly: boolean;
+  canEditAttendance: boolean;
+  canEditNotes: boolean;
 }) {
   const { data, isLoading } = useQuery({
     queryKey: ["session", sessionId],
@@ -71,7 +73,7 @@ export function SessionDetail({
             sessionId={sessionId}
             students={students}
             attendance={attendance}
-            readOnly={readOnly}
+            readOnly={!canEditAttendance}
           />
         </TabsContent>
         <TabsContent value="notes">
@@ -79,7 +81,7 @@ export function SessionDetail({
             sessionId={sessionId}
             students={students}
             notesByStudent={notesByStudent}
-            readOnly={readOnly}
+            readOnly={!canEditNotes}
           />
         </TabsContent>
         <TabsContent value="syllabus">

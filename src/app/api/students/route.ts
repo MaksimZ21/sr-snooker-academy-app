@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
-import { appendPricing, fetchPricing } from "@/lib/sheets/pricing";
+import { appendStudent, fetchStudents } from "@/lib/sheets/students";
 
 export async function GET() {
   try {
-    await requireUser();
-    const data = await fetchPricing();
-    return NextResponse.json({ pricing: data });
+    const user = await requireUser();
+    if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
+    const data = await fetchStudents();
+    return NextResponse.json({ students: data });
   } catch (e) {
     if (e instanceof Response) return e;
     return new NextResponse("error", { status: 500 });
@@ -20,14 +21,15 @@ export async function POST(req: Request) {
     if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
     const body = z
       .object({
-        lesson_type: z.string().min(1),
-        duration_min: z.coerce.number().int().positive(),
-        price_nis: z.coerce.number().int().nonnegative(),
-        notes: z.string().optional(),
+        name: z.string().min(1),
+        phone: z.string().optional(),
+        parent_name: z.string().optional(),
+        parent_phone: z.string().optional(),
+        general_notes: z.string().optional(),
       })
       .parse(await req.json());
-    await appendPricing(body);
-    return NextResponse.json({ ok: true });
+    const id = await appendStudent(body);
+    return NextResponse.json({ id });
   } catch (e) {
     if (e instanceof Response) return e;
     return new NextResponse("error", { status: 500 });

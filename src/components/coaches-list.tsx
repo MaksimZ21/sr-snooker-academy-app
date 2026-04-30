@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AddCoachDialog } from "@/components/forms/add-coach-dialog";
 
 type Coach = { email: string; name: string; phone: string; active: boolean };
 
@@ -28,9 +29,12 @@ export function CoachesList() {
   }
   return (
     <div className="p-4 flex flex-col gap-3">
-      <p className="text-sm text-muted-foreground">
-        עריכת רשימת המאמנים נעשית ישירות ב-Google Sheets.
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          ניהול רשימת המאמנים
+        </p>
+        <AddCoachDialog />
+      </div>
       {(data?.coaches ?? []).map((c) => (
         <Card key={c.email}>
           <CardContent className="p-4 flex items-center justify-between">

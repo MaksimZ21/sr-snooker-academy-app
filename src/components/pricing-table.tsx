@@ -2,8 +2,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Pricing } from "@/lib/sheets/schemas";
+import { AddPricingDialog } from "@/components/forms/add-pricing-dialog";
 
-export function PricingTable() {
+export function PricingTable({ showAdd = false }: { showAdd?: boolean }) {
   const { data, isLoading } = useQuery({
     queryKey: ["pricing"],
     queryFn: async () => {
@@ -26,7 +27,12 @@ export function PricingTable() {
   const rows = data?.pricing ?? [];
 
   return (
-    <div className="p-4">
+    <div className="p-4 flex flex-col gap-3">
+      {showAdd && (
+        <div className="flex justify-end">
+          <AddPricingDialog />
+        </div>
+      )}
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b">

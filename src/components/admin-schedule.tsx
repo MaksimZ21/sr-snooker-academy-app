@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AddSessionDialog } from "@/components/forms/add-session-dialog";
 
 type Coach = { email: string; name: string; active: boolean };
 
@@ -25,20 +26,30 @@ export function AdminSchedule() {
 
   return (
     <div>
-      <div className="p-4 max-w-xs">
-        <Select value={coach} onValueChange={(v) => setCoach(v ?? "all")}>
-          <SelectTrigger>
-            <SelectValue placeholder="כל המאמנים" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">כל המאמנים</SelectItem>
-            {(data?.coaches ?? []).filter((c) => c.active).map((c) => (
-              <SelectItem key={c.email} value={c.email}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="p-4 flex items-center justify-between gap-2 flex-wrap">
+        <div className="max-w-xs">
+          <Select value={coach} onValueChange={(v) => setCoach(v ?? "all")}>
+            <SelectTrigger>
+              <SelectValue placeholder="כל המאמנים" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">כל המאמנים</SelectItem>
+              {(data?.coaches ?? [])
+                .filter((c) => c.active)
+                .map((c) => (
+                  <SelectItem key={c.email} value={c.email}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <AddSessionDialog />
       </div>
-      <WeeklyGrid basePath="admin" coachFilter={coach === "all" ? undefined : coach} />
+      <WeeklyGrid
+        basePath="admin"
+        coachFilter={coach === "all" ? undefined : coach}
+      />
     </div>
   );
 }

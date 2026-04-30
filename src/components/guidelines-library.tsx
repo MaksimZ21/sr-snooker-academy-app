@@ -4,8 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Guideline } from "@/lib/sheets/schemas";
+import { AddGuidelineDialog } from "@/components/forms/add-guideline-dialog";
 
-export function GuidelinesLibrary() {
+export function GuidelinesLibrary({ showAdd = false }: { showAdd?: boolean }) {
   const [q, setQ] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["guidelines"],
@@ -37,7 +38,14 @@ export function GuidelinesLibrary() {
 
   return (
     <div className="p-4 flex flex-col gap-4">
-      <Input placeholder="חיפוש..." value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="חיפוש..."
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+        {showAdd && <AddGuidelineDialog />}
+      </div>
       {Object.entries(grouped).map(([cat, items]) => (
         <section key={cat}>
           <h2 className="font-bold mb-2">{cat}</h2>
@@ -46,11 +54,18 @@ export function GuidelinesLibrary() {
               <div key={g.id} className="border rounded p-3">
                 <h3 className="font-semibold">{g.title}</h3>
                 {g.body_or_link.startsWith("http") ? (
-                  <a href={g.body_or_link} target="_blank" rel="noopener" className="text-primary underline text-sm">
+                  <a
+                    href={g.body_or_link}
+                    target="_blank"
+                    rel="noopener"
+                    className="text-primary underline text-sm"
+                  >
                     פתח קישור
                   </a>
                 ) : (
-                  <p className="text-sm whitespace-pre-wrap">{g.body_or_link}</p>
+                  <p className="text-sm whitespace-pre-wrap">
+                    {g.body_or_link}
+                  </p>
                 )}
               </div>
             ))}

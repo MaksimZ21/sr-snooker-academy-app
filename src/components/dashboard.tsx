@@ -40,10 +40,12 @@ export function Dashboard({
     return d >= now;
   });
   const next = nextIdx >= 0 ? sessions[nextIdx] : null;
-  const previous =
-    nextIdx > 0
-      ? sessions[nextIdx - 1]
-      : sessions[sessions.length - 1] ?? null;
+  let previous: Session | null = null;
+  if (nextIdx === -1) {
+    previous = sessions[sessions.length - 1] ?? null;
+  } else if (nextIdx > 0) {
+    previous = sessions[nextIdx - 1];
+  }
 
   return (
     <div className="p-4 flex flex-col gap-6">

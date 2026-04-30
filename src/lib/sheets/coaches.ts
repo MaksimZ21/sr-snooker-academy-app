@@ -9,7 +9,7 @@ export function parseCoachesSheet(rows: string[][]): string[] {
     .filter(Boolean);
 }
 
-async function readActiveCoachEmails(): Promise<string[]> {
+export async function readActiveCoachEmails(): Promise<string[]> {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: getSheetId(),

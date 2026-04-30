@@ -45,6 +45,24 @@ export function invalidateSessions() {
   revalidateTag("sessions:today", { expire: 0 });
 }
 
+export async function setSessionStudents(sessionId: string, studentIds: string[]) {
+  const sheets = getSheetsClient();
+  const all = await readSheet(ALL_RANGE);
+  const headerLen = 1;
+  const idx = all.slice(headerLen).findIndex((r) => r[0] === sessionId);
+  if (idx === -1) throw new Error("session not found");
+  const sheetRow = idx + headerLen + 1;
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: getSheetId(),
+    range: `Sessions!G${sheetRow}`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[studentIds.join(",")]],
+    },
+  });
+  invalidateSessions();
+}
+
 export async function appendSession(input: {
   date: string;
   start_time: string;

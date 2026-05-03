@@ -84,6 +84,13 @@ export const PricingRow = z.object({
 });
 export type Pricing = z.infer<typeof PricingRow>;
 
+export const GroupRow = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  student_ids: Csv,
+});
+export type Group = z.infer<typeof GroupRow>;
+
 export function parseRows<T extends z.ZodTypeAny>(
   rows: string[][],
   schema: T,

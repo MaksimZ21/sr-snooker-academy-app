@@ -12,8 +12,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Users } from "lucide-react";
+import type { Group } from "@/lib/sheets/schemas";
 
 type Student = {
   id: string;
@@ -51,6 +59,27 @@ export function ManageRosterDialog({
     staleTime: 60_000,
   });
 
+  const groupsQ = useQuery({
+    queryKey: ["groups"],
+    queryFn: async () => {
+      const r = await fetch("/api/groups");
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as { groups: Group[] };
+    },
+    enabled: open,
+    staleTime: 60_000,
+  });
+
+  function applyGroup(groupId: string) {
+    const group = groupsQ.data?.groups.find((g) => g.id === groupId);
+    if (!group) return;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      group.student_ids.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
   const mut = useMutation({
     mutationFn: async () => {
       const r = await fetch(`/api/sessions/${sessionId}/students`, {
@@ -82,6 +111,20 @@ export function ManageRosterDialog({
         <DialogHeader>
           <DialogTitle>ניהול מתאמנים</DialogTitle>
         </DialogHeader>
+        {(groupsQ.data?.groups ?? []).length > 0 && (
+          <Select onValueChange={applyGroup}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="הוסף קבוצה..." />
+            </SelectTrigger>
+            <SelectContent>
+              {(groupsQ.data?.groups ?? []).map((g) => (
+                <SelectItem key={g.id} value={g.id}>
+                  {g.name} ({g.student_ids.length})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         {isLoading ? (
           <div className="py-4 text-muted-foreground">טוען...</div>
         ) : (

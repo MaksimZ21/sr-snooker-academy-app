@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { TRAINING_TYPE_LABEL } from "@/lib/training-type";
-import type { Student } from "@/lib/sheets/schemas";
+import type { Student, Group } from "@/lib/sheets/schemas";
 
 type Coach = { email: string; name: string; active: boolean };
 
@@ -65,6 +65,25 @@ export function AddSessionDialog() {
     },
     enabled: open,
   });
+
+  const groupsQ = useQuery({
+    queryKey: ["groups"],
+    queryFn: async () => {
+      const r = await fetch("/api/groups");
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as { groups: Group[] };
+    },
+    enabled: open,
+    staleTime: 60_000,
+  });
+
+  function applyGroup(groupId: string) {
+    const group = groupsQ.data?.groups.find((g) => g.id === groupId);
+    if (!group) return;
+    setStudentIds((prev) => [
+      ...new Set([...prev, ...group.student_ids]),
+    ]);
+  }
 
   const reset = () => {
     setDate("");
@@ -200,6 +219,20 @@ export function AddSessionDialog() {
           </div>
           <div>
             <Label>מתאמנים</Label>
+            {(groupsQ.data?.groups ?? []).length > 0 && (
+              <Select onValueChange={applyGroup}>
+                <SelectTrigger className="w-full mb-2">
+                  <SelectValue placeholder="הוסף קבוצה..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {(groupsQ.data?.groups ?? []).map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {g.name} ({g.student_ids.length})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <div className="border rounded-md max-h-60 overflow-y-auto p-2 flex flex-col gap-1">
               {activeStudents.length === 0 && (
                 <span className="text-sm text-muted-foreground">

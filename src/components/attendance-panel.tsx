@@ -5,24 +5,36 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Attendance, Student } from "@/lib/sheets/schemas";
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
 const STATUSES = [
   {
     key: "present" as const,
     label: "נוכח",
     activeClass: "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500",
-    rowClass: "border-emerald-400/60",
+    rowClass: "border-emerald-400/60 bg-emerald-50/60 dark:bg-emerald-950/20",
+    avatarClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300",
   },
   {
     key: "late" as const,
     label: "איחור",
     activeClass: "bg-amber-500 hover:bg-amber-600 text-white border-amber-500",
-    rowClass: "border-amber-400/60",
+    rowClass: "border-amber-400/60 bg-amber-50/60 dark:bg-amber-950/20",
+    avatarClass: "bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300",
   },
   {
     key: "absent" as const,
     label: "לא נוכח",
     activeClass: "bg-rose-500 hover:bg-rose-600 text-white border-rose-500",
-    rowClass: "border-rose-400/60",
+    rowClass: "border-rose-400/60 bg-rose-50/60 dark:bg-rose-950/20",
+    avatarClass: "bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300",
   },
 ] as const;
 
@@ -94,15 +106,22 @@ export function AttendancePanel({
           <div
             key={s.id}
             className={cn(
-              "flex justify-between items-center border rounded-lg p-3 transition-colors",
-              curConfig?.rowClass,
+              "flex justify-between items-center border-2 rounded-xl p-3.5 transition-all duration-200",
+              curConfig ? curConfig.rowClass : "border-border",
             )}
           >
-            <div>
-              <div className="font-medium">{s.name}</div>
-              <div className="text-xs text-muted-foreground">{s.id}</div>
+            <div className="flex items-center gap-3">
+              <div
+                className={cn(
+                  "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none transition-colors",
+                  curConfig ? curConfig.avatarClass : "bg-muted text-muted-foreground",
+                )}
+              >
+                {getInitials(s.name)}
+              </div>
+              <div className="font-medium text-sm">{s.name}</div>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1.5">
               {STATUSES.map((st) => (
                 <Button
                   key={st.key}
@@ -111,7 +130,7 @@ export function AttendancePanel({
                   disabled={readOnly || mut.isPending}
                   onClick={() => mut.mutate({ student_id: s.id, status: st.key })}
                   className={cn(
-                    "text-xs transition-colors",
+                    "text-xs h-8 px-3 transition-all",
                     cur === st.key && st.activeClass,
                   )}
                 >

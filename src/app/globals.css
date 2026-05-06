@@ -150,7 +150,7 @@
 
 @layer base {
   :root {
-    --font-sans: var(--font-rubik);
+    --font-sans: var(--font-heebo);
   }
 }
 

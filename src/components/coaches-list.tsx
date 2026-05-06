@@ -47,7 +47,7 @@ export function CoachesList() {
         <Card key={c.email} className="hover:shadow-sm transition-shadow">
           <CardContent className="p-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold shrink-0 select-none">
+              <div className="w-10 h-10 rounded-full bg-brand-gradient text-white flex items-center justify-center text-sm font-bold shrink-0 select-none shadow-md ring-2 ring-primary/20">
                 {getInitials(c.name)}
               </div>
               <div className="min-w-0">

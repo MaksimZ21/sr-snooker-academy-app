@@ -44,23 +44,23 @@ export function WeeklyGrid({
 
   return (
     <div className="p-4 flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-1.5 bg-muted/60 border border-border/50 rounded-xl p-1.5">
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={() => setAnchor(format(addDays(parseISO(anchor), -7), "yyyy-MM-dd"))}
-          className="flex items-center gap-1"
+          className="h-8 px-3 rounded-lg flex items-center gap-1 hover:bg-background hover:shadow-sm"
         >
-          <ChevronRight size={16} />
-          <span className="hidden sm:inline">שבוע קודם</span>
+          <ChevronRight size={15} />
+          <span className="hidden sm:inline text-xs">שבוע קודם</span>
         </Button>
 
-        <div className="flex flex-col items-center gap-0.5">
+        <div className="flex-1 flex flex-col items-center gap-0.5">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setAnchor(todayIsoTel())}
-            className="font-medium text-sm"
+            className="h-7 px-3 rounded-lg text-xs font-semibold hover:bg-background hover:shadow-sm"
           >
             היום
           </Button>
@@ -70,13 +70,13 @@ export function WeeklyGrid({
         </div>
 
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={() => setAnchor(format(addDays(parseISO(anchor), 7), "yyyy-MM-dd"))}
-          className="flex items-center gap-1"
+          className="h-8 px-3 rounded-lg flex items-center gap-1 hover:bg-background hover:shadow-sm"
         >
-          <span className="hidden sm:inline">שבוע הבא</span>
-          <ChevronLeft size={16} />
+          <span className="hidden sm:inline text-xs">שבוע הבא</span>
+          <ChevronLeft size={15} />
         </Button>
       </div>
 

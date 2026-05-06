@@ -40,19 +40,24 @@ export function SessionDetail({
 
   if (isLoading || !data) {
     return (
-      <div className="p-4 flex flex-col gap-4">
-        <header className="flex flex-col gap-2">
-          <div className="flex items-start justify-between gap-3">
-            <Skeleton className="h-8 w-36" />
-            <Skeleton className="h-6 w-20" />
+      <div className="flex flex-col">
+        <div className="bg-brand-gradient px-5 py-5">
+          <div className="flex items-end justify-between gap-3">
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-14 w-28 bg-white/20" />
+              <Skeleton className="h-4 w-16 bg-white/15" />
+            </div>
+            <Skeleton className="h-6 w-20 bg-white/20" />
           </div>
-          <Skeleton className="h-4 w-48" />
-        </header>
-        <Skeleton className="h-9 w-full rounded-md" />
-        <div className="flex flex-col gap-3 mt-2">
-          <Skeleton className="h-16 w-full rounded-md" />
-          <Skeleton className="h-16 w-full rounded-md" />
-          <Skeleton className="h-16 w-full rounded-md" />
+          <Skeleton className="h-3 w-28 bg-white/15 mt-3" />
+        </div>
+        <div className="p-4 flex flex-col gap-4">
+          <Skeleton className="h-9 w-full rounded-md" />
+          <div className="flex flex-col gap-3 mt-2">
+            <Skeleton className="h-16 w-full rounded-md" />
+            <Skeleton className="h-16 w-full rounded-md" />
+            <Skeleton className="h-16 w-full rounded-md" />
+          </div>
         </div>
       </div>
     );
@@ -62,56 +67,66 @@ export function SessionDetail({
   const cancelled = session.status === "cancelled";
 
   return (
-    <div className="p-4 flex flex-col gap-4">
-      <header className="flex flex-col gap-1.5">
-        <div className="flex items-start justify-between gap-3">
-          <h1
-            className={cn(
-              "text-2xl font-bold tabular-nums tracking-tight",
-              cancelled && "opacity-50 line-through",
-            )}
-          >
-            {session.start_time}–{session.end_time}
-          </h1>
-          <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-            <Badge className={cn("border", className)} variant="outline">
+    <div className="flex flex-col">
+      <div className="bg-brand-gradient px-5 pt-5 pb-6 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/5 blur-2xl" />
+          <div className="absolute -bottom-6 left-4 w-28 h-28 rounded-full bg-white/5 blur-xl" />
+        </div>
+        <div className="flex items-end justify-between gap-3 relative">
+          <div>
+            <div
+              className={cn(
+                "text-5xl font-bold tabular-nums tracking-tight text-white leading-none",
+                cancelled && "opacity-40 line-through",
+              )}
+            >
+              {session.start_time}
+            </div>
+            <div className="text-white/60 text-sm mt-1.5">עד {session.end_time}</div>
+          </div>
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <Badge className={cn("border text-xs font-medium", className)} variant="outline">
               {label}
             </Badge>
             {cancelled && <Badge variant="destructive">בוטל</Badge>}
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">{formatHebrewDate(session.date)}</p>
-      </header>
-      <Tabs defaultValue="attendance">
-        <TabsList className="grid grid-cols-4">
-          <TabsTrigger value="attendance">נוכחות</TabsTrigger>
-          <TabsTrigger value="notes">הערות</TabsTrigger>
-          <TabsTrigger value="syllabus">סילבוס</TabsTrigger>
-          <TabsTrigger value="guidelines">הנחיות</TabsTrigger>
-        </TabsList>
-        <TabsContent value="attendance">
-          <AttendancePanel
-            sessionId={sessionId}
-            students={students}
-            attendance={attendance}
-            readOnly={!canEditAttendance}
-          />
-        </TabsContent>
-        <TabsContent value="notes">
-          <NotesPanel
-            sessionId={sessionId}
-            students={students}
-            notesByStudent={notesByStudent}
-            readOnly={!canEditNotes}
-          />
-        </TabsContent>
-        <TabsContent value="syllabus">
-          <SyllabusPanel sessionId={sessionId} />
-        </TabsContent>
-        <TabsContent value="guidelines">
-          <GuidelinesPanel trainingType={session.training_type} />
-        </TabsContent>
-      </Tabs>
+        <p className="text-white/50 text-xs mt-3 relative">{formatHebrewDate(session.date)}</p>
+      </div>
+
+      <div className="p-4 flex flex-col gap-4">
+        <Tabs defaultValue="attendance">
+          <TabsList className="grid grid-cols-4">
+            <TabsTrigger value="attendance">נוכחות</TabsTrigger>
+            <TabsTrigger value="notes">הערות</TabsTrigger>
+            <TabsTrigger value="syllabus">סילבוס</TabsTrigger>
+            <TabsTrigger value="guidelines">הנחיות</TabsTrigger>
+          </TabsList>
+          <TabsContent value="attendance">
+            <AttendancePanel
+              sessionId={sessionId}
+              students={students}
+              attendance={attendance}
+              readOnly={!canEditAttendance}
+            />
+          </TabsContent>
+          <TabsContent value="notes">
+            <NotesPanel
+              sessionId={sessionId}
+              students={students}
+              notesByStudent={notesByStudent}
+              readOnly={!canEditNotes}
+            />
+          </TabsContent>
+          <TabsContent value="syllabus">
+            <SyllabusPanel sessionId={sessionId} />
+          </TabsContent>
+          <TabsContent value="guidelines">
+            <GuidelinesPanel trainingType={session.training_type} />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

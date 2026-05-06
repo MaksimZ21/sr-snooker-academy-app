@@ -1,13 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Rubik } from "next/font/google";
+import { Heebo } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/sonner";
 
-const rubik = Rubik({
+const heebo = Heebo({
   subsets: ["hebrew", "latin"],
-  variable: "--font-rubik",
-  weight: ["400", "500", "600", "700"],
+  variable: "--font-heebo",
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -23,7 +24,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="he" dir="rtl" suppressHydrationWarning>
-      <body className={`${rubik.variable} font-sans antialiased`}>
+      <body className={`${heebo.variable} font-sans antialiased`}>
         <Providers>
           {children}
           <Toaster position="top-center" />

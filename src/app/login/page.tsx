@@ -2,18 +2,31 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createSupabaseBrowserClient();
 
-  async function signIn() {
+  async function signIn(e: React.FormEvent) {
+    e.preventDefault();
     setLoading(true);
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
+    setError(null);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setError("אימייל או סיסמה שגויים");
+      setLoading(false);
+    } else {
+      const redirect = searchParams.get("redirect") ?? "/";
+      router.push(redirect);
+    }
   }
 
   return (
@@ -39,20 +52,30 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <p className="text-center text-muted-foreground text-sm">
-            היכנס באמצעות חשבון Google
-          </p>
-
-          <div className="border-t border-border/60" />
-
-          <Button
-            onClick={signIn}
-            disabled={loading}
-            size="lg"
-            className="w-full h-12 text-base"
-          >
-            {loading ? "מתחבר..." : "התחברות עם Google"}
-          </Button>
+          <form onSubmit={signIn} className="flex flex-col gap-3">
+            <Input
+              type="email"
+              placeholder="אימייל"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              dir="ltr"
+            />
+            <Input
+              type="password"
+              placeholder="סיסמה"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              dir="ltr"
+            />
+            {error && (
+              <p className="text-sm text-destructive text-center">{error}</p>
+            )}
+            <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base mt-1">
+              {loading ? "מתחבר..." : "התחברות"}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </main>

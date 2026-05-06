@@ -77,7 +77,7 @@ export function AddSessionDialog() {
     staleTime: 60_000,
   });
 
-  function applyGroup(groupId: string) {
+  function applyGroup(groupId: string | null) {
     const group = groupsQ.data?.groups.find((g) => g.id === groupId);
     if (!group) return;
     setStudentIds((prev) => [

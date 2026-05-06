@@ -1,12 +1,12 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,6 +30,35 @@ export default function LoginPage() {
   }
 
   return (
+    <form onSubmit={signIn} className="flex flex-col gap-3">
+      <Input
+        type="email"
+        placeholder="אימייל"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        dir="ltr"
+      />
+      <Input
+        type="password"
+        placeholder="סיסמה"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+        dir="ltr"
+      />
+      {error && (
+        <p className="text-sm text-destructive text-center">{error}</p>
+      )}
+      <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base mt-1">
+        {loading ? "מתחבר..." : "התחברות"}
+      </Button>
+    </form>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <main className="min-h-dvh grid place-items-center px-4 bg-brand-gradient">
       <Card className="w-full max-w-md bg-background/80 backdrop-blur-xl border-border/50 shadow-2xl relative overflow-hidden">
         <div className="absolute top-4 left-4 flex gap-1.5 opacity-70">
@@ -51,31 +80,9 @@ export default function LoginPage() {
               ניהול אימונים, נוכחות ומאמנים
             </p>
           </div>
-
-          <form onSubmit={signIn} className="flex flex-col gap-3">
-            <Input
-              type="email"
-              placeholder="אימייל"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              dir="ltr"
-            />
-            <Input
-              type="password"
-              placeholder="סיסמה"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              dir="ltr"
-            />
-            {error && (
-              <p className="text-sm text-destructive text-center">{error}</p>
-            )}
-            <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base mt-1">
-              {loading ? "מתחבר..." : "התחברות"}
-            </Button>
-          </form>
+          <Suspense>
+            <LoginForm />
+          </Suspense>
         </CardContent>
       </Card>
     </main>

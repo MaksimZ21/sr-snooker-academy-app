@@ -23,8 +23,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="he" dir="rtl" suppressHydrationWarning>
-      <body className={`${assistant.variable} font-sans antialiased`}>
+    <html lang="he" dir="rtl" suppressHydrationWarning className={assistant.variable}>
+      <body className="font-sans antialiased">
         <Providers>
           {children}
           <Toaster position="top-center" />

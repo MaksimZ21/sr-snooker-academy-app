@@ -54,7 +54,7 @@ export function Dashboard({
       <div className="flex items-center gap-2.5">
         <h1 className="text-xl font-bold">{formatHebrewDate(today)}</h1>
         {!isLoading && sessions.length > 0 && (
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+          <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-primary/10 text-primary ring-1 ring-primary/20">
             {sessions.length} מפגשים
           </span>
         )}
@@ -66,9 +66,9 @@ export function Dashboard({
         ) : next ? (
           <HeroNextCard session={next} basePath={basePath} />
         ) : (
-          <Card className="border-dashed">
+          <Card className="border-dashed border-2">
             <CardContent className="flex flex-col items-center gap-3 py-14 text-muted-foreground">
-              <CalendarX size={40} className="opacity-30" />
+              <CalendarX size={42} className="opacity-25" />
               <span className="text-sm">אין מפגש קרוב להיום</span>
             </CardContent>
           </Card>
@@ -102,22 +102,34 @@ function HeroNextCard({
 
   return (
     <Link href={`/${basePath}/sessions/${session.id}`}>
-      <Card className="overflow-hidden border-2 border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all duration-200">
-        <div className="bg-brand-gradient-soft px-5 py-3 flex items-center justify-between">
-          <div className="text-xs uppercase tracking-widest text-primary font-semibold">
-            המפגש הבא
+      <Card className="overflow-hidden border-2 border-primary/25 hover:border-primary/50 hover:shadow-xl transition-all duration-300 group">
+        {/* Gradient header strip */}
+        <div className="bg-brand-gradient px-5 py-3 flex items-center justify-between">
+          {/* Live pulsing indicator */}
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+            </span>
+            <span className="text-xs uppercase tracking-widest text-white/90 font-semibold">
+              המפגש הבא
+            </span>
           </div>
-          <Badge className={cn("border text-xs", className)} variant="outline">
+          <Badge
+            className={cn("border text-xs font-medium", className)}
+            variant="outline"
+          >
             {label}
           </Badge>
         </div>
+
         <CardContent className="p-5 flex flex-col gap-4">
           <div className="flex items-end justify-between gap-3">
             <div className="flex flex-col">
               <div
                 className={cn(
-                  "text-5xl md:text-6xl font-bold tabular-nums tracking-tight leading-none",
-                  cancelled && "opacity-50 line-through",
+                  "text-5xl md:text-6xl font-bold tabular-nums tracking-tight leading-none text-foreground group-hover:text-primary transition-colors duration-300",
+                  cancelled && "opacity-40 line-through",
                 )}
               >
                 {session.start_time}
@@ -131,12 +143,12 @@ function HeroNextCard({
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-1 border-t border-border/60">
+          <div className="flex items-center justify-between pt-2 border-t border-border/60">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Users size={15} />
               <span>{session.student_ids.length} מתאמנים</span>
             </div>
-            <div className="flex items-center gap-0.5 text-sm text-primary font-medium">
+            <div className="flex items-center gap-0.5 text-sm text-primary font-semibold group-hover:gap-1.5 transition-all duration-200">
               <span>פתח פרטים</span>
               <ChevronLeft size={15} />
             </div>
@@ -150,18 +162,18 @@ function HeroNextCard({
 function HeroSkeleton() {
   return (
     <Card className="overflow-hidden border-2 border-primary/10">
-      <div className="bg-brand-gradient-soft px-5 py-3">
-        <Skeleton className="h-4 w-24" />
+      <div className="bg-brand-gradient px-5 py-3">
+        <Skeleton className="h-4 w-32 bg-white/20" />
       </div>
       <CardContent className="p-5 flex flex-col gap-4">
         <div className="flex items-end justify-between gap-3">
           <div className="flex flex-col gap-2">
-            <Skeleton className="h-12 w-32" />
+            <Skeleton className="h-14 w-36" />
             <Skeleton className="h-4 w-20" />
           </div>
           <Skeleton className="h-6 w-16" />
         </div>
-        <div className="flex items-center justify-between pt-1 border-t border-border/60">
+        <div className="flex items-center justify-between pt-2 border-t border-border/60">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-4 w-20" />
         </div>

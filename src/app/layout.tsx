@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Heebo } from "next/font/google";
+import { Assistant } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/sonner";
 
-const heebo = Heebo({
+const assistant = Assistant({
   subsets: ["hebrew", "latin"],
-  variable: "--font-heebo",
-  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-assistant",
+  weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="he" dir="rtl" suppressHydrationWarning>
-      <body className={`${heebo.variable} font-sans antialiased`}>
+      <body className={`${assistant.variable} font-sans antialiased`}>
         <Providers>
           {children}
           <Toaster position="top-center" />

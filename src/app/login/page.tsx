@@ -21,7 +21,7 @@ function LoginForm() {
     setError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setError("אימייל או סיסמה שגויים");
+      setError(error.message);
       setLoading(false);
     } else {
       const redirect = searchParams.get("redirect") ?? "/";

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -20,8 +20,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { TRAINING_TYPE_LABEL } from "@/lib/training-type";
+import { cn } from "@/lib/utils";
 import type { Student, Group } from "@/lib/sheets/schemas";
 
 type Coach = { email: string; name: string; active: boolean };
@@ -44,6 +45,7 @@ export function AddSessionDialog() {
   const [trainingType, setTrainingType] = useState("");
   const [studentIds, setStudentIds] = useState<string[]>([]);
   const [driveUrl, setDriveUrl] = useState("");
+  const [search, setSearch] = useState("");
   const qc = useQueryClient();
 
   const coachesQ = useQuery({
@@ -80,9 +82,7 @@ export function AddSessionDialog() {
   function applyGroup(groupId: string | null) {
     const group = groupsQ.data?.groups.find((g) => g.id === groupId);
     if (!group) return;
-    setStudentIds((prev) => [
-      ...new Set([...prev, ...group.student_ids]),
-    ]);
+    setStudentIds((prev) => [...new Set([...prev, ...group.student_ids])]);
   }
 
   const reset = () => {
@@ -93,6 +93,7 @@ export function AddSessionDialog() {
     setTrainingType("");
     setStudentIds([]);
     setDriveUrl("");
+    setSearch("");
   };
 
   const mut = useMutation({
@@ -140,9 +141,16 @@ export function AddSessionDialog() {
   };
 
   const activeCoaches = (coachesQ.data?.coaches ?? []).filter((c) => c.active);
-  const activeStudents = (studentsQ.data?.students ?? []).filter(
-    (s) => s.active,
-  );
+  const activeStudents = (studentsQ.data?.students ?? []).filter((s) => s.active);
+
+  const filteredStudents = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return activeStudents;
+    return activeStudents.filter((s) => s.name.toLowerCase().includes(q));
+  }, [activeStudents, search]);
+
+  const isPrivate = trainingType === "private";
+  const showGroupSelect = !isPrivate && (groupsQ.data?.groups ?? []).length > 0;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -183,10 +191,7 @@ export function AddSessionDialog() {
           </div>
           <div>
             <Label>מאמן</Label>
-            <Select
-              value={coachEmail}
-              onValueChange={(v) => setCoachEmail(v ?? "")}
-            >
+            <Select value={coachEmail} onValueChange={(v) => setCoachEmail(v ?? "")}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="בחר מאמן" />
               </SelectTrigger>
@@ -201,10 +206,7 @@ export function AddSessionDialog() {
           </div>
           <div>
             <Label>סוג אימון</Label>
-            <Select
-              value={trainingType}
-              onValueChange={(v) => setTrainingType(v ?? "")}
-            >
+            <Select value={trainingType} onValueChange={(v) => setTrainingType(v ?? "")}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="בחר סוג אימון" />
               </SelectTrigger>
@@ -217,12 +219,22 @@ export function AddSessionDialog() {
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>מתאמנים</Label>
-            {(groupsQ.data?.groups ?? []).length > 0 && (
+
+          {/* Student selection */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <Label>מתאמנים</Label>
+              {studentIds.length > 0 && (
+                <span className="text-xs font-medium text-primary">
+                  {studentIds.length} נבחרו
+                </span>
+              )}
+            </div>
+
+            {showGroupSelect && (
               <Select onValueChange={applyGroup}>
-                <SelectTrigger className="w-full mb-2">
-                  <SelectValue placeholder="הוסף קבוצה..." />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="הוסף קבוצה שלמה..." />
                 </SelectTrigger>
                 <SelectContent>
                   {(groupsQ.data?.groups ?? []).map((g) => (
@@ -233,30 +245,57 @@ export function AddSessionDialog() {
                 </SelectContent>
               </Select>
             )}
-            <div className="border rounded-md max-h-60 overflow-y-auto p-2 flex flex-col gap-1">
-              {activeStudents.length === 0 && (
-                <span className="text-sm text-muted-foreground">
-                  אין מתאמנים פעילים
-                </span>
-              )}
-              {activeStudents.map((s) => (
-                <label
-                  key={s.id}
-                  className="flex items-center gap-2 cursor-pointer text-sm py-0.5"
-                >
-                  <input
-                    type="checkbox"
-                    checked={studentIds.includes(s.id)}
-                    onChange={() => toggleStudent(s.id)}
-                  />
-                  <span>
-                    {s.name}{" "}
-                    <span className="text-muted-foreground">({s.id})</span>
-                  </span>
-                </label>
-              ))}
+
+            <div className="border border-border/60 rounded-xl overflow-hidden">
+              <div className="px-2 pt-2 pb-1.5 border-b border-border/60 bg-muted/30">
+                <Input
+                  placeholder="חפש מתאמן..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-8 text-sm bg-background"
+                />
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {studentsQ.isLoading ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">טוען...</div>
+                ) : filteredStudents.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    {search ? "לא נמצאו מתאמנים" : "אין מתאמנים פעילים"}
+                  </div>
+                ) : (
+                  filteredStudents.map((s) => {
+                    const selected = studentIds.includes(s.id);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => toggleStudent(s.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 text-sm text-right transition-colors hover:bg-muted/50 border-b border-border/30 last:border-0",
+                          selected && "bg-primary/8",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                            selected
+                              ? "bg-primary border-primary"
+                              : "border-muted-foreground/30",
+                          )}
+                        >
+                          {selected && <Check size={10} className="text-white" strokeWidth={3} />}
+                        </div>
+                        <span className={cn("flex-1", selected && "font-semibold text-primary")}>
+                          {s.name}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
+
           <div>
             <Label>קישור לתיקיית סילבוס ב-Drive</Label>
             <Input

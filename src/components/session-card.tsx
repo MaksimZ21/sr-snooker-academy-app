@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Users } from "lucide-react";
 import type { Session } from "@/lib/sheets/schemas";
 import { formatHebrewDate } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
@@ -28,27 +29,35 @@ export function SessionCard({
 
   return (
     <Link href={`/${basePath}/sessions/${session.id}`}>
-      <Card className="hover:bg-accent/40 hover:shadow-md transition overflow-hidden">
-        <CardContent className="p-3 flex gap-3">
-          <div className={cn("w-1 self-stretch rounded-full shrink-0", stripe)} />
-          <div className="flex-1 flex flex-col gap-1.5">
+      <Card className="hover:shadow-md hover:-translate-y-px transition-all duration-200 overflow-hidden cursor-pointer">
+        <CardContent className="p-0 flex">
+          <div className={cn("w-1.5 self-stretch shrink-0", stripe)} />
+          <div className="flex-1 p-3 flex flex-col gap-1.5">
             <div className="flex justify-between items-start gap-2">
               <div
                 className={cn(
-                  "text-lg font-semibold tabular-nums",
-                  cancelled && "opacity-60 line-through",
+                  "text-lg font-semibold tabular-nums leading-tight",
+                  cancelled && "opacity-50 line-through",
                 )}
               >
                 {session.start_time}–{session.end_time}
               </div>
-              <Badge className={cn("border", className)} variant="outline">
-                {label}
-              </Badge>
+              <div className="flex items-center gap-1 shrink-0">
+                <Badge className={cn("border text-xs", className)} variant="outline">
+                  {label}
+                </Badge>
+                {cancelled && (
+                  <Badge variant="destructive" className="text-xs">בוטל</Badge>
+                )}
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               {formatHebrewDate(session.date)}
             </div>
-            <div className="text-sm">{session.student_ids.length} מתאמנים</div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Users size={12} />
+              <span>{session.student_ids.length} מתאמנים</span>
+            </div>
           </div>
         </CardContent>
       </Card>

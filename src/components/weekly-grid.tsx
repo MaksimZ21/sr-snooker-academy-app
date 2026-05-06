@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
 import { addDays, format, parseISO } from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { SessionCard } from "./session-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Session } from "@/lib/sheets/schemas";
+import { cn } from "@/lib/utils";
 
 export function WeeklyGrid({
   basePath,
@@ -16,6 +18,7 @@ export function WeeklyGrid({
   coachFilter?: string;
 }) {
   const [anchor, setAnchor] = useState(todayIsoTel());
+  const today = todayIsoTel();
   const { startIso, endIso } = weekRangeFor(anchor);
 
   const { data, isLoading } = useQuery({
@@ -36,27 +39,66 @@ export function WeeklyGrid({
     format(addDays(parseISO(startIso), i), "yyyy-MM-dd"),
   );
 
+  const startDisplay = `${startIso.slice(8, 10)}.${startIso.slice(5, 7)}`;
+  const endDisplay = `${endIso.slice(8, 10)}.${endIso.slice(5, 7)}`;
+
   return (
     <div className="p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <Button onClick={() => setAnchor(format(addDays(parseISO(anchor), -7), "yyyy-MM-dd"))}>
-          ←
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setAnchor(format(addDays(parseISO(anchor), -7), "yyyy-MM-dd"))}
+          className="flex items-center gap-1"
+        >
+          <ChevronRight size={16} />
+          <span className="hidden sm:inline">שבוע קודם</span>
         </Button>
-        <Button variant="ghost" onClick={() => setAnchor(todayIsoTel())}>
-          היום
-        </Button>
-        <Button onClick={() => setAnchor(format(addDays(parseISO(anchor), 7), "yyyy-MM-dd"))}>
-          →
+
+        <div className="flex flex-col items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setAnchor(todayIsoTel())}
+            className="font-medium text-sm"
+          >
+            היום
+          </Button>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {startDisplay} – {endDisplay}
+          </span>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setAnchor(format(addDays(parseISO(anchor), 7), "yyyy-MM-dd"))}
+          className="flex items-center gap-1"
+        >
+          <span className="hidden sm:inline">שבוע הבא</span>
+          <ChevronLeft size={16} />
         </Button>
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
         {days.map((iso) => {
           const ses = (data?.sessions ?? []).filter((s) => s.date === iso);
+          const isToday = iso === today;
           return (
-            <div key={iso} className="flex flex-col gap-2">
-              <div className="font-semibold text-sm">{dayLabelHe(iso)}</div>
-              <div className="text-xs text-muted-foreground">
-                {iso.slice(8, 10)}.{iso.slice(5, 7)}
+            <div
+              key={iso}
+              className={cn(
+                "flex flex-col gap-2 rounded-xl p-2 transition-colors",
+                isToday && "bg-primary/5 ring-1 ring-primary/20",
+              )}
+            >
+              <div className="flex items-baseline justify-between gap-1">
+                <div className={cn("font-semibold text-sm", isToday && "text-primary")}>
+                  {dayLabelHe(iso)}
+                </div>
+                <div className={cn("text-xs tabular-nums", isToday ? "text-primary/70" : "text-muted-foreground")}>
+                  {iso.slice(8, 10)}.{iso.slice(5, 7)}
+                </div>
               </div>
               {isLoading ? (
                 <>
@@ -66,7 +108,7 @@ export function WeeklyGrid({
               ) : (
                 <>
                   {ses.length === 0 && (
-                    <div className="text-xs text-muted-foreground">—</div>
+                    <div className="text-xs text-muted-foreground/50 text-center py-2">—</div>
                   )}
                   {ses.map((s) => (
                     <SessionCard key={s.id} session={s} basePath={basePath} />

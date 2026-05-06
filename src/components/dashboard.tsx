@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Users } from "lucide-react";
+import { CalendarX, ChevronLeft, Users } from "lucide-react";
 import { SessionCard } from "./session-card";
 import type { Session } from "@/lib/sheets/schemas";
 import { formatHebrewDate, todayIsoTel } from "@/lib/date";
@@ -51,7 +51,14 @@ export function Dashboard({
 
   return (
     <div className="p-4 flex flex-col gap-6">
-      <h1 className="text-xl font-bold">{formatHebrewDate(today)}</h1>
+      <div className="flex items-center gap-2.5">
+        <h1 className="text-xl font-bold">{formatHebrewDate(today)}</h1>
+        {!isLoading && sessions.length > 0 && (
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+            {sessions.length} מפגשים
+          </span>
+        )}
+      </div>
 
       <section className="flex flex-col gap-3">
         {isLoading ? (
@@ -60,8 +67,9 @@ export function Dashboard({
           <HeroNextCard session={next} basePath={basePath} />
         ) : (
           <Card className="border-dashed">
-            <CardContent className="text-center py-12 text-muted-foreground">
-              אין מפגש קרוב
+            <CardContent className="flex flex-col items-center gap-3 py-14 text-muted-foreground">
+              <CalendarX size={40} className="opacity-30" />
+              <span className="text-sm">אין מפגש קרוב להיום</span>
             </CardContent>
           </Card>
         )}
@@ -74,7 +82,7 @@ export function Dashboard({
         </section>
       ) : secondary ? (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm text-muted-foreground">{secondary.label}</h2>
+          <h2 className="text-sm font-medium text-muted-foreground">{secondary.label}</h2>
           <SessionCard session={secondary.session} basePath={basePath} />
         </section>
       ) : null}
@@ -94,11 +102,14 @@ function HeroNextCard({
 
   return (
     <Link href={`/${basePath}/sessions/${session.id}`}>
-      <Card className="overflow-hidden border-2 border-primary/20 hover:shadow-lg transition">
-        <div className="bg-brand-gradient-soft px-5 py-3">
-          <div className="text-sm uppercase tracking-wide text-brand font-semibold">
+      <Card className="overflow-hidden border-2 border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all duration-200">
+        <div className="bg-brand-gradient-soft px-5 py-3 flex items-center justify-between">
+          <div className="text-xs uppercase tracking-widest text-primary font-semibold">
             המפגש הבא
           </div>
+          <Badge className={cn("border text-xs", className)} variant="outline">
+            {label}
+          </Badge>
         </div>
         <CardContent className="p-5 flex flex-col gap-4">
           <div className="flex items-end justify-between gap-3">
@@ -106,28 +117,28 @@ function HeroNextCard({
               <div
                 className={cn(
                   "text-5xl md:text-6xl font-bold tabular-nums tracking-tight leading-none",
-                  cancelled && "opacity-60 line-through",
+                  cancelled && "opacity-50 line-through",
                 )}
               >
                 {session.start_time}
               </div>
-              <div className="text-muted-foreground mt-2">
+              <div className="text-muted-foreground mt-2 text-sm">
                 עד {session.end_time}
               </div>
             </div>
-            <Badge className={cn("border", className)} variant="outline">
-              {label}
-            </Badge>
+            {cancelled && (
+              <Badge variant="destructive" className="self-start">בוטל</Badge>
+            )}
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm">
-              <Users size={16} className="text-muted-foreground" />
+          <div className="flex items-center justify-between pt-1 border-t border-border/60">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users size={15} />
               <span>{session.student_ids.length} מתאמנים</span>
             </div>
-            <div className="flex items-center gap-1 text-sm text-brand font-medium">
+            <div className="flex items-center gap-0.5 text-sm text-primary font-medium">
               <span>פתח פרטים</span>
-              <ChevronLeft size={16} />
+              <ChevronLeft size={15} />
             </div>
           </div>
         </CardContent>
@@ -150,7 +161,7 @@ function HeroSkeleton() {
           </div>
           <Skeleton className="h-6 w-16" />
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pt-1 border-t border-border/60">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-4 w-20" />
         </div>

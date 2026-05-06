@@ -2,13 +2,29 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import type { Attendance, Student } from "@/lib/sheets/schemas";
 
-const STATUSES: { key: Attendance["status"]; label: string }[] = [
-  { key: "present", label: "נוכח" },
-  { key: "late", label: "איחור" },
-  { key: "absent", label: "לא נוכח" },
-];
+const STATUSES = [
+  {
+    key: "present" as const,
+    label: "נוכח",
+    activeClass: "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500",
+    rowClass: "border-emerald-400/60",
+  },
+  {
+    key: "late" as const,
+    label: "איחור",
+    activeClass: "bg-amber-500 hover:bg-amber-600 text-white border-amber-500",
+    rowClass: "border-amber-400/60",
+  },
+  {
+    key: "absent" as const,
+    label: "לא נוכח",
+    activeClass: "bg-rose-500 hover:bg-rose-600 text-white border-rose-500",
+    rowClass: "border-rose-400/60",
+  },
+] as const;
 
 type SessionDetailData = {
   attendance: Attendance[];
@@ -70,11 +86,18 @@ export function AttendancePanel({
   }
 
   return (
-    <div className="flex flex-col gap-3 mt-4">
+    <div className="flex flex-col gap-2.5 mt-4">
       {students.map((s) => {
         const cur = statusFor(s.id);
+        const curConfig = STATUSES.find((st) => st.key === cur);
         return (
-          <div key={s.id} className="flex justify-between items-center border rounded p-3">
+          <div
+            key={s.id}
+            className={cn(
+              "flex justify-between items-center border rounded-lg p-3 transition-colors",
+              curConfig?.rowClass,
+            )}
+          >
             <div>
               <div className="font-medium">{s.name}</div>
               <div className="text-xs text-muted-foreground">{s.id}</div>
@@ -84,9 +107,13 @@ export function AttendancePanel({
                 <Button
                   key={st.key}
                   size="sm"
-                  variant={cur === st.key ? "default" : "outline"}
+                  variant="outline"
                   disabled={readOnly || mut.isPending}
                   onClick={() => mut.mutate({ student_id: s.id, status: st.key })}
+                  className={cn(
+                    "text-xs transition-colors",
+                    cur === st.key && st.activeClass,
+                  )}
                 >
                   {st.label}
                 </Button>

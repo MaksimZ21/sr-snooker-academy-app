@@ -3,9 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Phone } from "lucide-react";
 import { AddCoachDialog } from "@/components/forms/add-coach-dialog";
 
 type Coach = { email: string; name: string; phone: string; active: boolean };
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
 
 export function CoachesList() {
   const { data, isLoading } = useQuery({
@@ -30,20 +40,31 @@ export function CoachesList() {
   return (
     <div className="p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          ניהול רשימת המאמנים
-        </p>
+        <p className="text-sm text-muted-foreground">ניהול רשימת המאמנים</p>
         <AddCoachDialog />
       </div>
       {(data?.coaches ?? []).map((c) => (
-        <Card key={c.email}>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <div className="font-semibold">{c.name}</div>
-              <div className="text-sm text-muted-foreground">{c.email}</div>
-              {c.phone && <div className="text-sm">{c.phone}</div>}
+        <Card key={c.email} className="hover:shadow-sm transition-shadow">
+          <CardContent className="p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold shrink-0 select-none">
+                {getInitials(c.name)}
+              </div>
+              <div className="min-w-0">
+                <div className="font-semibold truncate">{c.name}</div>
+                <div className="text-sm text-muted-foreground truncate">{c.email}</div>
+                {c.phone && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                    <Phone size={11} />
+                    <span>{c.phone}</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <Badge variant={c.active ? "default" : "secondary"}>
+            <Badge
+              variant={c.active ? "default" : "secondary"}
+              className="shrink-0"
+            >
               {c.active ? "פעיל" : "לא פעיל"}
             </Badge>
           </CardContent>

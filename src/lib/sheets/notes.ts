@@ -1,37 +1,18 @@
-import { unstable_cache, revalidateTag } from "next/cache";
-import { getSheetsClient, getSheetId } from "@/lib/google/sheets";
-import { readSheet } from "./read";
-import { parseRows, NoteRow, type Note } from "./schemas";
+import { revalidateTag } from "next/cache";
+import { db } from "@/lib/db/client";
+import type { Note } from "./schemas";
 
-const RANGE = "Notes!A:F";
-
-async function readAll(): Promise<Note[]> {
-  return parseRows(await readSheet(RANGE), NoteRow);
+export async function fetchNotesForStudent(studentId: string): Promise<Note[]> {
+  const { data } = await db
+    .from("notes")
+    .select("*")
+    .eq("student_id", studentId)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as Note[];
 }
 
-export const fetchNotesAll = unstable_cache(readAll, ["notes:all"], {
-  revalidate: 30,
-  tags: ["notes:all"],
-});
-
-export async function fetchNotesForStudent(studentId: string) {
-  return (await fetchNotesAll())
-    .filter((n) => n.student_id === studentId)
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
-}
-
-export async function appendNote(row: Note) {
-  const sheets = getSheetsClient();
-  await sheets.spreadsheets.values.append({
-    spreadsheetId: getSheetId(),
-    range: RANGE,
-    valueInputOption: "RAW",
-    requestBody: {
-      values: [
-        [row.id, row.student_id, row.session_id, row.coach_email, row.text, row.created_at],
-      ],
-    },
-  });
+export async function appendNote(row: Note): Promise<void> {
+  await db.from("notes").insert(row);
   revalidateTag("notes:all", { expire: 0 });
   revalidateTag(`notes:${row.student_id}`, { expire: 0 });
 }

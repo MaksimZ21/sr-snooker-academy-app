@@ -2,19 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { unstable_cache } from "next/cache";
-import { readSheet } from "@/lib/sheets/read";
+import { db } from "@/lib/db/client";
 import { appendCoach } from "@/lib/sheets/coaches-write";
 
 const fetchAll = unstable_cache(
   async () => {
-    const rows = await readSheet("Coaches!A:D");
-    const [, ...data] = rows;
-    return data.map((r) => ({
-      email: r[0] ?? "",
-      name: r[1] ?? "",
-      phone: r[2] ?? "",
-      active: (r[3] ?? "").toUpperCase() === "TRUE",
-    }));
+    const { data } = await db.from("coaches").select("*");
+    return (data ?? []) as { email: string; name: string; phone: string; active: boolean }[];
   },
   ["coaches:all"],
   { revalidate: 300, tags: ["coaches"] },

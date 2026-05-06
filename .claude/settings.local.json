@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\user\\\\Desktop\\\\snooker-academy\" -Recurse -Depth 2)",
+      "Bash(Select-Object FullName)",
+      "Bash(npm install *)",
+      "Bash(npx web-push *)",
+      "Bash(npm uninstall *)",
+      "Bash(where gh *)",
+      "Bash(winget list *)",
+      "PowerShell(winget install GitHub.cli --silent --accept-package-agreements --accept-source-agreements)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\")",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(npx tsc *)",
+      "Bash(Get-Content src *)",
+      "Bash(Select-String -Pattern \"\\\\.from\\\\\\(|supabase.*\\\\.from\")",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}

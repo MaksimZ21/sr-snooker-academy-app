@@ -1,12 +1,10 @@
 import { unstable_cache, revalidateTag } from "next/cache";
-import { readSheet } from "./read";
-import { parseRows, SessionRow, type Session } from "./schemas";
-import { getSheetsClient, getSheetId } from "@/lib/google/sheets";
-
-const ALL_RANGE = "Sessions!A:I";
+import { db } from "@/lib/db/client";
+import type { Session } from "./schemas";
 
 async function readAll(): Promise<Session[]> {
-  return parseRows(await readSheet(ALL_RANGE), SessionRow);
+  const { data } = await db.from("sessions").select("*");
+  return (data ?? []) as Session[];
 }
 
 export const fetchSessionsAll = unstable_cache(readAll, ["sessions:all"], {
@@ -36,31 +34,17 @@ export async function fetchSessionsTodayAll(todayIso: string) {
 }
 
 export async function fetchSessionById(id: string) {
-  const all = await fetchSessionsAll();
-  return all.find((s) => s.id === id) ?? null;
+  const { data } = await db
+    .from("sessions")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  return (data as Session) ?? null;
 }
 
 export function invalidateSessions() {
   revalidateTag("sessions:week", { expire: 0 });
   revalidateTag("sessions:today", { expire: 0 });
-}
-
-export async function setSessionStudents(sessionId: string, studentIds: string[]) {
-  const sheets = getSheetsClient();
-  const all = await readSheet(ALL_RANGE);
-  const headerLen = 1;
-  const idx = all.slice(headerLen).findIndex((r) => r[0] === sessionId);
-  if (idx === -1) throw new Error("session not found");
-  const sheetRow = idx + headerLen + 1;
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: getSheetId(),
-    range: `Sessions!G${sheetRow}`,
-    valueInputOption: "RAW",
-    requestBody: {
-      values: [[studentIds.join(",")]],
-    },
-  });
-  invalidateSessions();
 }
 
 export async function appendSession(input: {
@@ -72,38 +56,32 @@ export async function appendSession(input: {
   student_ids: string[];
   drive_folder_url?: string;
 }) {
-  const all = await readSheet(ALL_RANGE);
   const prefix = `SES-${input.date}-`;
-  const nums = (all.slice(1) ?? [])
-    .map((r) => r[0] ?? "")
-    .filter((s) => s.startsWith(prefix))
-    .map((s) => {
-      const m = s.match(/^SES-\d{4}-\d{2}-\d{2}-(\d+)$/);
+  const { data } = await db.from("sessions").select("id").like("id", `${prefix}%`);
+  const nums = (data ?? [])
+    .map((r) => {
+      const m = (r.id as string).match(/^SES-\d{4}-\d{2}-\d{2}-(\d+)$/);
       return m ? parseInt(m[1], 10) : 0;
     })
-    .filter((n) => Number.isFinite(n) && n > 0);
-  const nextNum = nums.length ? Math.max(...nums) + 1 : 1;
-  const id = `SES-${input.date}-${String(nextNum).padStart(3, "0")}`;
-
-  const sheets = getSheetsClient();
-  await sheets.spreadsheets.values.append({
-    spreadsheetId: getSheetId(),
-    range: ALL_RANGE,
-    valueInputOption: "USER_ENTERED",
-    requestBody: {
-      values: [[
-        id,
-        input.date,
-        input.start_time,
-        input.end_time,
-        input.coach_email.trim().toLowerCase(),
-        input.training_type,
-        (input.student_ids ?? []).join(","),
-        input.drive_folder_url ?? "",
-        "scheduled",
-      ]],
-    },
+    .filter((n) => n > 0);
+  const next = nums.length ? Math.max(...nums) + 1 : 1;
+  const id = `${prefix}${String(next).padStart(3, "0")}`;
+  await db.from("sessions").insert({
+    id,
+    date: input.date,
+    start_time: input.start_time,
+    end_time: input.end_time,
+    coach_email: input.coach_email.trim().toLowerCase(),
+    training_type: input.training_type,
+    student_ids: input.student_ids,
+    drive_folder_url: input.drive_folder_url ?? "",
+    status: "scheduled",
   });
   invalidateSessions();
   return id;
+}
+
+export async function setSessionStudents(sessionId: string, studentIds: string[]) {
+  await db.from("sessions").update({ student_ids: studentIds }).eq("id", sessionId);
+  invalidateSessions();
 }

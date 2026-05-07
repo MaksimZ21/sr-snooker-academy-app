@@ -10,6 +10,14 @@ export async function fetchAttendanceForSession(sessionId: string): Promise<Atte
   return (data ?? []) as Attendance[];
 }
 
+export async function fetchAttendanceForStudent(studentId: string): Promise<Attendance[]> {
+  const { data } = await db
+    .from("attendance")
+    .select("*")
+    .eq("student_id", studentId);
+  return (data ?? []) as Attendance[];
+}
+
 export async function upsertAttendance(row: Attendance): Promise<void> {
   await db
     .from("attendance")

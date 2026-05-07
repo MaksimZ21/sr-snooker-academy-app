@@ -1,12 +1,18 @@
 "use client";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddStudentDialog } from "@/components/forms/add-student-dialog";
+import { StudentHistoryDialog } from "@/components/student-history-dialog";
+import { History } from "lucide-react";
 import type { Student } from "@/lib/sheets/schemas";
 
 export function StudentsList() {
+  const [selected, setSelected] = useState<Student | null>(null);
+
   const { data, isLoading } = useQuery({
     queryKey: ["students"],
     queryFn: async () => {
@@ -55,12 +61,31 @@ export function StudentsList() {
                 </div>
               )}
             </div>
-            <Badge variant={s.active ? "default" : "secondary"}>
-              {s.active ? "פעיל" : "לא פעיל"}
-            </Badge>
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              <Badge variant={s.active ? "default" : "secondary"}>
+                {s.active ? "פעיל" : "לא פעיל"}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => setSelected(s)}
+              >
+                <History className="h-3.5 w-3.5 ml-1" />
+                נוכחות
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ))}
+      {selected && (
+        <StudentHistoryDialog
+          studentId={selected.id}
+          studentName={selected.name}
+          open={true}
+          onOpenChange={(v) => { if (!v) setSelected(null); }}
+        />
+      )}
     </div>
   );
 }

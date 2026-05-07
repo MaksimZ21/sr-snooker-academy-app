@@ -3,6 +3,7 @@ export type NavItem = { href: string; label: string; icon: string };
 export const COACH_NAV: NavItem[] = [
   { href: "/coach", label: "בית", icon: "Home" },
   { href: "/coach/schedule", label: "לו״ז", icon: "Calendar" },
+  { href: "/coach/sessions", label: "האימונים שלי", icon: "History" },
   { href: "/coach/guidelines", label: "הנחיות", icon: "BookOpen" },
   { href: "/coach/pricing", label: "מחירון", icon: "Tag" },
   { href: "/coach/profile", label: "פרופיל", icon: "User" },

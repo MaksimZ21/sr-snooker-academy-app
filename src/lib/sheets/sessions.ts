@@ -28,6 +28,13 @@ export async function fetchSessionsForCoachWeek(
   );
 }
 
+export async function fetchSessionsForCoach(email: string) {
+  const all = await fetchSessionsAll();
+  return all
+    .filter((s) => s.coach_email === email)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.start_time.localeCompare(a.start_time));
+}
+
 export async function fetchSessionsTodayAll(todayIso: string) {
   const all = await fetchSessionsAll();
   return all.filter((s) => s.date === todayIso);

@@ -1,9 +1,10 @@
 "use client";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Phone } from "lucide-react";
+import { Phone, History } from "lucide-react";
 import { AddCoachDialog } from "@/components/forms/add-coach-dialog";
 
 type Coach = { email: string; name: string; phone: string; active: boolean };
@@ -61,12 +62,18 @@ export function CoachesList() {
                 )}
               </div>
             </div>
-            <Badge
-              variant={c.active ? "default" : "secondary"}
-              className="shrink-0"
-            >
-              {c.active ? "פעיל" : "לא פעיל"}
-            </Badge>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                href={`/admin/coaches/sessions?coach=${encodeURIComponent(c.email)}`}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                <History size={13} />
+                <span>מפגשים</span>
+              </Link>
+              <Badge variant={c.active ? "default" : "secondary"}>
+                {c.active ? "פעיל" : "לא פעיל"}
+              </Badge>
+            </div>
           </CardContent>
         </Card>
       ))}

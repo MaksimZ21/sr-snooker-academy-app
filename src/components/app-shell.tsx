@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import * as Icons from "lucide-react";
@@ -18,9 +19,13 @@ export function AppShell({
       {/* Dark navy sidebar */}
       <aside className="hidden md:flex md:w-60 flex-col p-3 shrink-0 bg-sidebar">
         <div className="flex items-center gap-3 px-3 py-4">
-          <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-sidebar-primary text-sidebar-primary-foreground text-base font-black shrink-0 shadow-lg">
-            8
-          </span>
+          <Image
+            src="/logo.png"
+            alt="לוגו אקדמיית סנוקר"
+            width={80}
+            height={50}
+            className="shrink-0 object-contain"
+          />
           <div className="leading-tight">
             <div className="text-sm font-bold text-sidebar-foreground">אקדמיית סנוקר</div>
             <div className="text-xs text-sidebar-foreground/50">ניהול אקדמיה</div>

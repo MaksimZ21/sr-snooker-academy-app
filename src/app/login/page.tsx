@@ -1,5 +1,6 @@
 "use client";
 import { Suspense, useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -68,10 +69,14 @@ export default function LoginPage() {
         </div>
         <CardContent className="flex flex-col gap-6 p-8 pt-12">
           <div className="text-center flex flex-col gap-2">
-            <div className="flex items-center justify-center gap-2">
-              <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-foreground text-background text-base font-bold shadow">
-                8
-              </span>
+            <div className="flex flex-col items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="לוגו אקדמיית סנוקר"
+                width={120}
+                height={75}
+                className="object-contain"
+              />
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
                 אקדמיית סנוקר
               </h1>

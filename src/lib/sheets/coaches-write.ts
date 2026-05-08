@@ -1,5 +1,6 @@
 import { revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function appendCoach(input: {
   email: string;
@@ -13,6 +14,8 @@ export async function appendCoach(input: {
     phone: input.phone ?? "",
     active: true,
   });
+  const admin = createSupabaseAdminClient();
+  await admin.auth.admin.inviteUserByEmail(email);
   revalidateTag("coaches", { expire: 0 });
   return email;
 }

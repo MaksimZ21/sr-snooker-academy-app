@@ -25,9 +25,10 @@ export async function appendCoach(input: {
   });
   const admin = createSupabaseAdminClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sr-snooker-academy-app.vercel.app";
-  await admin.auth.admin.inviteUserByEmail(email, {
+  const { error } = await admin.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${siteUrl}/auth/callback?next=/set-password`,
   });
+  if (error) throw new Error(`invite_failed: ${error.message}`);
   revalidateTag("coaches", { expire: 0 });
   return email;
 }

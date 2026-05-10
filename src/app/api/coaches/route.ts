@@ -40,7 +40,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ email });
   } catch (e) {
     if (e instanceof Response) return e;
-    return new NextResponse("error", { status: 500 });
+    const msg = e instanceof Error ? e.message : "error";
+    return new NextResponse(msg, { status: 500 });
   }
 }
 

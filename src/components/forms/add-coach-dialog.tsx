@@ -35,7 +35,7 @@ export function AddCoachDialog() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, name, phone }),
       });
-      if (!r.ok) throw new Error("failed");
+      if (!r.ok) throw new Error(await r.text());
       return (await r.json()) as { email: string };
     },
     onSuccess: () => {
@@ -44,7 +44,7 @@ export function AddCoachDialog() {
       setOpen(false);
       reset();
     },
-    onError: () => toast.error("שגיאה בהוספת המאמן"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בהוספת המאמן"),
   });
 
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());

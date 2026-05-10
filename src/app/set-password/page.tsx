@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,19 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 export default function SetPasswordPage() {
-  const [ready, setReady] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
-
-  useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get("code");
-    if (!code) { setReady(true); return; }
-    supabase.auth.exchangeCodeForSession(code).then(() => setReady(true));
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,14 +24,6 @@ export default function SetPasswordPage() {
     const { error } = await supabase.auth.updateUser({ password });
     if (error) { setError(error.message); setLoading(false); return; }
     router.push("/");
-  }
-
-  if (!ready) {
-    return (
-      <main className="min-h-dvh grid place-items-center px-4 bg-brand-gradient">
-        <p className="text-muted-foreground text-sm">מאמת...</p>
-      </main>
-    );
   }
 
   return (

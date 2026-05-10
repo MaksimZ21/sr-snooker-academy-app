@@ -15,7 +15,9 @@ export async function appendCoach(input: {
     active: true,
   });
   const admin = createSupabaseAdminClient();
-  await admin.auth.admin.inviteUserByEmail(email);
+  await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/set-password`,
+  });
   revalidateTag("coaches", { expire: 0 });
   return email;
 }

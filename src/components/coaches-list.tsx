@@ -1,11 +1,21 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Phone, History } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Phone, History, Trash2 } from "lucide-react";
 import { AddCoachDialog } from "@/components/forms/add-coach-dialog";
+import { toast } from "sonner";
 
 type Coach = { email: string; name: string; phone: string; active: boolean };
 
@@ -19,6 +29,9 @@ function getInitials(name: string) {
 }
 
 export function CoachesList() {
+  const [toDelete, setToDelete] = useState<Coach | null>(null);
+  const qc = useQueryClient();
+
   const { data, isLoading } = useQuery({
     queryKey: ["coaches"],
     queryFn: async () => {
@@ -27,6 +40,23 @@ export function CoachesList() {
       return (await r.json()) as { coaches: Coach[] };
     },
     staleTime: 5 * 60_000,
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (email: string) => {
+      const r = await fetch("/api/coaches", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!r.ok) throw new Error("failed");
+    },
+    onSuccess: () => {
+      toast.success("המאמן נמחק");
+      qc.invalidateQueries({ queryKey: ["coaches"] });
+      setToDelete(null);
+    },
+    onError: () => toast.error("שגיאה במחיקת המאמן"),
   });
 
   if (isLoading) {
@@ -73,10 +103,42 @@ export function CoachesList() {
               <Badge variant={c.active ? "default" : "secondary"}>
                 {c.active ? "פעיל" : "לא פעיל"}
               </Badge>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setToDelete(c)}
+              >
+                <Trash2 size={15} />
+              </Button>
             </div>
           </CardContent>
         </Card>
       ))}
+
+      <Dialog open={!!toDelete} onOpenChange={(v) => { if (!v) setToDelete(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>מחיקת מאמן</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            האם למחוק את <span className="font-semibold text-foreground">{toDelete?.name}</span>?
+            הפעולה תסיר את המאמן מהמערכת ותבטל את גישתו.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setToDelete(null)} disabled={deleteMut.isPending}>
+              ביטול
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMut.isPending}
+              onClick={() => toDelete && deleteMut.mutate(toDelete.email)}
+            >
+              {deleteMut.isPending ? "מוחק..." : "מחק"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

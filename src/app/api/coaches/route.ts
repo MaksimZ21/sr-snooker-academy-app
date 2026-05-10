@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db/client";
-import { appendCoach } from "@/lib/sheets/coaches-write";
+import { appendCoach, deleteCoach } from "@/lib/sheets/coaches-write";
 
 const fetchAll = unstable_cache(
   async () => {
@@ -38,6 +38,19 @@ export async function POST(req: Request) {
       .parse(await req.json());
     const email = await appendCoach(body);
     return NextResponse.json({ email });
+  } catch (e) {
+    if (e instanceof Response) return e;
+    return new NextResponse("error", { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const user = await requireUser();
+    if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
+    const { email } = z.object({ email: z.email() }).parse(await req.json());
+    await deleteCoach(email);
+    return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;
     return new NextResponse("error", { status: 500 });

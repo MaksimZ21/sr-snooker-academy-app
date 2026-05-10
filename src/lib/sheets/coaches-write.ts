@@ -17,18 +17,22 @@ export async function appendCoach(input: {
   phone?: string;
 }) {
   const email = input.email.trim().toLowerCase();
-  await db.from("coaches").insert({
-    email,
-    name: input.name,
-    phone: input.phone ?? "",
-    active: true,
-  });
+  await db.from("coaches").upsert(
+    { email, name: input.name, phone: input.phone ?? "", active: true },
+    { onConflict: "email" },
+  );
   const admin = createSupabaseAdminClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sr-snooker-academy-app.vercel.app";
   const { error } = await admin.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${siteUrl}/auth/callback?next=/set-password`,
   });
-  if (error) throw new Error(`invite_failed: ${error.message}`);
+  if (error) {
+    // User already exists — send a password reset email instead
+    const { error: resetError } = await admin.auth.resetPasswordForEmail(email, {
+      redirectTo: `${siteUrl}/auth/callback?next=/set-password`,
+    });
+    if (resetError) throw new Error(`invite_failed: ${resetError.message}`);
+  }
   revalidateTag("coaches", { expire: 0 });
   return email;
 }

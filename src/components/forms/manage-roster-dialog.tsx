@@ -21,15 +21,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Users } from "lucide-react";
-import type { Group } from "@/lib/sheets/schemas";
+import type { Group, Student } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
-
-type Student = {
-  id: string;
-  name: string;
-  phone?: string;
-  active: boolean;
-};
 
 export function ManageRosterDialog({
   sessionId,

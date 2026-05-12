@@ -21,10 +21,12 @@ export async function POST(req: Request) {
     if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
     const body = z
       .object({
-        name: z.string().min(1),
+        first_name: z.string().optional(),
+        last_name: z.string().optional(),
         phone: z.string().optional(),
-        parent_name: z.string().optional(),
-        parent_phone: z.string().optional(),
+        email: z.string().optional(),
+        college_name: z.string().optional(),
+        subscription_type: z.string().optional(),
         general_notes: z.string().optional(),
       })
       .parse(await req.json());

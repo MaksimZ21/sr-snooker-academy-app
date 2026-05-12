@@ -2,9 +2,18 @@ import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
 import type { Student } from "./schemas";
 
+export type CrmStudent = {
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  email: string;
+  college_name?: string;
+  subscription_type?: string;
+};
+
 export const fetchStudents = unstable_cache(
   async (): Promise<Student[]> => {
-    const { data } = await db.from("students").select("*").order("name");
+    const { data } = await db.from("students").select("*").order("last_name").order("first_name");
     return (data ?? []) as Student[];
   },
   ["students:all"],
@@ -12,10 +21,12 @@ export const fetchStudents = unstable_cache(
 );
 
 export async function appendStudent(input: {
-  name: string;
+  first_name?: string;
+  last_name?: string;
   phone?: string;
-  parent_name?: string;
-  parent_phone?: string;
+  email?: string;
+  college_name?: string;
+  subscription_type?: string;
   general_notes?: string;
 }) {
   const { data } = await db.from("students").select("id");
@@ -26,13 +37,38 @@ export async function appendStudent(input: {
   const id = `S${String(next).padStart(3, "0")}`;
   await db.from("students").insert({
     id,
-    name: input.name,
+    first_name: input.first_name ?? "",
+    last_name: input.last_name ?? "",
     phone: input.phone ?? "",
-    parent_name: input.parent_name ?? "",
-    parent_phone: input.parent_phone ?? "",
+    email: input.email ?? "",
+    college_name: input.college_name ?? "",
+    subscription_type: input.subscription_type ?? "",
     general_notes: input.general_notes ?? "",
     active: true,
   });
   revalidateTag("students", { expire: 0 });
   return id;
+}
+
+export async function upsertStudentFromCrm(input: CrmStudent) {
+  const { data: existing } = await db
+    .from("students")
+    .select("id")
+    .eq("email", input.email)
+    .maybeSingle();
+
+  if (existing) {
+    await db.from("students").update({
+      first_name: input.first_name,
+      last_name: input.last_name,
+      phone: input.phone ?? "",
+      college_name: input.college_name ?? "",
+      subscription_type: input.subscription_type ?? "",
+    }).eq("id", existing.id);
+    revalidateTag("students", { expire: 0 });
+    return { id: existing.id as string, action: "updated" as const };
+  }
+
+  const id = await appendStudent(input);
+  return { id, action: "created" as const };
 }

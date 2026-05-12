@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { Users } from "lucide-react";
 import type { Group } from "@/lib/sheets/schemas";
+import { studentFullName } from "@/lib/sheets/schemas";
 
 type Student = {
   id: string;
@@ -150,7 +151,7 @@ export function ManageRosterDialog({
                       setSelected(next);
                     }}
                   />
-                  <span className="font-medium">{s.name}</span>
+                  <span className="font-medium">{studentFullName(s)}</span>
                   <span className="text-xs text-muted-foreground">{s.id}</span>
                 </Label>
               );

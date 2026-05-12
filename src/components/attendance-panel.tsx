@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Attendance, Student } from "@/lib/sheets/schemas";
+import { studentFullName } from "@/lib/sheets/schemas";
 
 function getInitials(name: string) {
   return name
@@ -117,9 +118,9 @@ export function AttendancePanel({
                   curConfig ? curConfig.avatarClass : "bg-muted text-muted-foreground",
                 )}
               >
-                {getInitials(s.name)}
+                {getInitials(studentFullName(s))}
               </div>
-              <div className="font-medium text-sm">{s.name}</div>
+              <div className="font-medium text-sm">{studentFullName(s)}</div>
             </div>
             <div className="flex gap-1.5">
               {STATUSES.map((st) => (

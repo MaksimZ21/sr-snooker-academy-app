@@ -6,8 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CreateGroupDialog, EditGroupDialog } from "@/components/forms/group-dialog";
-import type { Group } from "@/lib/sheets/schemas";
-import type { Student } from "@/lib/sheets/schemas";
+import type { Group, Student } from "@/lib/sheets/schemas";
+import { studentFullName } from "@/lib/sheets/schemas";
 
 export function GroupsList() {
   const qc = useQueryClient();
@@ -45,7 +45,7 @@ export function GroupsList() {
   });
 
   const studentMap = new Map(
-    (studentsQ.data?.students ?? []).map((s) => [s.id, s.name]),
+    (studentsQ.data?.students ?? []).map((s) => [s.id, studentFullName(s)]),
   );
 
   if (groupsQ.isLoading) {

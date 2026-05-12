@@ -15,8 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Plus, Pencil } from "lucide-react";
-import type { Group } from "@/lib/sheets/schemas";
-import type { Student } from "@/lib/sheets/schemas";
+import type { Group, Student } from "@/lib/sheets/schemas";
+import { studentFullName } from "@/lib/sheets/schemas";
 
 function GroupForm({
   group,
@@ -100,7 +100,7 @@ function GroupForm({
                     setSelected(next);
                   }}
                 />
-                <span>{s.name}</span>
+                <span>{studentFullName(s)}</span>
                 <span className="text-xs text-muted-foreground">{s.id}</span>
               </Label>
             ))}

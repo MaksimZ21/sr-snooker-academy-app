@@ -12,17 +12,19 @@ import {
 describe("parseRows + Student", () => {
   it("parses Students rows by header", () => {
     const rows = [
-      ["id", "name", "phone", "parent_name", "parent_phone", "general_notes", "active"],
-      ["S1", "Eli", "050", "Dan", "051", "", "TRUE"],
+      ["id", "first_name", "last_name", "phone", "email", "college_name", "subscription_type", "general_notes", "active"],
+      ["S1", "Eli", "Cohen", "050", "eli@test.com", "TAU", "monthly", "", "TRUE"],
     ];
     const r = parseRows(rows, StudentRow);
     expect(r).toEqual([
       {
         id: "S1",
-        name: "Eli",
+        first_name: "Eli",
+        last_name: "Cohen",
         phone: "050",
-        parent_name: "Dan",
-        parent_phone: "051",
+        email: "eli@test.com",
+        college_name: "TAU",
+        subscription_type: "monthly",
         general_notes: "",
         active: true,
       },

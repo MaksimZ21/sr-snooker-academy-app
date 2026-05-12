@@ -16,14 +16,20 @@ const Csv = z.preprocess(
 
 export const StudentRow = z.object({
   id: z.string().min(1),
-  name: z.string(),
+  first_name: z.string().default(""),
+  last_name: z.string().default(""),
   phone: z.string().default(""),
-  parent_name: z.string().default(""),
-  parent_phone: z.string().default(""),
+  email: z.string().default(""),
+  college_name: z.string().default(""),
+  subscription_type: z.string().default(""),
   general_notes: z.string().default(""),
   active: Bool,
 });
 export type Student = z.infer<typeof StudentRow>;
+
+export function studentFullName(s: Pick<Student, "first_name" | "last_name">) {
+  return [s.first_name, s.last_name].filter(Boolean).join(" ");
+}
 
 export const TrainingType = z.enum([
   "private",

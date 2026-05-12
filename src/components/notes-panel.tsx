@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Note, Student } from "@/lib/sheets/schemas";
+import { studentFullName } from "@/lib/sheets/schemas";
 
 function getInitials(name: string) {
   return name
@@ -76,10 +77,10 @@ function StudentNotes({
     <div className="border border-border/60 rounded-xl overflow-hidden">
       <div className="flex items-center gap-3 px-4 py-3 bg-muted/40 border-b border-border/60">
         <div className="w-8 h-8 rounded-full bg-primary/12 text-primary flex items-center justify-center text-xs font-bold shrink-0 select-none">
-          {getInitials(student.name)}
+          {getInitials(studentFullName(student))}
         </div>
         <div className="flex-1 flex items-baseline justify-between gap-2 min-w-0">
-          <h3 className="font-semibold text-sm truncate">{student.name}</h3>
+          <h3 className="font-semibold text-sm truncate">{studentFullName(student)}</h3>
           {notes.length > 0 && (
             <span className="text-xs text-muted-foreground shrink-0">{notes.length} הערות</span>
           )}

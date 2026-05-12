@@ -24,6 +24,7 @@ import { Check, Plus } from "lucide-react";
 import { TRAINING_TYPE_LABEL } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 import type { Student, Group } from "@/lib/sheets/schemas";
+import { studentFullName } from "@/lib/sheets/schemas";
 
 type Coach = { email: string; name: string; active: boolean };
 
@@ -146,7 +147,7 @@ export function AddSessionDialog() {
   const filteredStudents = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return activeStudents;
-    return activeStudents.filter((s) => s.name.toLowerCase().includes(q));
+    return activeStudents.filter((s) => studentFullName(s).toLowerCase().includes(q));
   }, [activeStudents, search]);
 
   const isPrivate = trainingType === "private";
@@ -286,7 +287,7 @@ export function AddSessionDialog() {
                           {selected && <Check size={10} className="text-white" strokeWidth={3} />}
                         </div>
                         <span className={cn("flex-1", selected && "font-semibold text-primary")}>
-                          {s.name}
+                          {studentFullName(s)}
                         </span>
                       </button>
                     );

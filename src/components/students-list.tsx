@@ -9,6 +9,7 @@ import { AddStudentDialog } from "@/components/forms/add-student-dialog";
 import { StudentHistoryDialog } from "@/components/student-history-dialog";
 import { History } from "lucide-react";
 import type { Student } from "@/lib/sheets/schemas";
+import { studentFullName } from "@/lib/sheets/schemas";
 
 export function StudentsList() {
   const [selected, setSelected] = useState<Student | null>(null);
@@ -43,17 +44,14 @@ export function StudentsList() {
           <CardContent className="p-4 flex items-start justify-between gap-3">
             <div className="flex-1">
               <div className="font-semibold">
-                {s.name}{" "}
+                {studentFullName(s)}{" "}
                 <span className="text-xs text-muted-foreground">({s.id})</span>
               </div>
               {s.phone && (
                 <div className="text-sm text-muted-foreground">{s.phone}</div>
               )}
-              {(s.parent_name || s.parent_phone) && (
-                <div className="text-sm">
-                  הורה: {s.parent_name}
-                  {s.parent_phone ? ` · ${s.parent_phone}` : ""}
-                </div>
+              {s.college_name && (
+                <div className="text-sm text-muted-foreground">{s.college_name}</div>
               )}
               {s.general_notes && (
                 <div className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">
@@ -81,7 +79,7 @@ export function StudentsList() {
       {selected && (
         <StudentHistoryDialog
           studentId={selected.id}
-          studentName={selected.name}
+          studentName={studentFullName(selected)}
           open={true}
           onOpenChange={(v) => { if (!v) setSelected(null); }}
         />

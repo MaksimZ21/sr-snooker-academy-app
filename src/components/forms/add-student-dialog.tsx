@@ -18,18 +18,22 @@ import { Plus } from "lucide-react";
 
 export function AddStudentDialog() {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
-  const [parentName, setParentName] = useState("");
-  const [parentPhone, setParentPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [collegeName, setCollegeName] = useState("");
+  const [subscriptionType, setSubscriptionType] = useState("");
   const [notes, setNotes] = useState("");
   const qc = useQueryClient();
 
   const reset = () => {
-    setName("");
+    setFirstName("");
+    setLastName("");
     setPhone("");
-    setParentName("");
-    setParentPhone("");
+    setEmail("");
+    setCollegeName("");
+    setSubscriptionType("");
     setNotes("");
   };
 
@@ -39,10 +43,12 @@ export function AddStudentDialog() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          name,
+          first_name: firstName,
+          last_name: lastName,
           phone,
-          parent_name: parentName,
-          parent_phone: parentPhone,
+          email,
+          college_name: collegeName,
+          subscription_type: subscriptionType,
           general_notes: notes,
         }),
       });
@@ -58,7 +64,7 @@ export function AddStudentDialog() {
     onError: () => toast.error("שגיאה בהוספת מתאמן"),
   });
 
-  const canSubmit = name.trim().length > 0 && !mut.isPending;
+  const canSubmit = (firstName.trim().length > 0 || lastName.trim().length > 0) && !mut.isPending;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -72,26 +78,28 @@ export function AddStudentDialog() {
         </DialogHeader>
         <div className="grid gap-3">
           <div>
-            <Label>שם</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Label>שם פרטי</Label>
+            <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          </div>
+          <div>
+            <Label>שם משפחה</Label>
+            <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
           </div>
           <div>
             <Label>טלפון</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
           <div>
-            <Label>שם הורה</Label>
-            <Input
-              value={parentName}
-              onChange={(e) => setParentName(e.target.value)}
-            />
+            <Label>מייל</Label>
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div>
-            <Label>טלפון הורה</Label>
-            <Input
-              value={parentPhone}
-              onChange={(e) => setParentPhone(e.target.value)}
-            />
+            <Label>שם מכללה</Label>
+            <Input value={collegeName} onChange={(e) => setCollegeName(e.target.value)} />
+          </div>
+          <div>
+            <Label>סוג מנוי</Label>
+            <Input value={subscriptionType} onChange={(e) => setSubscriptionType(e.target.value)} />
           </div>
           <div>
             <Label>הערות כלליות</Label>

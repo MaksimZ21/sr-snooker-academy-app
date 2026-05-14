@@ -45,10 +45,12 @@ export const SessionRow = z.object({
   date: z.string(),
   start_time: z.string(),
   end_time: z.string(),
-  coach_email: z.email(),
+  coach_email: z.union([z.email(), z.literal("")]).default(""),
   training_type: TrainingType,
   student_ids: Csv,
   drive_folder_url: z.string().default(""),
+  address: z.string().default(""),
+  crm_event_id: z.string().default(""),
   status: z.enum(["scheduled", "completed", "cancelled"]),
 });
 export type Session = z.infer<typeof SessionRow>;

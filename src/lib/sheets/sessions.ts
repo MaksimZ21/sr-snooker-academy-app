@@ -92,3 +92,55 @@ export async function setSessionStudents(sessionId: string, studentIds: string[]
   await db.from("sessions").update({ student_ids: studentIds }).eq("id", sessionId);
   invalidateSessions();
 }
+
+export async function upsertSessionFromCrm(input: {
+  crm_event_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  training_type?: string;
+  address?: string;
+}): Promise<{ id: string; action: "created" | "updated" }> {
+  const { data: existing } = await db
+    .from("sessions")
+    .select("id")
+    .eq("crm_event_id", input.crm_event_id)
+    .maybeSingle();
+
+  const fields = {
+    date: input.date,
+    start_time: input.start_time,
+    end_time: input.end_time,
+    training_type: input.training_type ?? "group",
+    address: input.address ?? "",
+    crm_event_id: input.crm_event_id,
+  };
+
+  if (existing) {
+    await db.from("sessions").update(fields).eq("id", existing.id);
+    invalidateSessions();
+    return { id: existing.id as string, action: "updated" };
+  }
+
+  const prefix = `SES-${input.date}-`;
+  const { data } = await db.from("sessions").select("id").like("id", `${prefix}%`);
+  const nums = (data ?? [])
+    .map((r) => {
+      const m = (r.id as string).match(/^SES-\d{4}-\d{2}-\d{2}-(\d+)$/);
+      return m ? parseInt(m[1], 10) : 0;
+    })
+    .filter((n) => n > 0);
+  const next = nums.length ? Math.max(...nums) + 1 : 1;
+  const id = `${prefix}${String(next).padStart(3, "0")}`;
+
+  await db.from("sessions").insert({
+    id,
+    ...fields,
+    coach_email: "",
+    student_ids: [],
+    drive_folder_url: "",
+    status: "scheduled",
+  });
+  invalidateSessions();
+  return { id, action: "created" };
+}

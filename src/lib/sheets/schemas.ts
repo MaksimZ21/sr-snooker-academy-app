@@ -51,6 +51,7 @@ export const SessionRow = z.object({
   drive_folder_url: z.string().default(""),
   address: z.string().default(""),
   crm_event_id: z.string().default(""),
+  crm_event_type: z.string().default(""),
   status: z.enum(["scheduled", "completed", "cancelled"]),
 });
 export type Session = z.infer<typeof SessionRow>;

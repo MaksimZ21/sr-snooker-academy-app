@@ -9,6 +9,7 @@ const TrainingQuery = z.object({
   end_time: z.string().min(1),
   address: z.string().optional(),
   training_type: z.string().optional(),
+  event_type: z.string().optional(),
 });
 
 export async function GET(req: Request) {
@@ -27,6 +28,7 @@ export async function GET(req: Request) {
     end_time: parsed.data.end_time,
     address: parsed.data.address,
     training_type: parsed.data.training_type,
+    crm_event_type: parsed.data.event_type,
   });
 
   return NextResponse.json(result, { status: 200 });

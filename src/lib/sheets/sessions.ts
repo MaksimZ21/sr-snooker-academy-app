@@ -100,6 +100,7 @@ export async function upsertSessionFromCrm(input: {
   end_time: string;
   training_type?: string;
   address?: string;
+  crm_event_type?: string;
 }): Promise<{ id: string; action: "created" | "updated" }> {
   const { data: existing } = await db
     .from("sessions")
@@ -114,6 +115,7 @@ export async function upsertSessionFromCrm(input: {
     training_type: input.training_type ?? "group",
     address: input.address ?? "",
     crm_event_id: input.crm_event_id,
+    crm_event_type: input.crm_event_type ?? "",
   };
 
   if (existing) {

@@ -17,10 +17,11 @@ export async function appendCoach(input: {
   phone?: string;
 }) {
   const email = input.email.trim().toLowerCase();
-  await db.from("coaches").upsert(
+  const { error: upsertError } = await db.from("coaches").upsert(
     { email, name: input.name, phone: input.phone ?? "", active: true },
     { onConflict: "email" },
   );
+  if (upsertError) throw new Error(`db_upsert_failed: ${upsertError.message}`);
   const admin = createSupabaseAdminClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sr-snooker-academy-app.vercel.app";
   const { error } = await admin.auth.admin.inviteUserByEmail(email, {

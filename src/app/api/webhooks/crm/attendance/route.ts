@@ -5,9 +5,12 @@ import { upsertAttendance } from "@/lib/sheets/attendance";
 import { studentFullName } from "@/lib/sheets/schemas";
 import type { Student } from "@/lib/sheets/schemas";
 
+const CrmStatus = z.enum(["confirmed", "declined", "present", "absent"]);
+
 const AttendanceQuery = z.object({
   event_id: z.string().min(1),
   name: z.string().min(1),
+  status: CrmStatus.default("confirmed"),
 });
 
 export async function GET(req: Request) {
@@ -19,7 +22,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
 
-  const { event_id, name } = parsed.data;
+  const { event_id, name, status } = parsed.data;
+  const attendanceStatus = (status === "confirmed" || status === "present") ? "present" : "absent";
 
   const { data: sessionData } = await db
     .from("sessions")
@@ -44,7 +48,7 @@ export async function GET(req: Request) {
   await upsertAttendance({
     session_id: sessionData.id as string,
     student_id: student.id as string,
-    status: "present",
+    status: attendanceStatus,
     marked_by: "crm",
     marked_at: new Date().toISOString(),
   });

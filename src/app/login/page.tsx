@@ -26,7 +26,7 @@ function LoginForm() {
       setLoading(false);
     } else {
       const redirect = searchParams.get("redirect") ?? "/";
-      router.push(redirect);
+      window.location.href = redirect;
     }
   }
 

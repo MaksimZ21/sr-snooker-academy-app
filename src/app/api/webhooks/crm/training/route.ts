@@ -43,5 +43,6 @@ export async function POST(req: Request) {
     const { searchParams } = new URL(req.url);
     body = Object.fromEntries(searchParams.entries());
   }
+  console.log("[crm/training] received:", JSON.stringify(body));
   return handle(body);
 }

@@ -1,5 +1,5 @@
-import { Dashboard } from "@/components/dashboard";
+import { AdminDashboard } from "@/components/admin-dashboard";
 
 export default function AdminHomePage() {
-  return <Dashboard basePath="admin" pollMs={30_000} />;
+  return <AdminDashboard />;
 }

@@ -18,15 +18,9 @@ export type DriveFolder = {
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 
 function getDriveClient() {
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!raw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON is not set");
-  const key = JSON.parse(raw);
-  const auth = new google.auth.JWT({
-    email: key.client_email,
-    key: key.private_key,
-    scopes: ["https://www.googleapis.com/auth/drive.readonly"],
-  });
-  return google.drive({ version: "v3", auth });
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) throw new Error("GOOGLE_API_KEY is not set");
+  return google.drive({ version: "v3", auth: apiKey });
 }
 
 async function listChildren(

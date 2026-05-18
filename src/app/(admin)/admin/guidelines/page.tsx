@@ -1,2 +1,2 @@
-import { GuidelinesLibrary } from "@/components/guidelines-library";
-export default function Page() { return <GuidelinesLibrary showAdd />; }
+import { DriveLibrary } from "@/components/drive-library";
+export default function Page() { return <DriveLibrary />; }

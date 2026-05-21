@@ -1,5 +1,5 @@
-import { Dashboard } from "@/components/dashboard";
+import { CoachDashboard } from "@/components/coach-dashboard";
 
 export default function CoachHomePage() {
-  return <Dashboard basePath="coach" pollMs={60_000} />;
+  return <CoachDashboard />;
 }

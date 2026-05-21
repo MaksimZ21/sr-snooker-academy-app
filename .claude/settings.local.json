@@ -18,7 +18,8 @@
       "Bash(Get-Content src *)",
       "Bash(Select-String -Pattern \"\\\\.from\\\\\\(|supabase.*\\\\.from\")",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(findstr \"\\\\\"dev\\\\\"\")"
     ]
   }
 }

@@ -4,9 +4,13 @@ import { fetchStudents } from "@/lib/sheets/students";
 import { fetchSessionsAll } from "@/lib/sheets/sessions";
 import { fetchGroupsAll } from "@/lib/sheets/groups";
 import { db } from "@/lib/db/client";
-import { todayIsoTel, weekRangeFor } from "@/lib/date";
+import { todayIsoTel, weekRangeFor, dayLabelHe } from "@/lib/date";
 import { addDays, format, parseISO } from "date-fns";
+import { TRAINING_TYPE_LABEL } from "@/lib/training-type";
 import type { Session } from "@/lib/sheets/schemas";
+
+export type DayBar = { date: string; day: string; count: number };
+export type TypeSlice = { type: string; label: string; count: number };
 
 export type AdminStats = {
   today: string;
@@ -18,6 +22,8 @@ export type AdminStats = {
   upcomingSessions: Session[];
   coachMap: Record<string, string>;
   alerts: { noCoach: Session[] };
+  sessionsByDay: DayBar[];
+  sessionsByType: TypeSlice[];
 };
 
 export async function GET() {
@@ -55,6 +61,32 @@ export async function GET() {
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(0, 10);
 
+    // Chart: sessions per day this week
+    const weekSessions = sessions.filter(
+      (s) => s.date >= startIso && s.date <= endIso && s.status !== "cancelled",
+    );
+    const sessionsByDay: DayBar[] = Array.from({ length: 7 }, (_, i) => {
+      const date = format(addDays(parseISO(startIso), i), "yyyy-MM-dd");
+      return {
+        date,
+        day: dayLabelHe(date).slice(0, 3),
+        count: weekSessions.filter((s) => s.date === date).length,
+      };
+    });
+
+    // Chart: sessions by training type this week
+    const typeCounts: Record<string, number> = {};
+    for (const s of weekSessions) {
+      typeCounts[s.training_type] = (typeCounts[s.training_type] ?? 0) + 1;
+    }
+    const sessionsByType: TypeSlice[] = Object.entries(typeCounts)
+      .map(([type, count]) => ({
+        type,
+        label: TRAINING_TYPE_LABEL[type] ?? type,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count);
+
     const stats: AdminStats = {
       today,
       students: {
@@ -66,11 +98,13 @@ export async function GET() {
         active: ((coachRows.data ?? []) as { active: boolean }[]).filter((c) => c.active).length,
       },
       groups: groups.length,
-      weekSessionCount: sessions.filter((s) => s.date >= startIso && s.date <= endIso).length,
+      weekSessionCount: weekSessions.length,
       todaySessions,
       upcomingSessions,
       coachMap,
       alerts: { noCoach: noCoachSessions },
+      sessionsByDay,
+      sessionsByType,
     };
 
     return NextResponse.json(stats);

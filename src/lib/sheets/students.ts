@@ -51,11 +51,18 @@ export async function appendStudent(input: {
 }
 
 export async function upsertStudentFromCrm(input: CrmStudent) {
-  const { data: existing } = await db
-    .from("students")
-    .select("id")
-    .eq("email", input.email)
-    .maybeSingle();
+  // match by email first, then by phone
+  let existing: { id: string } | null = null;
+
+  if (input.email) {
+    const { data } = await db.from("students").select("id").eq("email", input.email).maybeSingle();
+    existing = data as { id: string } | null;
+  }
+
+  if (!existing && input.phone) {
+    const { data } = await db.from("students").select("id").eq("phone", input.phone).maybeSingle();
+    existing = data as { id: string } | null;
+  }
 
   if (existing) {
     await db.from("students").update({

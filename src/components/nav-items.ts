@@ -21,6 +21,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/coaches", label: "מאמנים", icon: "Users" },
   { href: "/admin/students", label: "מתאמנים", icon: "GraduationCap" },
   { href: "/admin/groups", label: "קבוצות", icon: "UsersRound" },
+  { href: "/admin/messages", label: "פניות", icon: "MessageSquare" },
   { href: "/admin/guidelines", label: "שליפים למאמן", icon: "FolderOpen" },
   { href: "/admin/pricing", label: "מחירון", icon: "Tag" },
   { href: "/admin/profile", label: "פרופיל", icon: "User" },

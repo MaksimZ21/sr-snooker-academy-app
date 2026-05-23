@@ -7,6 +7,7 @@ import { db } from "@/lib/db/client";
 import { todayIsoTel, weekRangeFor, dayLabelHe } from "@/lib/date";
 import { addDays, format, parseISO } from "date-fns";
 import { TRAINING_TYPE_LABEL } from "@/lib/training-type";
+import { countNewContactRequests } from "@/lib/sheets/contact";
 import type { Session } from "@/lib/sheets/schemas";
 
 export type DayBar = { date: string; day: string; count: number };
@@ -24,6 +25,7 @@ export type AdminStats = {
   alerts: { noCoach: Session[] };
   sessionsByDay: DayBar[];
   sessionsByType: TypeSlice[];
+  newMessages: number;
 };
 
 export async function GET() {
@@ -35,11 +37,12 @@ export async function GET() {
     const { startIso, endIso } = weekRangeFor(today);
     const nextWeekEnd = format(addDays(parseISO(today), 7), "yyyy-MM-dd");
 
-    const [students, sessions, groups, coachRows] = await Promise.all([
+    const [students, sessions, groups, coachRows, newMessages] = await Promise.all([
       fetchStudents(),
       fetchSessionsAll(),
       fetchGroupsAll(),
       db.from("coaches").select("email, name, active"),
+      countNewContactRequests(),
     ]);
 
     const coachMap: Record<string, string> = {};
@@ -105,6 +108,7 @@ export async function GET() {
       alerts: { noCoach: noCoachSessions },
       sessionsByDay,
       sessionsByType,
+      newMessages,
     };
 
     return NextResponse.json(stats);

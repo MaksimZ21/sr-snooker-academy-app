@@ -93,6 +93,13 @@ export async function setSessionStudents(sessionId: string, studentIds: string[]
   invalidateSessions();
 }
 
+export async function fetchSessionsForStudent(studentId: string): Promise<Session[]> {
+  const all = await fetchSessionsAll();
+  return all
+    .filter((s) => s.student_ids.includes(studentId))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time));
+}
+
 export async function upsertSessionFromCrm(input: {
   crm_event_id: string;
   date: string;

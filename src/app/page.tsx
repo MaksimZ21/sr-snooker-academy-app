@@ -11,5 +11,6 @@ export default async function Home() {
   const role = await getUserRole(user.email!);
   if (role === "admin") redirect("/admin");
   if (role === "coach") redirect("/coach");
+  if (role === "student") redirect("/student");
   redirect("/denied");
 }

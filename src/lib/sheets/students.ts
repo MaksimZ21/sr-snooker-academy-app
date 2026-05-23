@@ -50,6 +50,24 @@ export async function appendStudent(input: {
   return id;
 }
 
+export const fetchActiveStudentEmails = unstable_cache(
+  async (): Promise<string[]> => {
+    const { data } = await db.from("students").select("email").eq("active", true);
+    return (data ?? []).map((r) => (r.email as string).toLowerCase()).filter(Boolean);
+  },
+  ["students:active-emails"],
+  { revalidate: 300, tags: ["students"] },
+);
+
+export async function getStudentByEmail(email: string): Promise<Student | null> {
+  const { data } = await db
+    .from("students")
+    .select("*")
+    .eq("email", email.toLowerCase())
+    .maybeSingle();
+  return (data as Student) ?? null;
+}
+
 export async function upsertStudentFromCrm(input: CrmStudent) {
   // match by email first, then by phone
   let existing: { id: string } | null = null;

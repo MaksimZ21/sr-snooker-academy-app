@@ -23,6 +23,7 @@ import {
   AlertCircle,
   ChevronLeft,
   Layers,
+  MessageSquare,
 } from "lucide-react";
 import { formatHebrewDate, dayLabelHe } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
@@ -61,11 +62,12 @@ export function AdminDashboard() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatCard icon={<Users size={20} />} label="תלמידים פעילים" value={data?.students.active} sub={data ? `מתוך ${data.students.total}` : undefined} color="blue" href="/admin/students" isLoading={isLoading} />
         <StatCard icon={<User size={20} />} label="מאמנים פעילים" value={data?.coaches.active} color="violet" href="/admin/coaches" isLoading={isLoading} />
         <StatCard icon={<CalendarDays size={20} />} label="מפגשים היום" value={data?.todaySessions.length} color="emerald" href="/admin/schedule" isLoading={isLoading} />
         <StatCard icon={<Layers size={20} />} label="קבוצות" value={data?.groups} color="amber" href="/admin/groups" isLoading={isLoading} />
+        <StatCard icon={<MessageSquare size={20} />} label="פניות חדשות" value={data?.newMessages} color="rose" href="/admin/messages" isLoading={isLoading} />
       </div>
 
       {/* Charts row */}
@@ -232,6 +234,7 @@ const COLOR_CLASSES = {
   violet: { bg: "bg-violet-100 dark:bg-violet-900/40", icon: "text-violet-600 dark:text-violet-400" },
   emerald: { bg: "bg-emerald-100 dark:bg-emerald-900/40", icon: "text-emerald-600 dark:text-emerald-400" },
   amber: { bg: "bg-amber-100 dark:bg-amber-900/40", icon: "text-amber-600 dark:text-amber-400" },
+  rose: { bg: "bg-rose-100 dark:bg-rose-900/40", icon: "text-rose-600 dark:text-rose-400" },
 } as const;
 
 function StatCard({ icon, label, value, sub, color, href, isLoading }: {

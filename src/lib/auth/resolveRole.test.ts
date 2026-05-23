@@ -7,6 +7,7 @@ describe("resolveRole", () => {
       email: "owner@academy.com",
       adminEmails: "owner@academy.com,boss@academy.com",
       activeCoachEmails: [],
+      activeStudentEmails: [],
     });
     expect(r).toBe("admin");
   });
@@ -16,6 +17,7 @@ describe("resolveRole", () => {
       email: "coach1@academy.com",
       adminEmails: "owner@academy.com",
       activeCoachEmails: ["coach1@academy.com"],
+      activeStudentEmails: [],
     });
     expect(r).toBe("coach");
   });
@@ -25,6 +27,7 @@ describe("resolveRole", () => {
       email: "rando@example.com",
       adminEmails: "owner@academy.com",
       activeCoachEmails: ["coach1@academy.com"],
+      activeStudentEmails: [],
     });
     expect(r).toBe("denied");
   });
@@ -34,6 +37,7 @@ describe("resolveRole", () => {
       email: "boss@academy.com",
       adminEmails: "boss@academy.com",
       activeCoachEmails: ["boss@academy.com"],
+      activeStudentEmails: [],
     });
     expect(r).toBe("admin");
   });
@@ -43,6 +47,7 @@ describe("resolveRole", () => {
       email: "Coach1@Academy.com",
       adminEmails: "",
       activeCoachEmails: ["coach1@academy.com"],
+      activeStudentEmails: [],
     });
     expect(r).toBe("coach");
   });
@@ -52,7 +57,38 @@ describe("resolveRole", () => {
       email: "boss@academy.com",
       adminEmails: " boss@academy.com , owner@academy.com ",
       activeCoachEmails: [],
+      activeStudentEmails: [],
     });
     expect(r).toBe("admin");
+  });
+
+  it("returns student for active student email", () => {
+    const r = resolveRole({
+      email: "student@a.com",
+      adminEmails: "",
+      activeCoachEmails: [],
+      activeStudentEmails: ["student@a.com"],
+    });
+    expect(r).toBe("student");
+  });
+
+  it("admin takes precedence over student", () => {
+    const r = resolveRole({
+      email: "admin@a.com",
+      adminEmails: "admin@a.com",
+      activeCoachEmails: [],
+      activeStudentEmails: ["admin@a.com"],
+    });
+    expect(r).toBe("admin");
+  });
+
+  it("coach takes precedence over student", () => {
+    const r = resolveRole({
+      email: "coach@a.com",
+      adminEmails: "",
+      activeCoachEmails: ["coach@a.com"],
+      activeStudentEmails: ["coach@a.com"],
+    });
+    expect(r).toBe("coach");
   });
 });

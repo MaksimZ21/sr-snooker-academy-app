@@ -5,14 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
-function LoginForm() {
+function StaffLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createSupabaseBrowserClient();
 
@@ -48,13 +47,133 @@ function LoginForm() {
         required
         dir="ltr"
       />
-      {error && (
-        <p className="text-sm text-destructive text-center">{error}</p>
-      )}
+      {error && <p className="text-sm text-destructive text-center">{error}</p>}
       <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base mt-1">
         {loading ? "מתחבר..." : "התחברות"}
       </Button>
     </form>
+  );
+}
+
+type OtpStep = "email" | "code";
+
+function StudentLoginForm() {
+  const [step, setStep] = useState<OtpStep>("email");
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const supabase = createSupabaseBrowserClient();
+
+  async function sendOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) {
+      setError(error.message);
+    } else {
+      setStep("code");
+    }
+    setLoading(false);
+  }
+
+  async function verifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: "email",
+    });
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      window.location.href = "/student";
+    }
+  }
+
+  if (step === "code") {
+    return (
+      <form onSubmit={verifyOtp} className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground text-center">
+          שלחנו קוד ל-{email}
+        </p>
+        <Input
+          type="text"
+          inputMode="numeric"
+          placeholder="קוד בן 6 ספרות"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          required
+          maxLength={6}
+          dir="ltr"
+          className="text-center text-lg tracking-widest"
+        />
+        {error && <p className="text-sm text-destructive text-center">{error}</p>}
+        <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base mt-1">
+          {loading ? "מאמת..." : "אימות"}
+        </Button>
+        <button
+          type="button"
+          onClick={() => setStep("email")}
+          className="text-sm text-muted-foreground underline text-center"
+        >
+          שנה מייל
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <form onSubmit={sendOtp} className="flex flex-col gap-3">
+      <Input
+        type="email"
+        placeholder="אימייל"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        dir="ltr"
+      />
+      {error && <p className="text-sm text-destructive text-center">{error}</p>}
+      <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base mt-1">
+        {loading ? "שולח קוד..." : "שלח קוד"}
+      </Button>
+    </form>
+  );
+}
+
+type Tab = "staff" | "student";
+
+function LoginTabs() {
+  const [tab, setTab] = useState<Tab>("staff");
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg text-sm">
+        <button
+          type="button"
+          onClick={() => setTab("staff")}
+          className={`rounded-md py-1.5 font-medium transition-colors ${
+            tab === "staff" ? "bg-background shadow-sm" : "text-muted-foreground"
+          }`}
+        >
+          מאמן / אדמין
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("student")}
+          className={`rounded-md py-1.5 font-medium transition-colors ${
+            tab === "student" ? "bg-background shadow-sm" : "text-muted-foreground"
+          }`}
+        >
+          מתאמן
+        </button>
+      </div>
+      {tab === "staff" ? <StaffLoginForm /> : <StudentLoginForm />}
+    </div>
   );
 }
 
@@ -86,7 +205,7 @@ export default function LoginPage() {
             </p>
           </div>
           <Suspense>
-            <LoginForm />
+            <LoginTabs />
           </Suspense>
         </CardContent>
       </Card>

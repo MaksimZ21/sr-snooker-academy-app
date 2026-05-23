@@ -68,6 +68,11 @@ export async function getStudentByEmail(email: string): Promise<Student | null> 
   return (data as Student) ?? null;
 }
 
+export async function deleteStudent(id: string): Promise<void> {
+  await db.from("students").delete().eq("id", id);
+  revalidateTag("students", { expire: 0 });
+}
+
 export async function upsertStudentFromCrm(input: CrmStudent) {
   // match by email first, then by phone
   let existing: { id: string } | null = null;

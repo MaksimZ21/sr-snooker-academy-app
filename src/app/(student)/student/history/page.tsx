@@ -3,9 +3,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStudentByEmail } from "@/lib/sheets/students";
 import { fetchAttendanceForStudent } from "@/lib/sheets/attendance";
 import { fetchSessionsAll } from "@/lib/sheets/sessions";
+import { fetchNotesForStudent } from "@/lib/sheets/notes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { Session } from "@/lib/sheets/schemas";
+import type { Note, Session } from "@/lib/sheets/schemas";
 
 const TYPE_LABELS: Record<string, string> = {
   private: "אישי",
@@ -35,15 +36,21 @@ export default async function StudentHistoryPage() {
   const student = await getStudentByEmail(user.email!);
   if (!student) redirect("/denied");
 
-  const [attendance, allSessions] = await Promise.all([
+  const [attendance, allSessions, allNotes] = await Promise.all([
     fetchAttendanceForStudent(student.id),
     fetchSessionsAll(),
+    fetchNotesForStudent(student.id),
   ]);
 
   const presentIds = new Set(
     attendance.filter((a) => a.status === "present").map((a) => a.session_id),
   );
   const sessionMap = new Map<string, Session>(allSessions.map((s) => [s.id, s]));
+
+  const notesBySession = allNotes.reduce<Record<string, Note[]>>((acc, n) => {
+    (acc[n.session_id] ??= []).push(n);
+    return acc;
+  }, {});
 
   const history = [...presentIds]
     .map((id) => sessionMap.get(id))
@@ -59,19 +66,34 @@ export default async function StudentHistoryPage() {
         <p className="text-muted-foreground text-center py-12">אין היסטוריית אימונים עדיין</p>
       ) : (
         <div className="flex flex-col gap-3">
-          {history.map((s) => (
-            <Card key={s.id}>
-              <CardContent className="flex items-center justify-between p-4">
-                <div>
-                  <p className="font-medium">{formatDate(s.date)}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {s.start_time} – {s.end_time}
-                  </p>
-                </div>
-                <Badge variant="secondary">{TYPE_LABELS[s.training_type] ?? s.training_type}</Badge>
-              </CardContent>
-            </Card>
-          ))}
+          {history.map((s) => {
+            const notes = notesBySession[s.id] ?? [];
+            return (
+              <Card key={s.id}>
+                <CardContent className="p-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="font-medium">{formatDate(s.date)}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {s.start_time} – {s.end_time}
+                      </p>
+                    </div>
+                    <Badge variant="secondary">{TYPE_LABELS[s.training_type] ?? s.training_type}</Badge>
+                  </div>
+                  {notes.length > 0 && (
+                    <div className="border-t border-border/60 pt-3 flex flex-col gap-2">
+                      <p className="text-xs font-medium text-muted-foreground">סיכום מהמאמן</p>
+                      {notes.map((n) => (
+                        <div key={n.id} className="bg-muted/50 rounded-lg px-3 py-2.5 text-sm leading-relaxed">
+                          {n.text}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

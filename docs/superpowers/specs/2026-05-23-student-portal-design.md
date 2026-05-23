@@ -13,8 +13,8 @@ A personal area for academy students accessible via web browser (PWA). Students 
 
 **Method:** Supabase Email OTP (`signInWithOtp({ email, options: { shouldCreateUser: false } })`)
 - Student enters email → Supabase sends a 6-digit code → student enters code on the same page
-- A **separate login page** at `/student/login` handles the OTP flow exclusively for students
-- The existing `/login` page (magic link) remains unchanged for coaches and admins
+- The **existing `/login` page** gets a toggle/tab: "כניסת מאמן/אדמין" (magic link, existing) vs "כניסת מתאמן" (OTP, new)
+- No separate URL needed — one login page handles both flows
 - `shouldCreateUser: false` ensures only pre-existing students in the DB can log in
 
 **Role resolution** (`src/lib/auth/resolveRole.ts`):

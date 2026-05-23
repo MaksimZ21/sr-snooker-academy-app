@@ -25,7 +25,7 @@ export function AppShell({
   }
 
   return (
-    <div className="min-h-dvh flex flex-col md:flex-row">
+    <div className="h-dvh flex flex-col md:flex-row overflow-hidden">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex md:w-64 flex-col shrink-0 bg-sidebar">
         {/* Logo */}
@@ -65,7 +65,7 @@ export function AppShell({
         </div>
       </aside>
 
-      <main className="flex-1 pb-20 md:pb-4 min-w-0">{children}</main>
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-4 min-w-0">{children}</main>
 
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 inset-x-0 md:hidden bg-background/95 backdrop-blur-md border-t flex justify-around safe-area-pb">

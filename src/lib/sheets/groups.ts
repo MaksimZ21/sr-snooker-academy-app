@@ -44,3 +44,30 @@ export async function deleteGroup(id: string): Promise<void> {
   await db.from("groups").delete().eq("id", id);
   invalidateGroups();
 }
+
+export async function ensureStudentInCollegeGroup(
+  collegeName: string,
+  studentId: string,
+): Promise<void> {
+  const name = collegeName.trim();
+  if (!name) return;
+
+  const { data } = await db
+    .from("groups")
+    .select("id, student_ids")
+    .ilike("name", name)
+    .maybeSingle();
+
+  if (data) {
+    const group = data as { id: string; student_ids: string[] };
+    const ids: string[] = Array.isArray(group.student_ids)
+      ? group.student_ids
+      : String(group.student_ids ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    if (!ids.includes(studentId)) {
+      await db.from("groups").update({ student_ids: [...ids, studentId] }).eq("id", group.id);
+      invalidateGroups();
+    }
+  } else {
+    await appendGroup(name, [studentId]);
+  }
+}

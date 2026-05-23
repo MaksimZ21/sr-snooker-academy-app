@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2 } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CreateGroupDialog, EditGroupDialog } from "@/components/forms/group-dialog";
 import type { Group, Student } from "@/lib/sheets/schemas";
@@ -44,6 +44,19 @@ export function GroupsList() {
     onError: () => toast.error("שגיאה במחיקה"),
   });
 
+  const syncMut = useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/admin/sync-college-groups", { method: "POST" });
+      if (!r.ok) throw new Error("failed");
+      return (await r.json()) as { synced: number };
+    },
+    onSuccess: (data) => {
+      toast.success(`סונכרנו ${data.synced} מתאמנים לקבוצות מכללה`);
+      qc.invalidateQueries({ queryKey: ["groups"] });
+    },
+    onError: () => toast.error("שגיאה בסנכרון"),
+  });
+
   const studentMap = new Map(
     (studentsQ.data?.students ?? []).map((s) => [s.id, studentFullName(s)]),
   );
@@ -66,7 +79,19 @@ export function GroupsList() {
         <p className="text-sm text-muted-foreground">
           קבוצות מתאמנים לשיבוץ מהיר לסשן
         </p>
-        <CreateGroupDialog />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => syncMut.mutate()}
+            disabled={syncMut.isPending}
+            title="צור/עדכן קבוצות אוטומטית לפי מכללה"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ml-1.5 ${syncMut.isPending ? "animate-spin" : ""}`} />
+            סנכרן מכללות
+          </Button>
+          <CreateGroupDialog />
+        </div>
       </div>
       {groups.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-8">

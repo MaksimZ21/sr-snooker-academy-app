@@ -1,5 +1,6 @@
 import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
+import { ensureStudentInCollegeGroup } from "./groups";
 import type { Student } from "./schemas";
 
 export type CrmStudent = {
@@ -96,9 +97,15 @@ export async function upsertStudentFromCrm(input: CrmStudent) {
       subscription_type: input.subscription_type ?? "",
     }).eq("id", existing.id);
     revalidateTag("students", { expire: 0 });
+    if (input.college_name) {
+      await ensureStudentInCollegeGroup(input.college_name, existing.id as string);
+    }
     return { id: existing.id as string, action: "updated" as const };
   }
 
   const id = await appendStudent(input);
+  if (input.college_name) {
+    await ensureStudentInCollegeGroup(input.college_name, id);
+  }
   return { id, action: "created" as const };
 }

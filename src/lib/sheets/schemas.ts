@@ -44,7 +44,7 @@ export const SessionRow = z.object({
   id: z.string().min(1),
   date: z.string(),
   start_time: z.string(),
-  end_time: z.string(),
+  end_time: z.string().default(""),
   coach_email: z.union([z.email(), z.literal("")]).default(""),
   training_type: TrainingType,
   student_ids: Csv,
@@ -52,6 +52,7 @@ export const SessionRow = z.object({
   address: z.string().default(""),
   crm_event_id: z.string().default(""),
   crm_event_type: z.string().default(""),
+  crm_appointment_id: z.string().default(""),
   status: z.enum(["scheduled", "completed", "cancelled"]),
 });
 export type Session = z.infer<typeof SessionRow>;
@@ -59,8 +60,8 @@ export type Session = z.infer<typeof SessionRow>;
 export const AttendanceRow = z.object({
   session_id: z.string(),
   student_id: z.string(),
-  status: z.enum(["present", "absent", "late"]),
-  marked_by: z.email(),
+  status: z.enum(["present", "absent", "late", "confirmed"]),
+  marked_by: z.string().min(1),
   marked_at: z.string(),
 });
 export type Attendance = z.infer<typeof AttendanceRow>;

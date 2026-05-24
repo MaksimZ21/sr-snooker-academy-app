@@ -19,7 +19,7 @@ export default async function Page({
           currentStudentIds={session.student_ids}
         />
       </div>
-      <SessionDetail sessionId={id} canEditAttendance={true} canEditNotes={false} />
+      <SessionDetail sessionId={id} canEditAttendance={true} canEditNotes={false} isAdmin={true} />
     </div>
   );
 }

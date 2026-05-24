@@ -63,7 +63,7 @@ async function handleAppointmentApproved(raw: Record<string, unknown>) {
   const session = await fetchSessionByCrmAppointmentId(appointment_id);
   if (!session) {
     console.warn(`[crm/training] session not found for appointment_id=${appointment_id}`);
-    return NextResponse.json({ error: "session not found" }, { status: 404 });
+    return NextResponse.json({ ok: true, warning: "session not found" }, { status: 200 });
   }
 
   // Find student by phone first, then by full name
@@ -105,18 +105,28 @@ async function handle(raw: Record<string, unknown>) {
 }
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  return handle(Object.fromEntries(searchParams.entries()));
+  try {
+    const { searchParams } = new URL(req.url);
+    return await handle(Object.fromEntries(searchParams.entries()));
+  } catch (e) {
+    console.error("[crm/training] error", e);
+    return NextResponse.json({ error: "internal error" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
-  const contentType = req.headers.get("content-type") ?? "";
-  let body: Record<string, unknown>;
-  if (contentType.includes("application/json")) {
-    body = await req.json();
-  } else {
-    const { searchParams } = new URL(req.url);
-    body = Object.fromEntries(searchParams.entries());
+  try {
+    const contentType = req.headers.get("content-type") ?? "";
+    let body: Record<string, unknown>;
+    if (contentType.includes("application/json")) {
+      body = await req.json();
+    } else {
+      const { searchParams } = new URL(req.url);
+      body = Object.fromEntries(searchParams.entries());
+    }
+    return await handle(body);
+  } catch (e) {
+    console.error("[crm/training] error", e);
+    return NextResponse.json({ error: "internal error" }, { status: 500 });
   }
-  return handle(body);
 }

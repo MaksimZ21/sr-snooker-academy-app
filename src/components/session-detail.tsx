@@ -7,6 +7,7 @@ import { AttendancePanel } from "./attendance-panel";
 import { NotesPanel } from "./notes-panel";
 import { SyllabusPanel } from "./syllabus-panel";
 import { GuidelinesPanel } from "./guidelines-panel";
+import { CoachSelector } from "./coach-selector";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatHebrewDate } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
@@ -23,10 +24,12 @@ export function SessionDetail({
   sessionId,
   canEditAttendance,
   canEditNotes,
+  isAdmin = false,
 }: {
   sessionId: string;
   canEditAttendance: boolean;
   canEditNotes: boolean;
+  isAdmin?: boolean;
 }) {
   const { data, isLoading } = useQuery({
     queryKey: ["session", sessionId],
@@ -93,6 +96,11 @@ export function SessionDetail({
           </div>
         </div>
         <p className="text-white/50 text-xs mt-3 relative">{formatHebrewDate(session.date)}</p>
+        {isAdmin && (
+          <div className="mt-3 relative">
+            <CoachSelector sessionId={sessionId} currentCoachEmail={session.coach_email} />
+          </div>
+        )}
       </div>
 
       <div className="p-4 flex flex-col gap-4">

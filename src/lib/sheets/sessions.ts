@@ -49,6 +49,23 @@ export async function fetchSessionById(id: string) {
   return (data as Session) ?? null;
 }
 
+export async function fetchSessionByCrmAppointmentId(appointmentId: string): Promise<Session | null> {
+  const { data } = await db
+    .from("sessions")
+    .select("*")
+    .eq("crm_appointment_id", appointmentId)
+    .maybeSingle();
+  return (data as Session) ?? null;
+}
+
+export async function updateSessionCoach(sessionId: string, coachEmail: string): Promise<void> {
+  await db
+    .from("sessions")
+    .update({ coach_email: coachEmail.trim().toLowerCase() })
+    .eq("id", sessionId);
+  invalidateSessions();
+}
+
 export function invalidateSessions() {
   revalidateTag("sessions:week", { expire: 0 });
   revalidateTag("sessions:today", { expire: 0 });
@@ -102,31 +119,66 @@ export async function fetchSessionsForStudent(studentId: string): Promise<Sessio
 
 export async function upsertSessionFromCrm(input: {
   crm_event_id: string;
+  crm_appointment_id?: string;
   date: string;
   start_time: string;
-  end_time: string;
+  end_time?: string;
   training_type?: string;
   address?: string;
   crm_event_type?: string;
+  group_name?: string;
 }): Promise<{ id: string; action: "created" | "updated" }> {
-  const { data: existing } = await db
-    .from("sessions")
-    .select("id")
-    .eq("crm_event_id", input.crm_event_id)
-    .maybeSingle();
+  // Resolve existing session — prefer appointment_id lookup, fall back to event_id
+  let existing: { id: string } | null = null;
+  if (input.crm_appointment_id) {
+    const { data } = await db
+      .from("sessions")
+      .select("id")
+      .eq("crm_appointment_id", input.crm_appointment_id)
+      .maybeSingle();
+    existing = data as { id: string } | null;
+  }
+  if (!existing) {
+    const { data } = await db
+      .from("sessions")
+      .select("id")
+      .eq("crm_event_id", input.crm_event_id)
+      .maybeSingle();
+    existing = data as { id: string } | null;
+  }
+
+  // Resolve group → student_ids
+  let studentIds: string[] = [];
+  if (input.group_name) {
+    const { data: group } = await db
+      .from("groups")
+      .select("student_ids")
+      .ilike("name", input.group_name)
+      .maybeSingle();
+    if (group) {
+      const raw = group.student_ids as unknown;
+      studentIds = Array.isArray(raw)
+        ? (raw as string[])
+        : String(raw ?? "").split(",").map((s: string) => s.trim()).filter(Boolean);
+    }
+  }
 
   const fields = {
     date: input.date,
     start_time: input.start_time,
-    end_time: input.end_time,
+    end_time: input.end_time ?? "",
     training_type: input.training_type ?? "group",
     address: input.address ?? "",
     crm_event_id: input.crm_event_id,
     crm_event_type: input.crm_event_type ?? "",
+    crm_appointment_id: input.crm_appointment_id ?? "",
   };
 
   if (existing) {
     await db.from("sessions").update(fields).eq("id", existing.id);
+    if (studentIds.length > 0) {
+      await db.from("sessions").update({ student_ids: studentIds }).eq("id", existing.id);
+    }
     invalidateSessions();
     return { id: existing.id as string, action: "updated" };
   }
@@ -146,7 +198,7 @@ export async function upsertSessionFromCrm(input: {
     id,
     ...fields,
     coach_email: "",
-    student_ids: [],
+    student_ids: studentIds,
     drive_folder_url: "",
     status: "scheduled",
   });

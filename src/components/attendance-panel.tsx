@@ -1,7 +1,10 @@
 "use client";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { MessageSquarePlus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Attendance, Student } from "@/lib/sheets/schemas";
@@ -47,6 +50,66 @@ type SessionDetailData = {
   [k: string]: unknown;
 };
 
+function InlineNoteInput({
+  sessionId,
+  studentId,
+  onClose,
+}: {
+  sessionId: string;
+  studentId: string;
+  onClose: () => void;
+}) {
+  const [text, setText] = useState("");
+  const qc = useQueryClient();
+  const mut = useMutation({
+    mutationFn: async (t: string) => {
+      const r = await fetch(`/api/sessions/${sessionId}/notes`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ student_id: studentId, text: t }),
+      });
+      if (!r.ok) throw new Error("write failed");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["session", sessionId] });
+      toast.success("ההערה נשמרה");
+      onClose();
+    },
+    onError: () => toast.error("שגיאה בשמירת ההערה"),
+  });
+
+  return (
+    <div className="mt-2.5 flex flex-col gap-2">
+      <Textarea
+        autoFocus
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="הוסף הערה לשחקן..."
+        className="min-h-[72px] resize-none text-sm"
+      />
+      <div className="flex gap-2 justify-end">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onClose}
+          disabled={mut.isPending}
+          className="text-xs h-8"
+        >
+          ביטול
+        </Button>
+        <Button
+          size="sm"
+          disabled={!text.trim() || mut.isPending}
+          onClick={() => mut.mutate(text.trim())}
+          className="text-xs h-8"
+        >
+          שמור
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function AttendancePanel({
   sessionId,
   students,
@@ -58,6 +121,7 @@ export function AttendancePanel({
   attendance: Attendance[];
   readOnly: boolean;
 }) {
+  const [openNoteId, setOpenNoteId] = useState<string | null>(null);
   const qc = useQueryClient();
   const mut = useMutation({
     mutationFn: async (input: { student_id: string; status: Attendance["status"] }) => {
@@ -111,11 +175,12 @@ export function AttendancePanel({
           <div
             key={s.id}
             className={cn(
-              "flex justify-between items-center border-2 rounded-xl p-3.5 transition-all duration-200",
+              "flex flex-col border-2 rounded-xl p-3.5 transition-all duration-200",
               curConfig ? curConfig.rowClass : isConfirmed ? CONFIRMED_ROW_CLASS : "border-border",
             )}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex justify-between items-center gap-2">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               <div
                 className={cn(
                   "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none transition-colors",
@@ -124,16 +189,16 @@ export function AttendancePanel({
               >
                 {getInitials(studentFullName(s))}
               </div>
-              <div className="flex items-center gap-2">
-                <div className="font-medium text-sm">{studentFullName(s)}</div>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="font-medium text-sm truncate">{studentFullName(s)}</div>
                 {isConfirmed && (
-                  <Badge variant="outline" className="text-xs border-blue-400 text-blue-600 dark:text-blue-400">
+                  <Badge variant="outline" className="text-xs border-blue-400 text-blue-600 dark:text-blue-400 shrink-0">
                     אישר הגעה
                   </Badge>
                 )}
               </div>
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex items-center gap-1.5 shrink-0">
               {STATUSES.map((st) => (
                 <Button
                   key={st.key}
@@ -149,7 +214,26 @@ export function AttendancePanel({
                   {st.label}
                 </Button>
               ))}
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setOpenNoteId(openNoteId === s.id ? null : s.id)}
+                className={cn(
+                  "h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground",
+                  openNoteId === s.id && "text-foreground bg-muted",
+                )}
+              >
+                <MessageSquarePlus className="w-4 h-4" />
+              </Button>
             </div>
+          </div>
+          {openNoteId === s.id && (
+            <InlineNoteInput
+              sessionId={sessionId}
+              studentId={s.id}
+              onClose={() => setOpenNoteId(null)}
+            />
+          )}
           </div>
         );
       })}

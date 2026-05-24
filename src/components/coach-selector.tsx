@@ -30,11 +30,11 @@ export function CoachSelector({
   });
 
   const mut = useMutation({
-    mutationFn: async (coachEmail: string) => {
+    mutationFn: async (coachEmail: string | null) => {
       const r = await fetch(`/api/sessions/${sessionId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ coach_email: coachEmail }),
+        body: JSON.stringify({ coach_email: coachEmail || "" }),
       });
       if (!r.ok) throw new Error("failed");
     },
@@ -53,7 +53,7 @@ export function CoachSelector({
       <span className="text-white/60 text-xs">מאמן</span>
       <Select
         value={value}
-        onValueChange={(v) => mut.mutate(v === "__none__" ? "" : v)}
+        onValueChange={(v) => mut.mutate(v === "__none__" ? null : v)}
         disabled={mut.isPending}
       >
         <SelectTrigger className="bg-white/10 border-white/20 text-white text-sm h-8 w-44">

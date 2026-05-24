@@ -19,7 +19,8 @@
       "Bash(Select-String -Pattern \"\\\\.from\\\\\\(|supabase.*\\\\.from\")",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(findstr \"\\\\\"dev\\\\\"\")"
+      "Bash(findstr \"\\\\\"dev\\\\\"\")",
+      "Bash(npm run *)"
     ]
   }
 }

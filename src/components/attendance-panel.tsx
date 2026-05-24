@@ -1,6 +1,7 @@
 "use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Attendance, Student } from "@/lib/sheets/schemas";
@@ -38,6 +39,8 @@ const STATUSES = [
     avatarClass: "bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300",
   },
 ] as const;
+
+const CONFIRMED_ROW_CLASS = "border-blue-400/60 bg-blue-50/60 dark:bg-blue-950/20";
 
 type SessionDetailData = {
   attendance: Attendance[];
@@ -102,13 +105,14 @@ export function AttendancePanel({
     <div className="flex flex-col gap-2.5 mt-4">
       {students.map((s) => {
         const cur = statusFor(s.id);
+        const isConfirmed = cur === "confirmed";
         const curConfig = STATUSES.find((st) => st.key === cur);
         return (
           <div
             key={s.id}
             className={cn(
               "flex justify-between items-center border-2 rounded-xl p-3.5 transition-all duration-200",
-              curConfig ? curConfig.rowClass : "border-border",
+              curConfig ? curConfig.rowClass : isConfirmed ? CONFIRMED_ROW_CLASS : "border-border",
             )}
           >
             <div className="flex items-center gap-3">
@@ -120,7 +124,14 @@ export function AttendancePanel({
               >
                 {getInitials(studentFullName(s))}
               </div>
-              <div className="font-medium text-sm">{studentFullName(s)}</div>
+              <div className="flex items-center gap-2">
+                <div className="font-medium text-sm">{studentFullName(s)}</div>
+                {isConfirmed && (
+                  <Badge variant="outline" className="text-xs border-blue-400 text-blue-600 dark:text-blue-400">
+                    אישר הגעה
+                  </Badge>
+                )}
+              </div>
             </div>
             <div className="flex gap-1.5">
               {STATUSES.map((st) => (

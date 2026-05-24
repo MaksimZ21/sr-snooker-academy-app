@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import type { Session, Student, Attendance, Note } from "@/lib/sheets/schemas";
 import { AttendancePanel } from "./attendance-panel";
+import { NotesPanel } from "./notes-panel";
 import { SyllabusPanel } from "./syllabus-panel";
 import { GuidelinesPanel } from "./guidelines-panel";
 import { CoachSelector } from "./coach-selector";
@@ -110,31 +111,31 @@ export function SessionDetail({
               {session.start_time}
             </div>
             <div className="text-white/60 text-sm mt-1.5 flex items-center gap-1">
-            <span>עד</span>
-            {isAdmin ? (
-              <input
-                ref={endTimeRef}
-                type="text"
-                inputMode="numeric"
-                defaultValue={session.end_time || ""}
-                placeholder="--:--"
-                disabled={savingEnd}
-                onBlur={(e) => {
-                  const val = e.target.value.trim();
-                  if (!val || /^([01]\d|2[0-3]):[0-5]\d$/.test(val)) {
-                    saveEndTime(val);
-                  } else {
-                    toast.error("פורמט: HH:MM (24 שעות)");
-                    e.target.value = session.end_time || "";
-                  }
-                }}
-                onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
-                className="bg-transparent text-white/60 text-sm outline-none w-12 border-b border-transparent focus:border-white/40 tabular-nums placeholder:text-white/25 transition-colors disabled:opacity-50"
-              />
-            ) : (
-              <span>{session.end_time || "—"}</span>
-            )}
-          </div>
+              <span>עד</span>
+              {isAdmin ? (
+                <input
+                  ref={endTimeRef}
+                  type="text"
+                  inputMode="numeric"
+                  defaultValue={session.end_time || ""}
+                  placeholder="--:--"
+                  disabled={savingEnd}
+                  onBlur={(e) => {
+                    const val = e.target.value.trim();
+                    if (!val || /^([01]\d|2[0-3]):[0-5]\d$/.test(val)) {
+                      saveEndTime(val);
+                    } else {
+                      toast.error("פורמט: HH:MM (24 שעות)");
+                      e.target.value = session.end_time || "";
+                    }
+                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                  className="bg-transparent text-white/60 text-sm outline-none w-12 border-b border-transparent focus:border-white/40 tabular-nums placeholder:text-white/25 transition-colors disabled:opacity-50"
+                />
+              ) : (
+                <span>{session.end_time || "—"}</span>
+              )}
+            </div>
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">
             <Badge className={cn("border text-xs font-medium", className)} variant="outline">
@@ -153,8 +154,9 @@ export function SessionDetail({
 
       <div className="p-4 flex flex-col gap-4">
         <Tabs defaultValue="attendance">
-          <TabsList className="grid grid-cols-3">
+          <TabsList className="grid grid-cols-4">
             <TabsTrigger value="attendance">נוכחות</TabsTrigger>
+            <TabsTrigger value="notes">הערות</TabsTrigger>
             <TabsTrigger value="syllabus">סילבוס</TabsTrigger>
             <TabsTrigger value="guidelines">הנחיות</TabsTrigger>
           </TabsList>
@@ -163,9 +165,15 @@ export function SessionDetail({
               sessionId={sessionId}
               students={students}
               attendance={attendance}
-              notesByStudent={notesByStudent}
               readOnly={!canEditAttendance}
-              readOnlyNotes={!canEditNotes}
+            />
+          </TabsContent>
+          <TabsContent value="notes">
+            <NotesPanel
+              sessionId={sessionId}
+              students={students}
+              notesByStudent={notesByStudent}
+              readOnly={!canEditNotes}
             />
           </TabsContent>
           <TabsContent value="syllabus">

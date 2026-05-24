@@ -175,10 +175,8 @@ export async function upsertSessionFromCrm(input: {
   };
 
   if (existing) {
-    await db.from("sessions").update(fields).eq("id", existing.id);
-    if (studentIds.length > 0) {
-      await db.from("sessions").update({ student_ids: studentIds }).eq("id", existing.id);
-    }
+    const updateData = studentIds.length > 0 ? { ...fields, student_ids: studentIds } : fields;
+    await db.from("sessions").update(updateData).eq("id", existing.id);
     invalidateSessions();
     return { id: existing.id as string, action: "updated" };
   }

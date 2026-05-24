@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import type { Session, Student, Attendance, Note } from "@/lib/sheets/schemas";
 import { AttendancePanel } from "./attendance-panel";
-import { NotesPanel } from "./notes-panel";
 import { SyllabusPanel } from "./syllabus-panel";
 import { GuidelinesPanel } from "./guidelines-panel";
 import { CoachSelector } from "./coach-selector";
@@ -110,20 +109,30 @@ export function SessionDetail({
             >
               {session.start_time}
             </div>
-            <div className="text-white/60 text-sm mt-1.5 flex items-center gap-1.5">
+            <div className="text-white/60 text-sm mt-1.5 flex items-center gap-1">
             <span>עד</span>
             {isAdmin ? (
               <input
                 ref={endTimeRef}
-                type="time"
-                defaultValue={session.end_time}
+                type="text"
+                inputMode="numeric"
+                defaultValue={session.end_time || ""}
+                placeholder="--:--"
                 disabled={savingEnd}
-                onBlur={(e) => saveEndTime(e.target.value)}
+                onBlur={(e) => {
+                  const val = e.target.value.trim();
+                  if (!val || /^([01]\d|2[0-3]):[0-5]\d$/.test(val)) {
+                    saveEndTime(val);
+                  } else {
+                    toast.error("פורמט: HH:MM (24 שעות)");
+                    e.target.value = session.end_time || "";
+                  }
+                }}
                 onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
-                className="bg-transparent text-white/80 text-sm border-b border-white/30 focus:border-white/70 outline-none w-16 tabular-nums disabled:opacity-50"
+                className="bg-transparent text-white/60 text-sm outline-none w-12 border-b border-transparent focus:border-white/40 tabular-nums placeholder:text-white/25 transition-colors disabled:opacity-50"
               />
             ) : (
-              <span>{session.end_time}</span>
+              <span>{session.end_time || "—"}</span>
             )}
           </div>
           </div>
@@ -144,9 +153,8 @@ export function SessionDetail({
 
       <div className="p-4 flex flex-col gap-4">
         <Tabs defaultValue="attendance">
-          <TabsList className="grid grid-cols-4">
+          <TabsList className="grid grid-cols-3">
             <TabsTrigger value="attendance">נוכחות</TabsTrigger>
-            <TabsTrigger value="notes">הערות</TabsTrigger>
             <TabsTrigger value="syllabus">סילבוס</TabsTrigger>
             <TabsTrigger value="guidelines">הנחיות</TabsTrigger>
           </TabsList>
@@ -155,15 +163,9 @@ export function SessionDetail({
               sessionId={sessionId}
               students={students}
               attendance={attendance}
-              readOnly={!canEditAttendance}
-            />
-          </TabsContent>
-          <TabsContent value="notes">
-            <NotesPanel
-              sessionId={sessionId}
-              students={students}
               notesByStudent={notesByStudent}
-              readOnly={!canEditNotes}
+              readOnly={!canEditAttendance}
+              readOnlyNotes={!canEditNotes}
             />
           </TabsContent>
           <TabsContent value="syllabus">

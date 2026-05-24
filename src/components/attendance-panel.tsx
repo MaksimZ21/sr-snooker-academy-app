@@ -1,11 +1,11 @@
 "use client";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Clock3, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { Attendance, Student } from "@/lib/sheets/schemas";
+import type { Attendance, Student, Note } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
 
 function getInitials(name: string) {
@@ -21,7 +21,6 @@ const STATUSES = [
   {
     key: "present" as const,
     label: "נוכח",
-    icon: Check,
     activeClass: "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500",
     rowClass: "bg-emerald-50/60 dark:bg-emerald-950/20",
     avatarClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300",
@@ -29,7 +28,6 @@ const STATUSES = [
   {
     key: "late" as const,
     label: "איחור",
-    icon: Clock3,
     activeClass: "bg-amber-500 hover:bg-amber-600 text-white border-amber-500",
     rowClass: "bg-amber-50/60 dark:bg-amber-950/20",
     avatarClass: "bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300",
@@ -37,32 +35,81 @@ const STATUSES = [
   {
     key: "absent" as const,
     label: "לא נוכח",
-    icon: X,
     activeClass: "bg-rose-500 hover:bg-rose-600 text-white border-rose-500",
     rowClass: "bg-rose-50/60 dark:bg-rose-950/20",
     avatarClass: "bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300",
   },
 ] as const;
 
-const CONFIRMED_ROW_CLASS = "border-blue-400/60 bg-blue-50/60 dark:bg-blue-950/20";
-
 type SessionDetailData = {
   attendance: Attendance[];
   [k: string]: unknown;
 };
 
+function NoteInput({ sessionId, studentId }: { sessionId: string; studentId: string }) {
+  const [text, setText] = useState("");
+  const qc = useQueryClient();
+  const mut = useMutation({
+    mutationFn: async (t: string) => {
+      const r = await fetch(`/api/sessions/${sessionId}/notes`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ student_id: studentId, text: t }),
+      });
+      if (!r.ok) throw new Error("write failed");
+    },
+    onSuccess: () => {
+      setText("");
+      qc.invalidateQueries({ queryKey: ["session", sessionId] });
+    },
+    onError: () => toast.error("שגיאה בשמירת ההערה"),
+  });
+
+  return (
+    <div className="flex items-center gap-2 mt-2">
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && text.trim() && !mut.isPending) {
+            mut.mutate(text.trim());
+          }
+        }}
+        placeholder="הוסף הערה לאימון..."
+        className="flex-1 text-xs bg-muted/40 border border-border/40 rounded-lg px-2.5 py-1.5 outline-none focus:border-primary/40 placeholder:text-muted-foreground/50 transition-colors"
+      />
+      {text.trim() && (
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={mut.isPending}
+          onClick={() => mut.mutate(text.trim())}
+          className="h-7 px-2 text-xs shrink-0"
+        >
+          שמור
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export function AttendancePanel({
   sessionId,
   students,
   attendance,
+  notesByStudent,
   readOnly,
+  readOnlyNotes,
 }: {
   sessionId: string;
   students: Student[];
   attendance: Attendance[];
+  notesByStudent: Record<string, Note[]>;
   readOnly: boolean;
+  readOnlyNotes: boolean;
 }) {
   const qc = useQueryClient();
+
   const mut = useMutation({
     mutationFn: async (input: { student_id: string; status: Attendance["status"] }) => {
       const r = await fetch(`/api/sessions/${sessionId}/attendance`, {
@@ -106,23 +153,26 @@ export function AttendancePanel({
   }
 
   return (
-    <div className="flex flex-col divide-y divide-border mt-4 rounded-xl overflow-hidden border border-border">
+    <div className="flex flex-col mt-4 border border-border/60 rounded-xl overflow-hidden divide-y divide-border/60">
       {students.map((s) => {
         const cur = statusFor(s.id);
         const isConfirmed = cur === "confirmed";
         const curConfig = STATUSES.find((st) => st.key === cur);
+        const notes = notesByStudent[s.id] ?? [];
+
         return (
           <div
             key={s.id}
             className={cn(
-              "flex justify-between items-center px-3 py-2.5 transition-colors",
-              curConfig ? curConfig.rowClass : isConfirmed ? CONFIRMED_ROW_CLASS : "bg-background",
+              "px-3 pt-3 pb-2.5 transition-colors",
+              curConfig ? curConfig.rowClass : isConfirmed ? "bg-blue-50/60 dark:bg-blue-950/20" : "bg-background",
             )}
           >
-            <div className="flex items-center gap-2.5 min-w-0">
+            {/* Name row */}
+            <div className="flex items-center gap-2 mb-2.5">
               <div
                 className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none transition-colors",
+                  "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none",
                   curConfig ? curConfig.avatarClass : "bg-muted text-muted-foreground",
                 )}
               >
@@ -137,29 +187,43 @@ export function AttendancePanel({
                 )}
               </div>
             </div>
+
+            {/* Attendance buttons */}
             {!readOnly && (
-              <div className="flex gap-1 shrink-0">
-                {STATUSES.map((st) => {
-                  const Icon = st.icon;
-                  return (
-                    <Button
-                      key={st.key}
-                      size="icon"
-                      variant="outline"
-                      disabled={mut.isPending}
-                      title={st.label}
-                      onClick={() => mut.mutate({ student_id: s.id, status: st.key })}
-                      className={cn(
-                        "h-8 w-8 transition-all",
-                        cur === st.key && st.activeClass,
-                      )}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </Button>
-                  );
-                })}
+              <div className="flex gap-1.5 mr-10 mb-2">
+                {STATUSES.map((st) => (
+                  <Button
+                    key={st.key}
+                    size="sm"
+                    variant="outline"
+                    disabled={mut.isPending}
+                    onClick={() => mut.mutate({ student_id: s.id, status: st.key })}
+                    className={cn(
+                      "text-xs h-8 px-3 transition-all flex-1",
+                      cur === st.key && st.activeClass,
+                    )}
+                  >
+                    {st.label}
+                  </Button>
+                ))}
               </div>
             )}
+
+            {/* Notes */}
+            <div className="mr-10">
+              {notes.length > 0 && (
+                <div className="flex flex-col gap-1 mb-1.5">
+                  {notes.map((n) => (
+                    <p key={n.id} className="text-xs text-muted-foreground bg-muted/50 rounded-md px-2 py-1 leading-relaxed">
+                      {n.text}
+                    </p>
+                  ))}
+                </div>
+              )}
+              {!readOnlyNotes && (
+                <NoteInput sessionId={sessionId} studentId={s.id} />
+              )}
+            </div>
           </div>
         );
       })}

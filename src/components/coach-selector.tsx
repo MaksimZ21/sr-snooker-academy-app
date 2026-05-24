@@ -47,6 +47,9 @@ export function CoachSelector({
 
   const coaches = (data?.coaches ?? []).filter((c) => c.active);
   const value = currentCoachEmail || "__none__";
+  const selectedName = coaches.find((c) => c.email === currentCoachEmail)?.name
+    ?? currentCoachEmail
+    ?? null;
 
   return (
     <div className="flex items-center gap-2">
@@ -57,7 +60,7 @@ export function CoachSelector({
         disabled={mut.isPending}
       >
         <SelectTrigger className="bg-white/10 border-white/20 text-white text-sm h-8 w-44">
-          <SelectValue placeholder="לא משובץ" />
+          <span className="truncate">{selectedName ?? "לא משובץ"}</span>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__none__">לא משובץ</SelectItem>

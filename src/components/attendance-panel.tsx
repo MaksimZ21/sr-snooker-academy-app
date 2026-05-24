@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Check, Clock3, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Attendance, Student } from "@/lib/sheets/schemas";
@@ -20,22 +21,25 @@ const STATUSES = [
   {
     key: "present" as const,
     label: "נוכח",
+    icon: Check,
     activeClass: "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500",
-    rowClass: "border-emerald-400/60 bg-emerald-50/60 dark:bg-emerald-950/20",
+    rowClass: "bg-emerald-50/60 dark:bg-emerald-950/20",
     avatarClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300",
   },
   {
     key: "late" as const,
     label: "איחור",
+    icon: Clock3,
     activeClass: "bg-amber-500 hover:bg-amber-600 text-white border-amber-500",
-    rowClass: "border-amber-400/60 bg-amber-50/60 dark:bg-amber-950/20",
+    rowClass: "bg-amber-50/60 dark:bg-amber-950/20",
     avatarClass: "bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300",
   },
   {
     key: "absent" as const,
     label: "לא נוכח",
+    icon: X,
     activeClass: "bg-rose-500 hover:bg-rose-600 text-white border-rose-500",
-    rowClass: "border-rose-400/60 bg-rose-50/60 dark:bg-rose-950/20",
+    rowClass: "bg-rose-50/60 dark:bg-rose-950/20",
     avatarClass: "bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300",
   },
 ] as const;
@@ -102,7 +106,7 @@ export function AttendancePanel({
   }
 
   return (
-    <div className="flex flex-col gap-2.5 mt-4">
+    <div className="flex flex-col divide-y divide-border mt-4 rounded-xl overflow-hidden border border-border">
       {students.map((s) => {
         const cur = statusFor(s.id);
         const isConfirmed = cur === "confirmed";
@@ -111,45 +115,51 @@ export function AttendancePanel({
           <div
             key={s.id}
             className={cn(
-              "flex justify-between items-center border-2 rounded-xl p-3.5 transition-all duration-200",
-              curConfig ? curConfig.rowClass : isConfirmed ? CONFIRMED_ROW_CLASS : "border-border",
+              "flex justify-between items-center px-3 py-2.5 transition-colors",
+              curConfig ? curConfig.rowClass : isConfirmed ? CONFIRMED_ROW_CLASS : "bg-background",
             )}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
               <div
                 className={cn(
-                  "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none transition-colors",
+                  "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none transition-colors",
                   curConfig ? curConfig.avatarClass : "bg-muted text-muted-foreground",
                 )}
               >
                 {getInitials(studentFullName(s))}
               </div>
-              <div className="flex items-center gap-2">
-                <div className="font-medium text-sm">{studentFullName(s)}</div>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="font-medium text-sm truncate">{studentFullName(s)}</span>
                 {isConfirmed && (
-                  <Badge variant="outline" className="text-xs border-blue-400 text-blue-600 dark:text-blue-400">
+                  <Badge variant="outline" className="text-xs border-blue-400 text-blue-600 dark:text-blue-400 shrink-0">
                     אישר הגעה
                   </Badge>
                 )}
               </div>
             </div>
-            <div className="flex gap-1.5">
-              {STATUSES.map((st) => (
-                <Button
-                  key={st.key}
-                  size="sm"
-                  variant="outline"
-                  disabled={readOnly || mut.isPending}
-                  onClick={() => mut.mutate({ student_id: s.id, status: st.key })}
-                  className={cn(
-                    "text-xs h-8 px-3 transition-all",
-                    cur === st.key && st.activeClass,
-                  )}
-                >
-                  {st.label}
-                </Button>
-              ))}
-            </div>
+            {!readOnly && (
+              <div className="flex gap-1 shrink-0">
+                {STATUSES.map((st) => {
+                  const Icon = st.icon;
+                  return (
+                    <Button
+                      key={st.key}
+                      size="icon"
+                      variant="outline"
+                      disabled={mut.isPending}
+                      title={st.label}
+                      onClick={() => mut.mutate({ student_id: s.id, status: st.key })}
+                      className={cn(
+                        "h-8 w-8 transition-all",
+                        cur === st.key && st.activeClass,
+                      )}
+                    >
+                      <Icon className="w-4 h-4" />
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       })}

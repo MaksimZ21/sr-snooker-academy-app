@@ -1,7 +1,9 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import type { Session, Student, Attendance, Note } from "@/lib/sheets/schemas";
 import { AttendancePanel } from "./attendance-panel";
 import { NotesPanel } from "./notes-panel";
@@ -31,6 +33,10 @@ export function SessionDetail({
   canEditNotes: boolean;
   isAdmin?: boolean;
 }) {
+  const qc = useQueryClient();
+  const [savingEnd, setSavingEnd] = useState(false);
+  const endTimeRef = useRef<HTMLInputElement>(null);
+
   const { data, isLoading } = useQuery({
     queryKey: ["session", sessionId],
     queryFn: async () => {
@@ -40,6 +46,24 @@ export function SessionDetail({
     },
     refetchInterval: 30_000,
   });
+
+  async function saveEndTime(value: string) {
+    setSavingEnd(true);
+    try {
+      const r = await fetch(`/api/sessions/${sessionId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ end_time: value }),
+      });
+      if (!r.ok) throw new Error("failed");
+      await qc.invalidateQueries({ queryKey: ["session", sessionId] });
+      toast.success("שעת סיום עודכנה");
+    } catch {
+      toast.error("שגיאה בשמירת שעת הסיום");
+    } finally {
+      setSavingEnd(false);
+    }
+  }
 
   if (isLoading || !data) {
     return (
@@ -86,7 +110,22 @@ export function SessionDetail({
             >
               {session.start_time}
             </div>
-            <div className="text-white/60 text-sm mt-1.5">עד {session.end_time}</div>
+            <div className="text-white/60 text-sm mt-1.5 flex items-center gap-1.5">
+            <span>עד</span>
+            {isAdmin ? (
+              <input
+                ref={endTimeRef}
+                type="time"
+                defaultValue={session.end_time}
+                disabled={savingEnd}
+                onBlur={(e) => saveEndTime(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                className="bg-transparent text-white/80 text-sm border-b border-white/30 focus:border-white/70 outline-none w-16 tabular-nums disabled:opacity-50"
+              />
+            ) : (
+              <span>{session.end_time}</span>
+            )}
+          </div>
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">
             <Badge className={cn("border text-xs font-medium", className)} variant="outline">

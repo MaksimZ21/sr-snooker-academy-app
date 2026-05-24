@@ -66,6 +66,11 @@ export async function updateSessionCoach(sessionId: string, coachEmail: string):
   invalidateSessions();
 }
 
+export async function updateSessionEndTime(sessionId: string, endTime: string): Promise<void> {
+  await db.from("sessions").update({ end_time: endTime.trim() }).eq("id", sessionId);
+  invalidateSessions();
+}
+
 export function invalidateSessions() {
   revalidateTag("sessions:week", { expire: 0 });
   revalidateTag("sessions:today", { expire: 0 });

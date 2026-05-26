@@ -8,14 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddStudentDialog } from "@/components/forms/add-student-dialog";
+import { EditStudentDialog } from "@/components/forms/edit-student-dialog";
 import { StudentHistoryDialog } from "@/components/student-history-dialog";
-import { History, Search, Trash2, X } from "lucide-react";
+import { History, Pencil, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import type { Student } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
 
 export function StudentsList() {
   const [selected, setSelected] = useState<Student | null>(null);
+  const [editing, setEditing] = useState<Student | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState("");
@@ -172,6 +174,15 @@ export function StudentsList() {
                 variant="ghost"
                 size="sm"
                 className="h-7 px-2 text-xs"
+                onClick={() => setEditing(s)}
+              >
+                <Pencil className="h-3.5 w-3.5 ml-1" />
+                עריכה
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
                 onClick={() => setSelected(s)}
               >
                 <History className="h-3.5 w-3.5 ml-1" />
@@ -223,6 +234,14 @@ export function StudentsList() {
           studentName={studentFullName(selected)}
           open={true}
           onOpenChange={(v) => { if (!v) setSelected(null); }}
+        />
+      )}
+
+      {editing && (
+        <EditStudentDialog
+          student={editing}
+          open={true}
+          onOpenChange={(v) => { if (!v) setEditing(null); }}
         />
       )}
     </div>

@@ -74,6 +74,23 @@ export async function deleteStudent(id: string): Promise<void> {
   revalidateTag("students", { expire: 0 });
 }
 
+export async function updateStudent(
+  id: string,
+  input: {
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    email?: string;
+    college_name?: string;
+    subscription_type?: string;
+    general_notes?: string;
+    active?: boolean;
+  },
+): Promise<void> {
+  await db.from("students").update(input).eq("id", id);
+  revalidateTag("students", { expire: 0 });
+}
+
 export async function upsertStudentFromCrm(input: CrmStudent) {
   // match by email first, then by phone
   let existing: { id: string } | null = null;

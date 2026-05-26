@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Pencil } from "lucide-react";
 import type { Group, Student } from "@/lib/sheets/schemas";
@@ -26,6 +27,7 @@ function GroupForm({
   onClose: () => void;
 }) {
   const [name, setName] = useState(group?.name ?? "");
+  const [collegeName, setCollegeName] = useState(group?.college_name ?? "");
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(group?.student_ids ?? []),
   );
@@ -41,9 +43,14 @@ function GroupForm({
     staleTime: 60_000,
   });
 
+  const colleges = useMemo(() => {
+    const names = (data?.students ?? []).map((s) => s.college_name).filter(Boolean);
+    return Array.from(new Set(names)).sort();
+  }, [data]);
+
   const mut = useMutation({
     mutationFn: async () => {
-      const body = { name, student_ids: Array.from(selected) };
+      const body = { name, student_ids: Array.from(selected), college_name: collegeName };
       const r = group
         ? await fetch(`/api/groups/${group.id}`, {
             method: "PATCH",
@@ -76,6 +83,23 @@ function GroupForm({
           onChange={(e) => setName(e.target.value)}
           placeholder="קבוצת שני, מתקדמים..."
         />
+      </div>
+      <div>
+        <Label>שיוך למכללה (אופציונלי)</Label>
+        <Select
+          value={collegeName || "__none__"}
+          onValueChange={(v) => setCollegeName(v === "__none__" ? "" : v)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">ללא שיוך למכללה</SelectItem>
+            {colleges.map((c) => (
+              <SelectItem key={c} value={c}>{c}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div>
         <Label>מתאמנים</Label>

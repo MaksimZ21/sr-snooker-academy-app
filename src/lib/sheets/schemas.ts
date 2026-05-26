@@ -98,6 +98,7 @@ export const GroupRow = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   student_ids: Csv,
+  college_name: z.preprocess((v) => v ?? "", z.string()),
 });
 export type Group = z.infer<typeof GroupRow>;
 

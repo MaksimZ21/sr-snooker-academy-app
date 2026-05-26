@@ -1,4 +1,5 @@
 "use client";
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,21 @@ export function GroupsList() {
     (studentsQ.data?.students ?? []).map((s) => [s.id, studentFullName(s)]),
   );
 
+  const { standaloneGroups, collegeMap } = useMemo(() => {
+    const groups = groupsQ.data?.groups ?? [];
+    const standaloneGroups: Group[] = [];
+    const collegeMap = new Map<string, Group[]>();
+    for (const g of groups) {
+      if (g.college_name) {
+        if (!collegeMap.has(g.college_name)) collegeMap.set(g.college_name, []);
+        collegeMap.get(g.college_name)!.push(g);
+      } else {
+        standaloneGroups.push(g);
+      }
+    }
+    return { standaloneGroups, collegeMap };
+  }, [groupsQ.data]);
+
   if (groupsQ.isLoading) {
     return (
       <div className="p-4 flex flex-col gap-3">
@@ -71,7 +87,45 @@ export function GroupsList() {
     );
   }
 
-  const groups = groupsQ.data?.groups ?? [];
+  const totalGroups = (groupsQ.data?.groups ?? []).length;
+
+  function GroupCard({ g }: { g: Group }) {
+    return (
+      <Card>
+        <CardContent className="p-4 flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold">
+              {g.name}{" "}
+              <span className="text-xs text-muted-foreground font-normal">
+                ({g.student_ids.length} מתאמנים)
+              </span>
+            </div>
+            <div className="text-sm text-muted-foreground mt-1 flex flex-wrap gap-1">
+              {g.student_ids.map((id) => (
+                <span
+                  key={id}
+                  className="bg-muted px-1.5 py-0.5 rounded text-xs"
+                >
+                  {studentMap.get(id) ?? id}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <EditGroupDialog group={g} />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => deleteMut.mutate(g.id)}
+              disabled={deleteMut.isPending}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="p-4 flex flex-col gap-3">
@@ -93,45 +147,39 @@ export function GroupsList() {
           <CreateGroupDialog />
         </div>
       </div>
-      {groups.length === 0 && (
+
+      {totalGroups === 0 && (
         <p className="text-sm text-muted-foreground text-center py-8">
           אין קבוצות עדיין
         </p>
       )}
-      {groups.map((g) => (
-        <Card key={g.id}>
-          <CardContent className="p-4 flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold">
-                {g.name}{" "}
-                <span className="text-xs text-muted-foreground font-normal">
-                  ({g.student_ids.length} מתאמנים)
-                </span>
-              </div>
-              <div className="text-sm text-muted-foreground mt-1 flex flex-wrap gap-1">
-                {g.student_ids.map((id) => (
-                  <span
-                    key={id}
-                    className="bg-muted px-1.5 py-0.5 rounded text-xs"
-                  >
-                    {studentMap.get(id) ?? id}
-                  </span>
-                ))}
-              </div>
+
+      {/* College sections */}
+      {Array.from(collegeMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b, "he"))
+        .map(([college, groups]) => (
+          <div key={college} className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 mt-1">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs font-medium text-muted-foreground px-1">{college}</span>
+              <div className="h-px flex-1 bg-border" />
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <EditGroupDialog group={g} />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => deleteMut.mutate(g.id)}
-                disabled={deleteMut.isPending}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            {groups.map((g) => (
+              <GroupCard key={g.id} g={g} />
+            ))}
+          </div>
+        ))}
+
+      {/* Standalone groups */}
+      {standaloneGroups.length > 0 && collegeMap.size > 0 && (
+        <div className="flex items-center gap-2 mt-1">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs font-medium text-muted-foreground px-1">קבוצות כלליות</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+      )}
+      {standaloneGroups.map((g) => (
+        <GroupCard key={g.id} g={g} />
       ))}
     </div>
   );

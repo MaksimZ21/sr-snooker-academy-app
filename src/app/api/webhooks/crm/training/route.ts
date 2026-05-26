@@ -44,6 +44,7 @@ async function handleEventCreated(raw: Record<string, unknown>) {
   const result = await upsertSessionFromCrm({
     crm_event_id: event_id,
     crm_appointment_id: appointment_id,
+    name: meeting_type || undefined,
     date: time.date,
     start_time: time.startTime,
     end_time: "",

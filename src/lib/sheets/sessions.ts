@@ -125,6 +125,7 @@ export async function fetchSessionsForStudent(studentId: string): Promise<Sessio
 export async function upsertSessionFromCrm(input: {
   crm_event_id: string;
   crm_appointment_id?: string;
+  name?: string;
   date: string;
   start_time: string;
   end_time?: string;
@@ -169,6 +170,7 @@ export async function upsertSessionFromCrm(input: {
   }
 
   const fields = {
+    name: input.name ?? "",
     date: input.date,
     start_time: input.start_time,
     end_time: input.end_time ?? "",

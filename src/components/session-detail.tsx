@@ -144,7 +144,9 @@ export function SessionDetail({
             {cancelled && <Badge variant="destructive">בוטל</Badge>}
           </div>
         </div>
-        <p className="text-white/50 text-xs mt-3 relative">{formatHebrewDate(session.date)}</p>
+        <p className="text-white/50 text-xs mt-3 relative">
+          {session.name ? `${session.name} · ` : ""}{formatHebrewDate(session.date)}
+        </p>
         {isAdmin && (
           <div className="mt-3 relative">
             <CoachSelector sessionId={sessionId} currentCoachEmail={session.coach_email} />

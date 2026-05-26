@@ -53,7 +53,9 @@ export function SessionCard({
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <div className="text-xs text-muted-foreground">{formatHebrewDate(session.date)}</div>
+              <div className="text-xs text-muted-foreground">
+                {session.name ? session.name : formatHebrewDate(session.date)}
+              </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-primary transition-colors duration-200">
                 <span className="flex items-center gap-0.5">
                   <Users size={11} />

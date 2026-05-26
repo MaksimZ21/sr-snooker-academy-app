@@ -42,6 +42,7 @@ export const TrainingType = z.enum([
 
 export const SessionRow = z.object({
   id: z.string().min(1),
+  name: z.string().default(""),
   date: z.string(),
   start_time: z.string(),
   end_time: z.string().default(""),

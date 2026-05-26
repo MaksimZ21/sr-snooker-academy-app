@@ -88,7 +88,7 @@ function GroupForm({
         <Label>שיוך למכללה (אופציונלי)</Label>
         <Select
           value={collegeName || "__none__"}
-          onValueChange={(v) => setCollegeName(v === "__none__" ? "" : v)}
+          onValueChange={(v) => setCollegeName(!v || v === "__none__" ? "" : v)}
         >
           <SelectTrigger>
             <SelectValue />

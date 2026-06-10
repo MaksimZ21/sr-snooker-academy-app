@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
-import { fetchSessionsAll } from "@/lib/sheets/sessions";
+import { fetchSessionsForCoach } from "@/lib/sheets/sessions";
 import { fetchStudents } from "@/lib/sheets/students";
 import { todayIsoTel, weekRangeFor, dayLabelHe } from "@/lib/date";
 import { addDays, format, parseISO } from "date-fns";
@@ -25,8 +25,8 @@ export async function GET() {
     const { startIso, endIso } = weekRangeFor(today);
     const nextWeekEnd = format(addDays(parseISO(today), 7), "yyyy-MM-dd");
 
-    const [allSessions, students] = await Promise.all([
-      fetchSessionsAll(),
+    const [mySessions, students] = await Promise.all([
+      fetchSessionsForCoach(user.email),
       fetchStudents(),
     ]);
 
@@ -34,8 +34,6 @@ export async function GET() {
     for (const s of students) {
       studentMap[s.id] = [s.first_name, s.last_name].filter(Boolean).join(" ");
     }
-
-    const mySessions = allSessions.filter((s) => s.coach_email === user.email);
 
     const todaySessions = mySessions
       .filter((s) => s.date === today)

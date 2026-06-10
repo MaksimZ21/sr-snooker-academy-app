@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStudentByEmail } from "@/lib/sheets/students";
 import { fetchAttendanceForStudent } from "@/lib/sheets/attendance";
-import { fetchSessionsAll } from "@/lib/sheets/sessions";
+import { fetchSessionsByIds } from "@/lib/sheets/sessions";
 import { fetchNotesForStudent } from "@/lib/sheets/notes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,15 +36,15 @@ export default async function StudentHistoryPage() {
   const student = await getStudentByEmail(user.email!);
   if (!student) redirect("/denied");
 
-  const [attendance, allSessions, allNotes] = await Promise.all([
+  const [attendance, allNotes] = await Promise.all([
     fetchAttendanceForStudent(student.id),
-    fetchSessionsAll(),
     fetchNotesForStudent(student.id),
   ]);
 
   const presentIds = new Set(
     attendance.filter((a) => a.status === "present").map((a) => a.session_id),
   );
+  const allSessions = await fetchSessionsByIds([...presentIds]);
   const sessionMap = new Map<string, Session>(allSessions.map((s) => [s.id, s]));
 
   const notesBySession = allNotes.reduce<Record<string, Note[]>>((acc, n) => {

@@ -12,33 +12,58 @@ export const fetchSessionsAll = unstable_cache(readAll, ["sessions:all"], {
   tags: ["sessions:week"],
 });
 
-export async function fetchSessionsForCoachToday(email: string, todayIso: string) {
-  const all = await fetchSessionsAll();
-  return all.filter((s) => s.coach_email === email && s.date === todayIso);
-}
+export const fetchSessionsForCoachToday = unstable_cache(
+  async (email: string, todayIso: string): Promise<Session[]> => {
+    const { data } = await db
+      .from("sessions")
+      .select("*")
+      .eq("coach_email", email)
+      .eq("date", todayIso);
+    return (data ?? []) as Session[];
+  },
+  ["sessions:coach-today"],
+  { revalidate: 60, tags: ["sessions:week", "sessions:today"] },
+);
 
-export async function fetchSessionsForCoachWeek(
-  email: string,
-  startIso: string,
-  endIso: string,
-) {
-  const all = await fetchSessionsAll();
-  return all.filter(
-    (s) => s.coach_email === email && s.date >= startIso && s.date <= endIso,
-  );
-}
+export const fetchSessionsForCoachWeek = unstable_cache(
+  async (email: string, startIso: string, endIso: string): Promise<Session[]> => {
+    const { data } = await db
+      .from("sessions")
+      .select("*")
+      .eq("coach_email", email)
+      .gte("date", startIso)
+      .lte("date", endIso);
+    return (data ?? []) as Session[];
+  },
+  ["sessions:coach-week"],
+  { revalidate: 60, tags: ["sessions:week"] },
+);
 
-export async function fetchSessionsForCoach(email: string) {
-  const all = await fetchSessionsAll();
-  return all
-    .filter((s) => s.coach_email === email)
-    .sort((a, b) => b.date.localeCompare(a.date) || b.start_time.localeCompare(a.start_time));
-}
+export const fetchSessionsForCoach = unstable_cache(
+  async (email: string): Promise<Session[]> => {
+    const { data } = await db
+      .from("sessions")
+      .select("*")
+      .eq("coach_email", email)
+      .order("date", { ascending: false })
+      .order("start_time", { ascending: false });
+    return (data ?? []) as Session[];
+  },
+  ["sessions:coach"],
+  { revalidate: 60, tags: ["sessions:week"] },
+);
 
-export async function fetchSessionsTodayAll(todayIso: string) {
-  const all = await fetchSessionsAll();
-  return all.filter((s) => s.date === todayIso);
-}
+export const fetchSessionsTodayAll = unstable_cache(
+  async (todayIso: string): Promise<Session[]> => {
+    const { data } = await db
+      .from("sessions")
+      .select("*")
+      .eq("date", todayIso);
+    return (data ?? []) as Session[];
+  },
+  ["sessions:today-all"],
+  { revalidate: 60, tags: ["sessions:week", "sessions:today"] },
+);
 
 export async function fetchSessionById(id: string) {
   const { data } = await db
@@ -115,12 +140,39 @@ export async function setSessionStudents(sessionId: string, studentIds: string[]
   invalidateSessions();
 }
 
-export async function fetchSessionsForStudent(studentId: string): Promise<Session[]> {
-  const all = await fetchSessionsAll();
-  return all
-    .filter((s) => s.student_ids.includes(studentId))
-    .sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time));
+export const fetchSessionsForStudent = unstable_cache(
+  async (studentId: string): Promise<Session[]> => {
+    const { data } = await db
+      .from("sessions")
+      .select("*")
+      .contains("student_ids", [studentId])
+      .order("date")
+      .order("start_time");
+    return (data ?? []) as Session[];
+  },
+  ["sessions:student"],
+  { revalidate: 60, tags: ["sessions:week"] },
+);
+
+export async function fetchSessionsByIds(ids: string[]): Promise<Session[]> {
+  if (ids.length === 0) return [];
+  const { data } = await db.from("sessions").select("*").in("id", ids);
+  return (data ?? []) as Session[];
 }
+
+export const fetchSessionsForDateRange = unstable_cache(
+  async (startIso: string, endIso: string, coachEmail?: string): Promise<Session[]> => {
+    const query = db
+      .from("sessions")
+      .select("*")
+      .gte("date", startIso)
+      .lte("date", endIso);
+    const { data } = await (coachEmail ? query.eq("coach_email", coachEmail) : query);
+    return (data ?? []) as Session[];
+  },
+  ["sessions:range"],
+  { revalidate: 60, tags: ["sessions:week"] },
+);
 
 export async function upsertSessionFromCrm(input: {
   crm_event_id: string;

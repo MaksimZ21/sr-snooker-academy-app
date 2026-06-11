@@ -55,3 +55,7 @@ Three roles only: `admin | coach | denied`
 - Commit messages: conventional commits (`feat:`, `fix:`, `chore:`, `refactor:`)
 - Never commit directly to `main` — always create a branch
 - Never commit `.env*` files or any file containing API keys or secrets
+
+## Security: Pending
+- **Webhook auth** — `src/app/api/webhooks/crm/` routes have no secret validation. `CRM_WEBHOOK_SECRET` is defined in `.env.local.example` but never used. Blocked on getting access to configure the secret in the CRM. Once access is available: read the secret from `process.env.CRM_WEBHOOK_SECRET` and validate the `x-webhook-secret` header in all three webhook routes before processing the payload.
+- **Export API key** — `/api/export/students` accepts `api_key` as a query param. Should move to `Authorization: Bearer` header to avoid leaking the key in logs and browser history.

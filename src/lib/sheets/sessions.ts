@@ -154,15 +154,18 @@ export async function upsertSessionFromCrm(input: {
   }
 
   // Resolve group → student_ids
+  // First tries exact match, then checks if any group name is contained within the CRM name
+  // (e.g. CRM sends "מכללה חיפה" but group is named "חיפה")
   let studentIds: string[] = [];
   if (input.group_name) {
-    const { data: group } = await db
-      .from("groups")
-      .select("student_ids")
-      .ilike("name", input.group_name)
-      .maybeSingle();
-    if (group) {
-      const raw = group.student_ids as unknown;
+    const { data: allGroups } = await db.from("groups").select("name, student_ids");
+    const groups = (allGroups ?? []) as { name: string; student_ids: unknown }[];
+    const crmName = input.group_name.trim().toLowerCase();
+    const matched =
+      groups.find((g) => g.name.trim().toLowerCase() === crmName) ??
+      groups.find((g) => crmName.includes(g.name.trim().toLowerCase()));
+    if (matched) {
+      const raw = matched.student_ids as unknown;
       studentIds = Array.isArray(raw)
         ? (raw as string[])
         : String(raw ?? "").split(",").map((s: string) => s.trim()).filter(Boolean);

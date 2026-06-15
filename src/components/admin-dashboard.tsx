@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   BarChart,
   Bar,
@@ -24,6 +26,8 @@ import {
   ChevronLeft,
   Layers,
   MessageSquare,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { formatHebrewDate, dayLabelHe } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
@@ -41,6 +45,21 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export function AdminDashboard() {
+  const [reminderState, setReminderState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [sentCount, setSentCount] = useState(0);
+
+  async function sendReminders() {
+    setReminderState("loading");
+    try {
+      const r = await fetch("/api/cron/daily-reminder", { method: "POST" });
+      const json = await r.json();
+      setSentCount(json.sent ?? 0);
+      setReminderState("done");
+    } catch {
+      setReminderState("error");
+    }
+  }
+
   const { data, isLoading } = useQuery<AdminStats>({
     queryKey: ["admin:stats"],
     queryFn: async () => {
@@ -166,9 +185,29 @@ export function AdminDashboard() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold">מפגשים היום</CardTitle>
-            <Link href="/admin/schedule" className="text-xs text-primary hover:underline flex items-center gap-0.5">
-              לוז מלא <ChevronLeft size={12} />
-            </Link>
+            <div className="flex items-center gap-3">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1.5"
+                disabled={reminderState === "loading"}
+                onClick={sendReminders}
+              >
+                {reminderState === "loading" ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Send size={12} />
+                )}
+                {reminderState === "done"
+                  ? `נשלח ל-${sentCount} מאמנים`
+                  : reminderState === "error"
+                    ? "שגיאה בשליחה"
+                    : "שלח תזכורות"}
+              </Button>
+              <Link href="/admin/schedule" className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                לוז מלא <ChevronLeft size={12} />
+              </Link>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-0">

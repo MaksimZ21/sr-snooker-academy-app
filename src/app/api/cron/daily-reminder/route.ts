@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth/requireUser";
 import { db } from "@/lib/db/client";
 import { todayIsoTel } from "@/lib/date";
 import { fetchSessionsTodayAll } from "@/lib/sheets/sessions";
@@ -9,13 +10,11 @@ import type { Session } from "@/lib/sheets/schemas";
 type CoachRow = { email: string; name: string; phone: string };
 type StudentRow = { id: string; first_name: string; last_name: string };
 
-export async function GET(req: Request) {
-  const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new NextResponse("Unauthorized", { status: 401 });
-  }
-
+export async function POST(req: Request) {
   try {
+    const user = await requireUser();
+    if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
+
     const today = todayIsoTel();
     const sessions = await fetchSessionsTodayAll(today);
     const active = sessions.filter((s) => s.coach_email && s.status !== "cancelled");
@@ -91,7 +90,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ ok: true, sent });
   } catch (e) {
-    console.error("[cron/daily-reminder]", e);
+    if (e instanceof Response) return e;
+    console.error("[daily-reminder]", e);
     return NextResponse.json({ error: "internal error" }, { status: 500 });
   }
 }

@@ -13,7 +13,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Phone, History, Trash2 } from "lucide-react";
+import { Phone, History, Trash2, Pencil } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { AddCoachDialog } from "@/components/forms/add-coach-dialog";
 import { toast } from "sonner";
 
@@ -30,7 +32,16 @@ function getInitials(name: string) {
 
 export function CoachesList() {
   const [toDelete, setToDelete] = useState<Coach | null>(null);
+  const [toEdit, setToEdit] = useState<Coach | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
   const qc = useQueryClient();
+
+  function openEdit(c: Coach) {
+    setEditName(c.name);
+    setEditPhone(c.phone);
+    setToEdit(c);
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ["coaches"],
@@ -40,6 +51,23 @@ export function CoachesList() {
       return (await r.json()) as { coaches: Coach[] };
     },
     staleTime: 5 * 60_000,
+  });
+
+  const editMut = useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/coaches", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: toEdit!.email, name: editName, phone: editPhone }),
+      });
+      if (!r.ok) throw new Error("failed");
+    },
+    onSuccess: () => {
+      toast.success("הפרטים עודכנו");
+      qc.invalidateQueries({ queryKey: ["coaches"] });
+      setToEdit(null);
+    },
+    onError: () => toast.error("שגיאה בעדכון הפרטים"),
   });
 
   const deleteMut = useMutation({
@@ -106,6 +134,14 @@ export function CoachesList() {
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                onClick={() => openEdit(c)}
+              >
+                <Pencil size={15} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 onClick={() => setToDelete(c)}
               >
@@ -115,6 +151,36 @@ export function CoachesList() {
           </CardContent>
         </Card>
       ))}
+
+      <Dialog open={!!toEdit} onOpenChange={(v) => { if (!v) setToEdit(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>עריכת מאמן</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground mb-1">{toEdit?.email}</div>
+          <div className="grid gap-3">
+            <div>
+              <Label>שם</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div>
+              <Label>טלפון</Label>
+              <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="05X-XXXXXXX" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setToEdit(null)} disabled={editMut.isPending}>
+              ביטול
+            </Button>
+            <Button
+              disabled={!editName.trim() || editMut.isPending}
+              onClick={() => editMut.mutate()}
+            >
+              {editMut.isPending ? "שומר..." : "שמור"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!toDelete} onOpenChange={(v) => { if (!v) setToDelete(null); }}>
         <DialogContent>

@@ -2,6 +2,19 @@ import { revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
+export async function updateCoach(input: {
+  email: string;
+  name: string;
+  phone?: string;
+}): Promise<void> {
+  const { error } = await db
+    .from("coaches")
+    .update({ name: input.name, phone: input.phone ?? "" })
+    .eq("email", input.email.trim().toLowerCase());
+  if (error) throw new Error(`db_update_failed: ${error.message}`);
+  revalidateTag("coaches", { expire: 0 });
+}
+
 export async function deleteCoach(email: string) {
   const admin = createSupabaseAdminClient();
   await db.from("coaches").delete().eq("email", email);

@@ -74,23 +74,23 @@ export function AdminDashboard() {
   });
 
   return (
-    <div className="p-4 md:p-6 flex flex-col gap-6">
+    <div className="p-4 md:p-6 flex flex-col gap-5">
       {/* Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex items-end justify-between animate-fade-in-up">
         <div>
-          <p className="text-xs text-muted-foreground mb-0.5">סקירה כללית</p>
-          <h1 className="text-2xl font-bold">
+          <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider mb-1">סקירה כללית</p>
+          <h1 className="text-2xl font-bold tracking-tight">
             {isLoading || !data ? <Skeleton className="h-8 w-52 inline-block" /> : formatHebrewDate(data.today)}
           </h1>
         </div>
-        <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 rounded-full px-3 py-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          פעיל
+        <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 border border-border/50 rounded-full px-3 py-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 status-dot" />
+          מחובר
         </div>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
         <StatCard icon={<Users size={18} />} label="תלמידים פעילים" value={data?.students.active} sub={data ? `מתוך ${data.students.total}` : undefined} href="/admin/students" isLoading={isLoading} />
         <StatCard icon={<User size={18} />} label="מאמנים פעילים" value={data?.coaches.active} href="/admin/coaches" isLoading={isLoading} />
         <StatCard icon={<CalendarDays size={18} />} label="מפגשים היום" value={data?.todaySessions.length} href="/admin/schedule" isLoading={isLoading} highlight />
@@ -99,7 +99,7 @@ export function AdminDashboard() {
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in-up" style={{ animationDelay: "120ms" }}>
         {/* Bar chart — sessions per day */}
         <Card className="md:col-span-2">
           <CardHeader className="pb-2">
@@ -190,7 +190,7 @@ export function AdminDashboard() {
       </div>
 
       {/* Today's sessions */}
-      <Card>
+      <Card className="animate-fade-in-up" style={{ animationDelay: "180ms" } as React.CSSProperties}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold">מפגשים היום</CardTitle>
@@ -290,51 +290,59 @@ function StatCard({ icon, label, value, sub, href, isLoading, highlight, alert }
   return (
     <Link href={href} className="block h-full">
       <div className={cn(
-        "group relative h-full rounded-2xl border p-4 flex flex-col justify-between gap-3",
-        "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg",
+        "group relative h-full rounded-2xl p-4 flex flex-col justify-between gap-3",
+        "transition-all duration-250 hover:-translate-y-1",
         highlight
-          ? "bg-brand-gradient border-transparent text-white shadow-md"
-          : "bg-card border-border/70 hover:border-primary/30",
+          ? "bg-brand-gradient shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:shadow-xl"
+          : "bg-card ring-1 ring-foreground/[0.07] dark:ring-white/[0.06] hover:ring-primary/25 hover:shadow-md dark:hover:ring-primary/20",
       )}>
-        <div className="flex items-center justify-between">
+        {/* Top row: icon + alert dot */}
+        <div className="flex items-start justify-between">
           <span className={cn(
-            "p-2 rounded-xl",
-            highlight ? "bg-white/20" : "bg-primary/10 text-primary",
+            "p-2 rounded-xl transition-transform duration-200 group-hover:scale-110",
+            highlight ? "bg-white/20" : "bg-primary/10 text-primary dark:bg-primary/15",
           )}>
             {icon}
           </span>
           {alert && (value ?? 0) > 0 && (
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-rose-500 status-dot mt-0.5" />
           )}
         </div>
+
+        {/* Value + label */}
         {isLoading ? (
           <div>
-            <Skeleton className={cn("h-8 w-14 mb-1", highlight && "bg-white/20")} />
-            <Skeleton className={cn("h-3 w-20", highlight && "bg-white/20")} />
+            <Skeleton className={cn("h-9 w-14 mb-1.5 rounded-lg", highlight && "bg-white/20")} />
+            <Skeleton className={cn("h-3 w-20 rounded", highlight && "bg-white/20")} />
           </div>
         ) : (
           <div>
             <div className={cn(
-              "text-3xl font-bold tabular-nums leading-none",
-              highlight ? "text-white" : "",
+              "text-3xl font-bold tabular-nums leading-none tracking-tight",
+              highlight ? "text-white" : "text-foreground",
             )}>
               {value ?? 0}
             </div>
             <div className={cn(
-              "text-xs mt-1",
-              highlight ? "text-white/80" : "text-muted-foreground",
+              "text-xs mt-1.5 font-medium",
+              highlight ? "text-white/75" : "text-muted-foreground",
             )}>
               {label}
             </div>
             {sub && (
               <div className={cn(
                 "text-[10px] mt-0.5",
-                highlight ? "text-white/60" : "text-muted-foreground/50",
+                highlight ? "text-white/50" : "text-muted-foreground/50",
               )}>
                 {sub}
               </div>
             )}
           </div>
+        )}
+
+        {/* Subtle inner glow on hover (non-highlight only) */}
+        {!highlight && (
+          <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gradient-to-br from-primary/[0.04] to-transparent" />
         )}
       </div>
     </Link>

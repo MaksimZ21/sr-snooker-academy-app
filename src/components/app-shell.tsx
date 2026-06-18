@@ -4,7 +4,8 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import * as Icons from "lucide-react";
-import { LogOut } from "lucide-react";
+import { LogOut, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 import type { NavItem } from "./nav-items";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -52,16 +53,19 @@ export function AppShell({
           ))}
         </nav>
 
-        {/* Logout */}
+        {/* Bottom actions */}
         <div className="p-3">
           <div className="h-px bg-sidebar-border mb-3" />
-          <button
-            onClick={handleSignOut}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground/80 transition-all duration-150"
-          >
-            <LogOut size={16} strokeWidth={2} />
-            <span>התנתקות</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSignOut}
+              className="flex flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground/80 transition-all duration-150"
+            >
+              <LogOut size={16} strokeWidth={2} />
+              <span>התנתקות</span>
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
 
@@ -74,6 +78,20 @@ export function AppShell({
         ))}
       </nav>
     </div>
+  );
+}
+
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme();
+  return (
+    <button
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      className="w-9 h-9 flex items-center justify-center rounded-lg text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground/80 transition-all duration-150 shrink-0"
+      aria-label="החלף מצב תצוגה"
+    >
+      <Sun size={16} className="hidden dark:block" />
+      <Moon size={16} className="block dark:hidden" />
+    </button>
   );
 }
 

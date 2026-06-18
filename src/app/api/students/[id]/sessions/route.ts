@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchAttendanceForStudent } from "@/lib/sheets/attendance";
-import { fetchSessionsAll } from "@/lib/sheets/sessions";
+import { fetchSessionsByIds } from "@/lib/sheets/sessions";
 
 export async function GET(
   _req: Request,
@@ -11,10 +11,8 @@ export async function GET(
     const user = await requireUser();
     if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
     const { id } = await params;
-    const [attendance, sessions] = await Promise.all([
-      fetchAttendanceForStudent(id),
-      fetchSessionsAll(),
-    ]);
+    const attendance = await fetchAttendanceForStudent(id);
+    const sessions = await fetchSessionsByIds(attendance.map((a) => a.session_id));
     const sessionMap = new Map(sessions.map((s) => [s.id, s]));
     const rows = attendance
       .map((a) => {

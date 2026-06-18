@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchStudents } from "@/lib/sheets/students";
-import { fetchSessionsAll } from "@/lib/sheets/sessions";
 import { fetchGroupsAll } from "@/lib/sheets/groups";
 import { db } from "@/lib/db/client";
 import { todayIsoTel, weekRangeFor, dayLabelHe } from "@/lib/date";
@@ -37,9 +36,21 @@ export async function GET() {
     const { startIso, endIso } = weekRangeFor(today);
     const nextWeekEnd = format(addDays(parseISO(today), 7), "yyyy-MM-dd");
 
-    const [students, sessions, groups, coachRows, newMessages] = await Promise.all([
+    const [
+      students,
+      todayRows,
+      weekRows,
+      upcomingRows,
+      noCoachRows,
+      groups,
+      coachRows,
+      newMessages,
+    ] = await Promise.all([
       fetchStudents(),
-      fetchSessionsAll(),
+      db.from("sessions").select("*").eq("date", today).order("start_time"),
+      db.from("sessions").select("*").gte("date", startIso).lte("date", endIso).neq("status", "cancelled"),
+      db.from("sessions").select("*").gt("date", today).lte("date", nextWeekEnd).neq("status", "cancelled").order("date").order("start_time").limit(20),
+      db.from("sessions").select("*").eq("coach_email", "").gte("date", today).eq("status", "scheduled").order("date").limit(10),
       fetchGroupsAll(),
       db.from("coaches").select("email, name, active"),
       countNewContactRequests(),
@@ -50,24 +61,10 @@ export async function GET() {
       coachMap[c.email] = c.name;
     }
 
-    const todaySessions = sessions
-      .filter((s) => s.date === today)
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
-
-    const upcomingSessions = sessions
-      .filter((s) => s.date > today && s.date <= nextWeekEnd && s.status !== "cancelled")
-      .sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time))
-      .slice(0, 20);
-
-    const noCoachSessions = sessions
-      .filter((s) => !s.coach_email && s.date >= today && s.status === "scheduled")
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(0, 10);
-
-    // Chart: sessions per day this week
-    const weekSessions = sessions.filter(
-      (s) => s.date >= startIso && s.date <= endIso && s.status !== "cancelled",
-    );
+    const todaySessions = (todayRows.data ?? []) as Session[];
+    const upcomingSessions = (upcomingRows.data ?? []) as Session[];
+    const noCoachSessions = (noCoachRows.data ?? []) as Session[];
+    const weekSessions = (weekRows.data ?? []) as Session[];
     const sessionsByDay: DayBar[] = Array.from({ length: 7 }, (_, i) => {
       const date = format(addDays(parseISO(startIso), i), "yyyy-MM-dd");
       return {

@@ -4,7 +4,7 @@ import { upsertStudentFromCrm } from "@/lib/sheets/students";
 
 const CrmQuery = z.object({
   first_name: z.string().min(1),
-  last_name: z.string().min(1),
+  last_name: z.string().optional().default(""),
   phone: z.string().optional(),
   email: z.string().email(),
   college_name: z.string().optional(),

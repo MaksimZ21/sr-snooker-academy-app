@@ -22,11 +22,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Send, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, Trash2, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { ScheduledMessage } from "@/app/api/whatsapp/scheduled/route";
 
 type WhatsAppGroup = { id: string; name: string };
+type Coach = { email: string; name: string; phone: string };
+type RecipientMode = "group" | "coaches";
 
 const STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "ממתין", variant: "outline" },
@@ -48,10 +50,19 @@ function formatLocalDatetime(iso: string) {
 export function WhatsAppScheduler() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<RecipientMode>("group");
   const [chatId, setChatId] = useState("");
   const [chatName, setChatName] = useState("");
   const [message, setMessage] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
+
+  function resetDialog() {
+    setMode("group");
+    setChatId("");
+    setChatName("");
+    setMessage("");
+    setScheduledAt("");
+  }
 
   const { data: msgData, isLoading: loadingMsgs } = useQuery({
     queryKey: ["whatsapp:scheduled"],
@@ -67,7 +78,17 @@ export function WhatsAppScheduler() {
       const r = await fetch("/api/whatsapp/groups");
       return (await r.json()) as { groups: WhatsAppGroup[] };
     },
-    enabled: open,
+    enabled: open && mode === "group",
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: coachData, isLoading: loadingCoaches } = useQuery({
+    queryKey: ["coaches"],
+    queryFn: async () => {
+      const r = await fetch("/api/coaches");
+      return (await r.json()) as { coaches: Coach[] };
+    },
+    enabled: open && mode === "coaches",
     staleTime: 5 * 60_000,
   });
 
@@ -89,10 +110,7 @@ export function WhatsAppScheduler() {
       toast.success("ההודעה תוזמנה");
       qc.invalidateQueries({ queryKey: ["whatsapp:scheduled"] });
       setOpen(false);
-      setMessage("");
-      setChatId("");
-      setChatName("");
-      setScheduledAt("");
+      resetDialog();
     },
     onError: () => toast.error("שגיאה בשמירה"),
   });
@@ -109,16 +127,37 @@ export function WhatsAppScheduler() {
     onError: () => toast.error("שגיאה במחיקה"),
   });
 
-  const canSubmit = chatId && message.trim() && scheduledAt && !addMut.isPending;
+  function handleModeChange(next: RecipientMode) {
+    setMode(next);
+    setChatId("");
+    setChatName("");
+  }
 
+  function handleRecipientChange(val: string | null) {
+    if (!val) return;
+    setChatId(val);
+    if (mode === "group") {
+      setChatName(groupData?.groups.find((g) => g.id === val)?.name ?? "");
+    } else {
+      if (val === "coaches:all") {
+        setChatName("כל המאמנים");
+      } else {
+        const c = coachData?.coaches.find((c) => `coach:${c.email}` === val);
+        setChatName(c?.name ?? "");
+      }
+    }
+  }
+
+  const canSubmit = chatId && message.trim() && scheduledAt && !addMut.isPending;
   const messages = msgData?.messages ?? [];
   const pending = messages.filter((m) => m.status === "pending");
   const history = messages.filter((m) => m.status !== "pending");
+  const isLoadingRecipients = mode === "group" ? loadingGroups : loadingCoaches;
 
   return (
     <div className="p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">הודעות מתוזמנות לקבוצות WhatsApp</p>
+        <p className="text-sm text-muted-foreground">הודעות מתוזמנות לקבוצות ומאמנים</p>
         <Button size="sm" onClick={() => setOpen(true)}>
           <Plus size={14} className="ml-1.5" />
           הודעה חדשה
@@ -150,39 +189,66 @@ export function WhatsAppScheduler() {
       )}
 
       {/* Add Dialog */}
-      <Dialog open={open} onOpenChange={(v) => { if (!v) setOpen(false); }}>
+      <Dialog open={open} onOpenChange={(v) => { if (!v) { setOpen(false); resetDialog(); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>הודעה חדשה לקבוצת WhatsApp</DialogTitle>
+            <DialogTitle>הודעה חדשה</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3">
+            {/* Mode toggle */}
             <div>
-              <Label>קבוצה</Label>
-              {loadingGroups ? (
+              <Label>סוג נמען</Label>
+              <div className="flex gap-2 mt-1">
+                <Button
+                  size="sm"
+                  variant={mode === "group" ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={() => handleModeChange("group")}
+                  type="button"
+                >
+                  קבוצת WhatsApp
+                </Button>
+                <Button
+                  size="sm"
+                  variant={mode === "coaches" ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={() => handleModeChange("coaches")}
+                  type="button"
+                >
+                  מאמנים
+                </Button>
+              </div>
+            </div>
+
+            {/* Recipient picker */}
+            <div>
+              <Label>{mode === "group" ? "קבוצה" : "מאמן"}</Label>
+              {isLoadingRecipients ? (
                 <Skeleton className="h-9 w-full rounded-md mt-1" />
               ) : (
-                <Select
-                  value={chatId}
-                  onValueChange={(val: string | null) => {
-                    if (!val) return;
-                    setChatId(val);
-                    const g = groupData?.groups.find((g) => g.id === val);
-                    setChatName(g?.name ?? "");
-                  }}
-                >
+                <Select value={chatId} onValueChange={(val: string | null) => handleRecipientChange(val)}>
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="בחר קבוצה..." />
+                    <SelectValue placeholder={mode === "group" ? "בחר קבוצה..." : "בחר מאמן..."} />
                   </SelectTrigger>
                   <SelectContent>
-                    {(groupData?.groups ?? []).map((g) => (
-                      <SelectItem key={g.id} value={g.id}>
-                        {g.name}
-                      </SelectItem>
-                    ))}
+                    {mode === "group"
+                      ? (groupData?.groups ?? []).map((g) => (
+                          <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                        ))
+                      : <>
+                          <SelectItem value="coaches:all">כל המאמנים</SelectItem>
+                          {(coachData?.coaches ?? [])
+                            .filter((c) => c.phone)
+                            .map((c) => (
+                              <SelectItem key={c.email} value={`coach:${c.email}`}>{c.name}</SelectItem>
+                            ))}
+                        </>
+                    }
                   </SelectContent>
                 </Select>
               )}
             </div>
+
             <div>
               <Label>הודעה</Label>
               <Textarea
@@ -204,7 +270,7 @@ export function WhatsAppScheduler() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={addMut.isPending}>
+            <Button variant="outline" onClick={() => { setOpen(false); resetDialog(); }} disabled={addMut.isPending}>
               ביטול
             </Button>
             <Button disabled={!canSubmit} onClick={() => addMut.mutate()}>

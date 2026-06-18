@@ -3,6 +3,27 @@ import { db } from "@/lib/db/client";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/greenapi";
 
 type Row = { id: string; chat_id: string; chat_name: string; message: string };
+type CoachRow = { email: string; phone: string };
+
+async function sendToTarget(chatId: string, message: string): Promise<void> {
+  if (chatId === "coaches:all") {
+    const { data } = await db.from("coaches").select("email, phone").eq("active", true);
+    const coaches = (data ?? []) as CoachRow[];
+    for (const c of coaches) {
+      if (c.phone) await sendWhatsAppMessage(c.phone, message);
+    }
+    return;
+  }
+  if (chatId.startsWith("coach:")) {
+    const email = chatId.slice("coach:".length);
+    const { data } = await db.from("coaches").select("phone").eq("email", email).maybeSingle();
+    if (data && (data as { phone: string }).phone) {
+      await sendWhatsAppMessage((data as { phone: string }).phone, message);
+    }
+    return;
+  }
+  await sendWhatsAppMessage(chatId, message);
+}
 
 export async function POST(req: Request) {
   const auth = req.headers.get("authorization");
@@ -23,7 +44,7 @@ export async function POST(req: Request) {
 
     for (const row of rows) {
       try {
-        await sendWhatsAppMessage(row.chat_id, row.message);
+        await sendToTarget(row.chat_id, row.message);
         await db.from("whatsapp_scheduled").update({ status: "sent" }).eq("id", row.id);
         sent++;
       } catch (e) {

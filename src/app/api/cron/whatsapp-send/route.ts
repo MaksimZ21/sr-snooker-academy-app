@@ -1,16 +1,35 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
-import { sendWhatsAppMessage } from "@/lib/whatsapp/greenapi";
+import { sendWhatsAppMessage, sendWhatsAppFile, sendWhatsAppPoll } from "@/lib/whatsapp/greenapi";
 
 type Row = { id: string; chat_id: string; chat_name: string; message: string };
 type CoachRow = { email: string; phone: string };
 
-async function sendToTarget(chatId: string, message: string): Promise<void> {
+type ParsedMessage =
+  | { type: "text"; text: string }
+  | { type: "image"; url: string; caption: string }
+  | { type: "poll"; question: string; options: string[] };
+
+function parseMessage(raw: string): ParsedMessage {
+  try {
+    const p = JSON.parse(raw) as Record<string, unknown>;
+    if (p.__type === "image" && typeof p.url === "string") {
+      return { type: "image", url: p.url, caption: typeof p.caption === "string" ? p.caption : "" };
+    }
+    if (p.__type === "poll" && typeof p.question === "string" && Array.isArray(p.options)) {
+      return { type: "poll", question: p.question, options: p.options as string[] };
+    }
+  } catch {}
+  return { type: "text", text: raw };
+}
+
+async function dispatchToTarget(chatId: string, raw: string): Promise<void> {
+  const parsed = parseMessage(raw);
+
   if (chatId === "coaches:all") {
     const { data } = await db.from("coaches").select("email, phone").eq("active", true);
-    const coaches = (data ?? []) as CoachRow[];
-    for (const c of coaches) {
-      if (c.phone) await sendWhatsAppMessage(c.phone, message);
+    for (const c of (data ?? []) as CoachRow[]) {
+      if (c.phone) await dispatch(c.phone, parsed);
     }
     return;
   }
@@ -18,11 +37,17 @@ async function sendToTarget(chatId: string, message: string): Promise<void> {
     const email = chatId.slice("coach:".length);
     const { data } = await db.from("coaches").select("phone").eq("email", email).maybeSingle();
     if (data && (data as { phone: string }).phone) {
-      await sendWhatsAppMessage((data as { phone: string }).phone, message);
+      await dispatch((data as { phone: string }).phone, parsed);
     }
     return;
   }
-  await sendWhatsAppMessage(chatId, message);
+  await dispatch(chatId, parsed);
+}
+
+async function dispatch(target: string, msg: ParsedMessage): Promise<void> {
+  if (msg.type === "text") return sendWhatsAppMessage(target, msg.text);
+  if (msg.type === "image") return sendWhatsAppFile(target, msg.url, msg.caption);
+  if (msg.type === "poll") return sendWhatsAppPoll(target, msg.question, msg.options);
 }
 
 export async function POST(req: Request) {
@@ -44,7 +69,7 @@ export async function POST(req: Request) {
 
     for (const row of rows) {
       try {
-        await sendToTarget(row.chat_id, row.message);
+        await dispatchToTarget(row.chat_id, row.message);
         await db.from("whatsapp_scheduled").update({ status: "sent" }).eq("id", row.id);
         sent++;
       } catch (e) {

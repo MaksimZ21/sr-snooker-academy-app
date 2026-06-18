@@ -44,6 +44,9 @@ const TYPE_COLORS: Record<string, string> = {
   "match-play": "#f43f5e",
 };
 
+const BRAND = "#0b9e70";
+const BRAND_FAINT = "rgba(11,158,112,0.18)";
+
 export function AdminDashboard() {
   const [reminderState, setReminderState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [sentCount, setSentCount] = useState(0);
@@ -73,20 +76,26 @@ export function AdminDashboard() {
   return (
     <div className="p-4 md:p-6 flex flex-col gap-6">
       {/* Header */}
-      <div>
-        <p className="text-xs text-muted-foreground mb-0.5">סקירה כללית</p>
-        <h1 className="text-2xl font-bold">
-          {isLoading || !data ? <Skeleton className="h-8 w-52 inline-block" /> : formatHebrewDate(data.today)}
-        </h1>
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-xs text-muted-foreground mb-0.5">סקירה כללית</p>
+          <h1 className="text-2xl font-bold">
+            {isLoading || !data ? <Skeleton className="h-8 w-52 inline-block" /> : formatHebrewDate(data.today)}
+          </h1>
+        </div>
+        <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 rounded-full px-3 py-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          פעיל
+        </div>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <StatCard icon={<Users size={20} />} label="תלמידים פעילים" value={data?.students.active} sub={data ? `מתוך ${data.students.total}` : undefined} color="blue" href="/admin/students" isLoading={isLoading} />
-        <StatCard icon={<User size={20} />} label="מאמנים פעילים" value={data?.coaches.active} color="violet" href="/admin/coaches" isLoading={isLoading} />
-        <StatCard icon={<CalendarDays size={20} />} label="מפגשים היום" value={data?.todaySessions.length} color="emerald" href="/admin/schedule" isLoading={isLoading} />
-        <StatCard icon={<Layers size={20} />} label="קבוצות" value={data?.groups} color="amber" href="/admin/groups" isLoading={isLoading} />
-        <StatCard icon={<MessageSquare size={20} />} label="פניות חדשות" value={data?.newMessages} color="rose" href="/admin/messages" isLoading={isLoading} />
+        <StatCard icon={<Users size={18} />} label="תלמידים פעילים" value={data?.students.active} sub={data ? `מתוך ${data.students.total}` : undefined} href="/admin/students" isLoading={isLoading} />
+        <StatCard icon={<User size={18} />} label="מאמנים פעילים" value={data?.coaches.active} href="/admin/coaches" isLoading={isLoading} />
+        <StatCard icon={<CalendarDays size={18} />} label="מפגשים היום" value={data?.todaySessions.length} href="/admin/schedule" isLoading={isLoading} highlight />
+        <StatCard icon={<Layers size={18} />} label="קבוצות" value={data?.groups} href="/admin/groups" isLoading={isLoading} />
+        <StatCard icon={<MessageSquare size={18} />} label="פניות חדשות" value={data?.newMessages} href="/admin/messages" isLoading={isLoading} alert={!!data?.newMessages} />
       </div>
 
       {/* Charts row */}
@@ -121,7 +130,7 @@ export function AdminDashboard() {
                     {(data?.sessionsByDay ?? []).map((entry) => (
                       <Cell
                         key={entry.date}
-                        fill={entry.date === data?.today ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.25)"}
+                        fill={entry.date === data?.today ? BRAND : BRAND_FAINT}
                       />
                     ))}
                   </Bar>
@@ -268,47 +277,66 @@ export function AdminDashboard() {
 
 /* ─── Sub-components ─────────────────────────────────────────── */
 
-const COLOR_CLASSES = {
-  blue: { bg: "bg-blue-100 dark:bg-blue-900/40", icon: "text-blue-600 dark:text-blue-400" },
-  violet: { bg: "bg-violet-100 dark:bg-violet-900/40", icon: "text-violet-600 dark:text-violet-400" },
-  emerald: { bg: "bg-emerald-100 dark:bg-emerald-900/40", icon: "text-emerald-600 dark:text-emerald-400" },
-  amber: { bg: "bg-amber-100 dark:bg-amber-900/40", icon: "text-amber-600 dark:text-amber-400" },
-  rose: { bg: "bg-rose-100 dark:bg-rose-900/40", icon: "text-rose-600 dark:text-rose-400" },
-} as const;
-
-function StatCard({ icon, label, value, sub, color, href, isLoading }: {
+function StatCard({ icon, label, value, sub, href, isLoading, highlight, alert }: {
   icon: React.ReactNode;
   label: string;
   value?: number;
   sub?: string;
-  color: keyof typeof COLOR_CLASSES;
   href: string;
   isLoading: boolean;
+  highlight?: boolean;
+  alert?: boolean;
 }) {
-  const c = COLOR_CLASSES[color];
   return (
-    <Link href={href}>
-      <Card className="hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 h-full">
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0", c.bg)}>
-            <span className={c.icon}>{icon}</span>
+    <Link href={href} className="block h-full">
+      <div className={cn(
+        "group relative h-full rounded-2xl border p-4 flex flex-col justify-between gap-3",
+        "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg",
+        highlight
+          ? "bg-brand-gradient border-transparent text-white shadow-md"
+          : "bg-card border-border/70 hover:border-primary/30",
+      )}>
+        <div className="flex items-center justify-between">
+          <span className={cn(
+            "p-2 rounded-xl",
+            highlight ? "bg-white/20" : "bg-primary/10 text-primary",
+          )}>
+            {icon}
+          </span>
+          {alert && (value ?? 0) > 0 && (
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+          )}
+        </div>
+        {isLoading ? (
+          <div>
+            <Skeleton className={cn("h-8 w-14 mb-1", highlight && "bg-white/20")} />
+            <Skeleton className={cn("h-3 w-20", highlight && "bg-white/20")} />
           </div>
-          <div className="min-w-0">
-            {isLoading ? (
-              <>
-                <Skeleton className="h-7 w-10 mb-1" />
-                <Skeleton className="h-3.5 w-20" />
-              </>
-            ) : (
-              <>
-                <div className="text-2xl font-bold tabular-nums leading-none">{value ?? 0}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
-                {sub && <div className="text-xs text-muted-foreground/60">{sub}</div>}
-              </>
+        ) : (
+          <div>
+            <div className={cn(
+              "text-3xl font-bold tabular-nums leading-none",
+              highlight ? "text-white" : "",
+            )}>
+              {value ?? 0}
+            </div>
+            <div className={cn(
+              "text-xs mt-1",
+              highlight ? "text-white/80" : "text-muted-foreground",
+            )}>
+              {label}
+            </div>
+            {sub && (
+              <div className={cn(
+                "text-[10px] mt-0.5",
+                highlight ? "text-white/60" : "text-muted-foreground/50",
+              )}>
+                {sub}
+              </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </Link>
   );
 }
@@ -319,12 +347,14 @@ function SessionRow({ session, coachMap }: { session: Session; coachMap: Record<
   const coachName = session.coach_email
     ? (coachMap[session.coach_email] ?? session.coach_email.split("@")[0])
     : "ללא מאמן";
+  const typeColor = TYPE_COLORS[session.training_type] ?? "#94a3b8";
 
   return (
-    <Link href={`/admin/sessions/${session.id}`} className="flex items-center gap-3 py-3 hover:bg-muted/40 rounded-lg px-2 -mx-2 transition-colors group">
-      <div className="w-16 shrink-0 text-left tabular-nums">
-        <div className={cn("text-sm font-semibold", cancelled && "line-through opacity-50")}>{session.start_time}</div>
-        <div className="text-xs text-muted-foreground">{session.end_time}</div>
+    <Link href={`/admin/sessions/${session.id}`} className="flex items-center gap-3 py-2.5 hover:bg-muted/40 rounded-xl px-2 -mx-2 transition-colors group">
+      <div className="w-1 self-stretch rounded-full shrink-0" style={{ background: cancelled ? "#94a3b8" : typeColor }} />
+      <div className="w-14 shrink-0 text-left tabular-nums">
+        <div className={cn("text-sm font-semibold", cancelled && "line-through opacity-40")}>{session.start_time}</div>
+        <div className="text-[10px] text-muted-foreground">{session.end_time}</div>
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
         <div className="flex items-center gap-2 flex-wrap">

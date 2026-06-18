@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,12 @@ import {
   CheckCircle2,
   Clock,
   Image,
+  Loader2,
   MessageSquare,
   BarChart2,
   Plus,
   Trash2,
+  Upload,
   X,
   XCircle,
 } from "lucide-react";
@@ -79,6 +81,9 @@ export function WhatsAppScheduler() {
   const [text, setText] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageCaption, setImageCaption] = useState("");
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageFileName, setImageFileName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState(["", ""]);
   const [scheduledAt, setScheduledAt] = useState("");
@@ -90,6 +95,7 @@ export function WhatsAppScheduler() {
     setText("");
     setImageUrl("");
     setImageCaption("");
+    setImageFileName("");
     setPollQuestion("");
     setPollOptions(["", ""]);
     setScheduledAt("");
@@ -170,6 +176,24 @@ export function WhatsAppScheduler() {
     onError: () => toast.error("שגיאה במחיקה"),
   });
 
+  async function handleFileUpload(file: File) {
+    setImageUploading(true);
+    setImageFileName(file.name);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const r = await fetch("/api/upload/image", { method: "POST", body: form });
+      const json = await r.json() as { url?: string; error?: string };
+      if (!r.ok || !json.url) throw new Error(json.error ?? "upload failed");
+      setImageUrl(json.url);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "שגיאה בהעלאת הקובץ");
+      setImageFileName("");
+    } finally {
+      setImageUploading(false);
+    }
+  }
+
   function handleRecipientModeChange(next: RecipientMode) {
     setRecipientMode(next);
     setChatId("");
@@ -196,6 +220,7 @@ export function WhatsAppScheduler() {
     chatId &&
     scheduledAt &&
     !addMut.isPending &&
+    !imageUploading &&
     ((msgType === "text" && text.trim()) ||
       (msgType === "image" && imageUrl.trim()) ||
       (msgType === "poll" && pollQuestion.trim() && validOptions.length >= 2));
@@ -348,17 +373,69 @@ export function WhatsAppScheduler() {
               {/* Image */}
               {msgType === "image" && (
                 <div className="flex flex-col gap-3">
+                  {/* URL input */}
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1 block">קישור לתמונה</Label>
                     <Input
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
+                      value={imageFileName ? "" : imageUrl}
+                      onChange={(e) => { setImageFileName(""); setImageUrl(e.target.value); }}
                       placeholder="https://..."
                       dir="ltr"
                       className="text-sm"
+                      disabled={!!imageFileName || imageUploading}
                     />
                   </div>
-                  {imageUrl && (
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-border/60" />
+                    <span className="text-xs text-muted-foreground">או</span>
+                    <div className="flex-1 h-px bg-border/60" />
+                  </div>
+
+                  {/* File upload */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) { setImageUrl(""); handleFileUpload(f); }
+                      e.target.value = "";
+                    }}
+                  />
+                  {imageFileName ? (
+                    <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
+                      {imageUploading ? (
+                        <Loader2 size={14} className="animate-spin text-muted-foreground shrink-0" />
+                      ) : (
+                        <Image size={14} className="text-primary shrink-0" />
+                      )}
+                      <span className="text-sm flex-1 truncate text-muted-foreground">{imageFileName}</span>
+                      {!imageUploading && (
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => { setImageFileName(""); setImageUrl(""); }}
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-border/80 bg-muted/20 py-4 text-sm text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/40 transition-all duration-150"
+                    >
+                      <Upload size={15} />
+                      העלה תמונה מהמחשב
+                    </button>
+                  )}
+
+                  {/* Preview */}
+                  {imageUrl && !imageUploading && (
                     <div className="relative rounded-xl overflow-hidden border border-border/60 bg-muted/30 max-h-56">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -369,6 +446,8 @@ export function WhatsAppScheduler() {
                       />
                     </div>
                   )}
+
+                  {/* Caption */}
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1 block">כיתוב (אופציונלי)</Label>
                     <Textarea

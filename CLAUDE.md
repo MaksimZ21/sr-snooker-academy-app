@@ -59,3 +59,20 @@ Three roles only: `admin | coach | denied`
 ## Security: Pending
 - **Webhook auth** — `src/app/api/webhooks/crm/` routes have no secret validation. `CRM_WEBHOOK_SECRET` is defined in `.env.local.example` but never used. Blocked on getting access to configure the secret in the CRM. Once access is available: read the secret from `process.env.CRM_WEBHOOK_SECRET` and validate the `x-webhook-secret` header in all three webhook routes before processing the payload.
 - **Export API key** — `/api/export/students` accepts `api_key` as a query param. Should move to `Authorization: Bearer` header to avoid leaking the key in logs and browser history.
+
+## WhatsApp (Green API)
+- Instance/token env vars: `GREENAPI_INSTANCE_ID`, `GREENAPI_TOKEN`
+- Client: `src/lib/whatsapp/greenapi.ts` — `sendWhatsAppMessage(phoneOrChatId, message)`, `getWhatsAppGroups()`
+- Scheduled messages table: `whatsapp_scheduled` (Supabase) — id, chat_id, chat_name, message, scheduled_at, status
+- Cron endpoint: `POST /api/cron/whatsapp-send` — secured with `Authorization: Bearer <CRON_SECRET>`. Handles special chat_ids: `coaches:all` (sends to all active coaches), `coach:<email>` (single coach by email), or a WhatsApp group id (`XXXXXX@g.us`)
+- Cron job configured on cron-job.org to hit the endpoint
+- Admin button "שלח תזכורות" in dashboard (`src/components/admin-dashboard.tsx`) → `POST /api/cron/daily-reminder` — sends today's sessions summary to each coach via WhatsApp
+- Scheduler UI: `src/components/whatsapp-scheduler.tsx`, page: `/admin/whatsapp`
+
+## Google Sheets Integration (Pending)
+- **Goal:** Display data from an existing external Google Sheets file in the admin panel, and show events/tournaments from it in the Schedule page
+- **Sheet ID:** `1JVTHG5UTnUe1bzZKct91EfpaEH4DUi8B8SbKT-45MU0`
+- **Sheet shared** with the service account in `GOOGLE_SERVICE_ACCOUNT_JSON`
+- **Sheets client:** `getSheetsClient()` from `src/lib/google/sheets.ts` — already has `spreadsheets` scope
+- **Stopped at:** Need to know the tab names and column structure before building. User to provide tab names + column headers for the events/tournaments tab so we can map them to the Schedule view.
+- Events from the sheet should appear in the existing Schedule page alongside regular sessions, in a distinct color/style.

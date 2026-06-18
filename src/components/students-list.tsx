@@ -1,7 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AddStudentDialog } from "@/components/forms/add-student-dialog";
 import { EditStudentDialog } from "@/components/forms/edit-student-dialog";
 import { StudentHistoryDialog } from "@/components/student-history-dialog";
-import { History, Pencil, Search, Trash2, X } from "lucide-react";
+import { History, Pencil, Search, Trash2, X, Check } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import type { Student } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
 
@@ -51,9 +51,7 @@ export function StudentsList() {
   });
 
   const colleges = useMemo(() => {
-    const names = (data?.students ?? [])
-      .map((s) => s.college_name)
-      .filter(Boolean);
+    const names = (data?.students ?? []).map((s) => s.college_name).filter(Boolean);
     return Array.from(new Set(names)).sort();
   }, [data]);
 
@@ -74,37 +72,33 @@ export function StudentsList() {
 
   const hasFilters = search || statusFilter !== "all" || collegeFilter !== "all";
 
-  if (isLoading) {
-    return (
-      <div className="p-4 flex flex-col gap-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 w-full rounded-xl" />
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <div className="p-4 flex flex-col gap-3">
+    <div className="p-4 md:p-6 flex flex-col gap-4">
+      {/* Header */}
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">ניהול רשימת המתאמנים</p>
+        <div>
+          <h2 className="font-semibold text-base">מתאמנים</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {isLoading ? "טוען..." : `${filtered.length} מתאמנים${hasFilters ? ` מתוך ${data?.students.length ?? 0}` : ""}`}
+          </p>
+        </div>
         <AddStudentDialog />
       </div>
 
       {/* Filters */}
       <div className="flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Search className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="חיפוש לפי שם, טלפון, מייל..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pr-8"
+            className="pr-8 h-9 text-sm"
             dir="rtl"
           />
         </div>
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-          <SelectTrigger className="w-full sm:w-36">
+          <SelectTrigger className="w-full sm:w-32 h-9 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -115,7 +109,7 @@ export function StudentsList() {
         </Select>
         {colleges.length > 0 && (
           <Select value={collegeFilter} onValueChange={(v) => setCollegeFilter(v ?? "all")}>
-            <SelectTrigger className="w-full sm:w-44">
+            <SelectTrigger className="w-full sm:w-40 h-9 text-sm">
               <SelectValue placeholder="כל המכללות" />
             </SelectTrigger>
             <SelectContent>
@@ -130,7 +124,7 @@ export function StudentsList() {
           <Button
             variant="ghost"
             size="icon"
-            className="shrink-0"
+            className="shrink-0 h-9 w-9"
             onClick={() => { setSearch(""); setStatusFilter("all"); setCollegeFilter("all"); }}
             title="נקה סינון"
           >
@@ -139,94 +133,43 @@ export function StudentsList() {
         )}
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        {filtered.length} מתאמנים{hasFilters ? ` (מתוך ${data?.students.length ?? 0})` : ""}
-      </p>
-
-      {filtered.map((s) => (
-        <Card key={s.id}>
-          <CardContent className="p-4 flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold">
-                {studentFullName(s)}{" "}
-                <span className="text-xs text-muted-foreground">({s.id})</span>
+      {/* List */}
+      <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm shadow-foreground/[0.04] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
+        {isLoading ? (
+          <div className="divide-y divide-border/50">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3">
+                <Skeleton className="w-8 h-8 rounded-full shrink-0" />
+                <div className="flex-1 flex flex-col gap-1.5">
+                  <Skeleton className="h-3.5 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <Skeleton className="h-5 w-12 rounded-full" />
               </div>
-              {s.email && (
-                <div className="text-sm text-muted-foreground truncate">{s.email}</div>
-              )}
-              {s.phone && (
-                <div className="text-sm text-muted-foreground">{s.phone}</div>
-              )}
-              {s.college_name && (
-                <div className="text-sm text-muted-foreground">{s.college_name}</div>
-              )}
-              {s.general_notes && (
-                <div className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">
-                  {s.general_notes}
-                </div>
-              )}
-            </div>
-            <div className="flex flex-col items-end gap-2 shrink-0">
-              <Badge variant={s.active ? "default" : "secondary"}>
-                {s.active ? "פעיל" : "לא פעיל"}
-              </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => setEditing(s)}
-              >
-                <Pencil className="h-3.5 w-3.5 ml-1" />
-                עריכה
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => setSelected(s)}
-              >
-                <History className="h-3.5 w-3.5 ml-1" />
-                נוכחות
-              </Button>
-              {confirmDelete === s.id ? (
-                <div className="flex gap-1">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    disabled={deleting}
-                    onClick={() => handleDelete(s.id)}
-                  >
-                    בטוח?
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => setConfirmDelete(null)}
-                  >
-                    ביטול
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                  onClick={() => setConfirmDelete(s.id)}
-                >
-                  <Trash2 className="h-3.5 w-3.5 ml-1" />
-                  מחק
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-
-      {filtered.length === 0 && (
-        <p className="text-center text-sm text-muted-foreground py-8">לא נמצאו מתאמנים</p>
-      )}
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="py-16 text-center text-sm text-muted-foreground">
+            {hasFilters ? "לא נמצאו מתאמנים תואמים לסינון" : "אין מתאמנים עדיין"}
+          </div>
+        ) : (
+          <div className="divide-y divide-border/40">
+            {filtered.map((s) => (
+              <StudentRow
+                key={s.id}
+                student={s}
+                confirmDelete={confirmDelete}
+                deleting={deleting}
+                onEdit={() => setEditing(s)}
+                onHistory={() => setSelected(s)}
+                onDeleteRequest={() => setConfirmDelete(s.id)}
+                onDeleteConfirm={() => handleDelete(s.id)}
+                onDeleteCancel={() => setConfirmDelete(null)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {selected && (
         <StudentHistoryDialog
@@ -236,13 +179,118 @@ export function StudentsList() {
           onOpenChange={(v) => { if (!v) setSelected(null); }}
         />
       )}
-
       {editing && (
         <EditStudentDialog
           student={editing}
           open={true}
           onOpenChange={(v) => { if (!v) setEditing(null); }}
         />
+      )}
+    </div>
+  );
+}
+
+function StudentRow({
+  student: s,
+  confirmDelete,
+  deleting,
+  onEdit,
+  onHistory,
+  onDeleteRequest,
+  onDeleteConfirm,
+  onDeleteCancel,
+}: {
+  student: Student;
+  confirmDelete: string | null;
+  deleting: boolean;
+  onEdit: () => void;
+  onHistory: () => void;
+  onDeleteRequest: () => void;
+  onDeleteConfirm: () => void;
+  onDeleteCancel: () => void;
+}) {
+  const name = studentFullName(s);
+  const initials = name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  const isConfirming = confirmDelete === s.id;
+
+  const info = [s.phone, s.email, s.college_name].filter(Boolean).join(" · ");
+
+  return (
+    <div className={cn(
+      "group flex items-center gap-3 px-4 py-2.5 transition-colors duration-150",
+      "hover:bg-muted/40 dark:hover:bg-white/[0.03]",
+      isConfirming && "bg-destructive/5 dark:bg-destructive/10",
+    )}>
+      {/* Avatar */}
+      <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/15 text-primary flex items-center justify-center text-[11px] font-bold shrink-0 select-none">
+        {initials}
+      </div>
+
+      {/* Name + info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium leading-none">{name}</span>
+          {!s.active && (
+            <Badge variant="secondary" className="text-[10px] h-4 px-1.5 py-0">לא פעיל</Badge>
+          )}
+        </div>
+        {info && (
+          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{info}</p>
+        )}
+      </div>
+
+      {/* Actions */}
+      {isConfirming ? (
+        <div className="flex items-center gap-1 shrink-0 animate-scale-in">
+          <span className="text-xs text-destructive font-medium ml-1">למחוק?</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-destructive hover:bg-destructive/10"
+            disabled={deleting}
+            onClick={onDeleteConfirm}
+          >
+            <Check className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={onDeleteCancel}
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            title="עריכה"
+            onClick={onEdit}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            title="היסטוריית נוכחות"
+            onClick={onHistory}
+          >
+            <History className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            title="מחיקה"
+            onClick={onDeleteRequest}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       )}
     </div>
   );

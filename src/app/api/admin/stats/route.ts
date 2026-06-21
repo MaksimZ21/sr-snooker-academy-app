@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchStudents } from "@/lib/sheets/students";
 import { fetchGroupsAll } from "@/lib/sheets/groups";
@@ -27,12 +28,8 @@ export type AdminStats = {
   newMessages: number;
 };
 
-export async function GET() {
-  try {
-    const user = await requireUser();
-    if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
-
-    const today = todayIsoTel();
+const fetchAdminStatsData = unstable_cache(
+  async (today: string): Promise<AdminStats> => {
     const { startIso, endIso } = weekRangeFor(today);
     const nextWeekEnd = format(addDays(parseISO(today), 7), "yyyy-MM-dd");
 
@@ -65,6 +62,7 @@ export async function GET() {
     const upcomingSessions = (upcomingRows.data ?? []) as Session[];
     const noCoachSessions = (noCoachRows.data ?? []) as Session[];
     const weekSessions = (weekRows.data ?? []) as Session[];
+
     const sessionsByDay: DayBar[] = Array.from({ length: 7 }, (_, i) => {
       const date = format(addDays(parseISO(startIso), i), "yyyy-MM-dd");
       return {
@@ -74,20 +72,15 @@ export async function GET() {
       };
     });
 
-    // Chart: sessions by training type this week
     const typeCounts: Record<string, number> = {};
     for (const s of weekSessions) {
       typeCounts[s.training_type] = (typeCounts[s.training_type] ?? 0) + 1;
     }
     const sessionsByType: TypeSlice[] = Object.entries(typeCounts)
-      .map(([type, count]) => ({
-        type,
-        label: TRAINING_TYPE_LABEL[type] ?? type,
-        count,
-      }))
+      .map(([type, count]) => ({ type, label: TRAINING_TYPE_LABEL[type] ?? type, count }))
       .sort((a, b) => b.count - a.count);
 
-    const stats: AdminStats = {
+    return {
       today,
       students: {
         total: students.length,
@@ -107,7 +100,16 @@ export async function GET() {
       sessionsByType,
       newMessages,
     };
+  },
+  ["admin:stats"],
+  { revalidate: 30, tags: ["admin-stats"] },
+);
 
+export async function GET() {
+  try {
+    const user = await requireUser();
+    if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
+    const stats = await fetchAdminStatsData(todayIsoTel());
     return NextResponse.json(stats);
   } catch (e) {
     if (e instanceof Response) return e;

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { requireUser } from "@/lib/auth/requireUser";
 import { db } from "@/lib/db/client";
 import { fetchStudents } from "@/lib/sheets/students";
@@ -17,18 +18,15 @@ export type CoachStats = {
   studentMap: Record<string, string>;
 };
 
-export async function GET() {
-  try {
-    const user = await requireUser();
-
-    const today = todayIsoTel();
+const fetchCoachStatsData = unstable_cache(
+  async (coachEmail: string, today: string): Promise<CoachStats> => {
     const { startIso, endIso } = weekRangeFor(today);
     const nextWeekEnd = format(addDays(parseISO(today), 7), "yyyy-MM-dd");
 
     const [todayRows, weekRows, upcomingRows, students] = await Promise.all([
-      db.from("sessions").select("*").eq("coach_email", user.email).eq("date", today).order("start_time"),
-      db.from("sessions").select("*").eq("coach_email", user.email).gte("date", startIso).lte("date", endIso).neq("status", "cancelled"),
-      db.from("sessions").select("*").eq("coach_email", user.email).gt("date", today).lte("date", nextWeekEnd).neq("status", "cancelled").order("date").order("start_time").limit(15),
+      db.from("sessions").select("*").eq("coach_email", coachEmail).eq("date", today).order("start_time"),
+      db.from("sessions").select("*").eq("coach_email", coachEmail).gte("date", startIso).lte("date", endIso).neq("status", "cancelled"),
+      db.from("sessions").select("*").eq("coach_email", coachEmail).gt("date", today).lte("date", nextWeekEnd).neq("status", "cancelled").order("date").order("start_time").limit(15),
       fetchStudents(),
     ]);
 
@@ -52,7 +50,7 @@ export async function GET() {
 
     const weekStudentCount = new Set(weekSessions.flatMap((s) => s.student_ids)).size;
 
-    return NextResponse.json({
+    return {
       today,
       todaySessions,
       upcomingSessions,
@@ -60,7 +58,17 @@ export async function GET() {
       weekStudentCount,
       sessionsByDay,
       studentMap,
-    } satisfies CoachStats);
+    };
+  },
+  ["coach:stats"],
+  { revalidate: 30, tags: ["coach-stats"] },
+);
+
+export async function GET() {
+  try {
+    const user = await requireUser();
+    const stats = await fetchCoachStatsData(user.email, todayIsoTel());
+    return NextResponse.json(stats);
   } catch (e) {
     if (e instanceof Response) return e;
     return new NextResponse("error", { status: 500 });

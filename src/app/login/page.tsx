@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useSearchParams } from "next/navigation";
+import { MessageCircle } from "lucide-react";
 
 function StaffLoginForm() {
   const [email, setEmail] = useState("");
@@ -145,17 +146,118 @@ function StudentLoginForm() {
   );
 }
 
+type WaStep = "phone" | "code";
+
+function WhatsAppLoginForm() {
+  const [step, setStep] = useState<WaStep>("phone");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [token, setToken] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function sendOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const r = await fetch("/api/auth/whatsapp-otp/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    });
+    const json = await r.json();
+    if (!r.ok) {
+      setError(json.error ?? "שגיאה בשליחה");
+    } else {
+      setToken(json.token ?? "");
+      setStep("code");
+    }
+    setLoading(false);
+  }
+
+  async function verifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const r = await fetch("/api/auth/whatsapp-otp/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, code, token }),
+    });
+    const json = await r.json();
+    if (!r.ok) {
+      setError(json.error ?? "קוד שגוי");
+      setLoading(false);
+    } else {
+      window.location.href = json.actionLink;
+    }
+  }
+
+  if (step === "code") {
+    return (
+      <form onSubmit={verifyOtp} className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground text-center">
+          שלחנו קוד ב-WhatsApp למספר {phone}
+        </p>
+        <Input
+          type="text"
+          inputMode="numeric"
+          placeholder="קוד בן 6 ספרות"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          required
+          maxLength={6}
+          dir="ltr"
+          className="text-center text-lg tracking-widest"
+          autoFocus
+        />
+        {error && <p className="text-sm text-destructive text-center">{error}</p>}
+        <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base bg-[#25D366] hover:bg-[#1ebe5c] text-white">
+          {loading ? "מאמת..." : "כניסה"}
+        </Button>
+        <button
+          type="button"
+          onClick={() => { setStep("phone"); setCode(""); setError(null); }}
+          className="text-sm text-muted-foreground underline text-center"
+        >
+          שנה מספר
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <form onSubmit={sendOtp} className="flex flex-col gap-3">
+      <Input
+        type="tel"
+        placeholder="מספר טלפון (054...)"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        required
+        dir="ltr"
+        autoFocus
+      />
+      {error && <p className="text-sm text-destructive text-center">{error}</p>}
+      <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base gap-2 bg-[#25D366] hover:bg-[#1ebe5c] text-white">
+        <MessageCircle size={18} />
+        {loading ? "שולח..." : "שלח קוד ב-WhatsApp"}
+      </Button>
+    </form>
+  );
+}
+
 type Tab = "staff" | "student";
 
 function LoginTabs() {
   const [tab, setTab] = useState<Tab>("staff");
+  const [showWa, setShowWa] = useState(false);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg text-sm">
         <button
           type="button"
-          onClick={() => setTab("staff")}
+          onClick={() => { setTab("staff"); setShowWa(false); }}
           className={`rounded-md py-1.5 font-medium transition-colors ${
             tab === "staff" ? "bg-background shadow-sm" : "text-muted-foreground"
           }`}
@@ -164,7 +266,7 @@ function LoginTabs() {
         </button>
         <button
           type="button"
-          onClick={() => setTab("student")}
+          onClick={() => { setTab("student"); setShowWa(false); }}
           className={`rounded-md py-1.5 font-medium transition-colors ${
             tab === "student" ? "bg-background shadow-sm" : "text-muted-foreground"
           }`}
@@ -172,7 +274,41 @@ function LoginTabs() {
           מתאמן
         </button>
       </div>
-      {tab === "staff" ? <StaffLoginForm /> : <StudentLoginForm />}
+
+      {showWa ? (
+        <div className="flex flex-col gap-3">
+          <WhatsAppLoginForm />
+          <button
+            type="button"
+            onClick={() => setShowWa(false)}
+            className="text-sm text-muted-foreground underline text-center"
+          >
+            חזור לכניסה עם אימייל
+          </button>
+        </div>
+      ) : (
+        <>
+          {tab === "staff" ? <StaffLoginForm /> : <StudentLoginForm />}
+          <div className="relative my-1">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border/60" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-background px-3 text-xs text-muted-foreground">או</span>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="w-full h-11 gap-2 border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/10"
+            onClick={() => setShowWa(true)}
+          >
+            <MessageCircle size={17} />
+            כניסה עם WhatsApp
+          </Button>
+        </>
+      )}
     </div>
   );
 }

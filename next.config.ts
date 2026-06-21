@@ -9,6 +9,7 @@ const withSerwist = withSerwistInit({
 
 const config: NextConfig = {
   turbopack: {},
+  serverExternalPackages: ["@react-pdf/renderer", "canvas"],
 };
 
 export default withSerwist(config);

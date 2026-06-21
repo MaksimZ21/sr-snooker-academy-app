@@ -36,17 +36,9 @@ export async function appendCoach(input: {
   );
   if (upsertError) throw new Error(`db_upsert_failed: ${upsertError.message}`);
   const admin = createSupabaseAdminClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sr-snooker-academy-app.vercel.app";
-  const { error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback?next=/set-password`,
-  });
-  if (error) {
-    // User already exists — send a password reset email instead
-    const { error: resetError } = await admin.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/auth/callback?next=/set-password`,
-    });
-    if (resetError) throw new Error(`invite_failed: ${resetError.message}`);
-  }
+  // Create auth user silently (no invite email) — coach logs in via WhatsApp OTP
+  await admin.auth.admin.createUser({ email, email_confirm: true });
+  // Ignore "already exists" error — user was already created on a previous add or first login
   revalidateTag("coaches", { expire: 0 });
   return email;
 }

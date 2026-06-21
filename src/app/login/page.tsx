@@ -170,8 +170,10 @@ function WhatsAppLoginForm() {
     const json = await r.json();
     if (!r.ok) {
       setError(json.error ?? "שגיאה בשליחה");
+    } else if (!json.token) {
+      setError("המספר אינו רשום במערכת");
     } else {
-      setToken(json.token ?? "");
+      setToken(json.token);
       setStep("code");
     }
     setLoading(false);

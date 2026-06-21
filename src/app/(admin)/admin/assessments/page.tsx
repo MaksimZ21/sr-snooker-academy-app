@@ -3,9 +3,11 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { FileText, Search, Send } from "lucide-react";
+import Link from "next/link";
+import { FileText, Plus, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 import { TECHNIQUE_CRITERIA, type Assessment } from "@/lib/sheets/assessment-types";
 
@@ -64,6 +66,12 @@ export default function AdminAssessmentsPage() {
             {isLoading ? "טוען..." : `${filtered.length} דוחות`}
           </p>
         </div>
+        <Link href="/admin/assessments/new">
+          <Button size="sm">
+            <Plus size={14} className="ml-1.5" />
+            דוח חדש
+          </Button>
+        </Link>
       </div>
 
       <div className="relative">

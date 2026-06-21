@@ -17,7 +17,7 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function AssessmentForm() {
+export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPath?: string }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
@@ -61,7 +61,7 @@ export function AssessmentForm() {
       });
       if (!r.ok) throw new Error("failed");
       toast.success("הדוח נשמר");
-      router.push("/coach/assessments");
+      router.push(returnPath);
     } catch {
       toast.error("שגיאה בשמירת הדוח");
     } finally {

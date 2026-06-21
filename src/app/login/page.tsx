@@ -8,6 +8,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useSearchParams } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 
+// StaffLoginForm kept for potential future use (password login)
 function StaffLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -55,6 +56,7 @@ function StaffLoginForm() {
     </form>
   );
 }
+
 
 type OtpStep = "email" | "code";
 
@@ -275,7 +277,9 @@ function LoginTabs() {
         </button>
       </div>
 
-      {showWa ? (
+      {tab === "staff" ? (
+        <WhatsAppLoginForm />
+      ) : showWa ? (
         <div className="flex flex-col gap-3">
           <WhatsAppLoginForm />
           <button
@@ -288,7 +292,7 @@ function LoginTabs() {
         </div>
       ) : (
         <>
-          {tab === "staff" ? <StaffLoginForm /> : <StudentLoginForm />}
+          <StudentLoginForm />
           <div className="relative my-1">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border/60" />

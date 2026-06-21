@@ -11,10 +11,10 @@ export default async function AdminLayout({
 }) {
   const supabase = await createSupabaseServerClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const role = await getUserRole(user.email!);
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) redirect("/login");
+  const role = await getUserRole(session.user.email!);
   if (role !== "admin") redirect("/coach");
   return <AppShell items={ADMIN_NAV}>{children}</AppShell>;
 }

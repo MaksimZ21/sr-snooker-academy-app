@@ -20,13 +20,13 @@ export async function middleware(req: NextRequest) {
   );
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
   const path = req.nextUrl.pathname;
   const isProtected = PROTECTED.some((p) => path.startsWith(p));
 
-  if (isProtected && !user) {
+  if (isProtected && !session) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirect", path);
@@ -37,5 +37,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth/callback).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
 };

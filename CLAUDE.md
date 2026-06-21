@@ -53,7 +53,7 @@ Three roles only: `admin | coach | denied`
 
 ## Git
 - Commit messages: conventional commits (`feat:`, `fix:`, `chore:`, `refactor:`)
-- Never commit directly to `main` — always create a branch
+- Push directly to `main` — no need to create a branch
 - Never commit `.env*` files or any file containing API keys or secrets
 
 ## Security: Pending

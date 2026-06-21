@@ -58,7 +58,7 @@ Three roles only: `admin | coach | denied`
 
 ## Security: Pending
 - **Webhook auth** — `src/app/api/webhooks/crm/` routes have no secret validation. `CRM_WEBHOOK_SECRET` is defined in `.env.local.example` but never used. Blocked on getting access to configure the secret in the CRM. Once access is available: read the secret from `process.env.CRM_WEBHOOK_SECRET` and validate the `x-webhook-secret` header in all three webhook routes before processing the payload.
-- **Export API key** — `/api/export/students` accepts `api_key` as a query param. Should move to `Authorization: Bearer` header to avoid leaking the key in logs and browser history.
+- **Export API key** — ✅ Fixed: `/api/export/students` now accepts only `Authorization: Bearer` header (query param removed).
 
 ## WhatsApp (Green API)
 - Instance/token env vars: `GREENAPI_INSTANCE_ID`, `GREENAPI_TOKEN`
@@ -68,6 +68,25 @@ Three roles only: `admin | coach | denied`
 - Cron job configured on cron-job.org to hit the endpoint
 - Admin button "שלח תזכורות" in dashboard (`src/components/admin-dashboard.tsx`) → `POST /api/cron/daily-reminder` — sends today's sessions summary to each coach via WhatsApp
 - Scheduler UI: `src/components/whatsapp-scheduler.tsx`, page: `/admin/whatsapp`
+
+## WhatsApp OTP Login
+- **Routes:** `POST /api/auth/whatsapp-otp/send` + `POST /api/auth/whatsapp-otp/verify`
+- **Flow:** phone → Green API WhatsApp OTP → HMAC-signed token (no DB) → Supabase `admin.generateLink` → `/auth/callback` → session
+- **Requires:** `OTP_SECRET` env var (any random string, set in Vercel)
+- **Phone lookup:** searches `coaches` and `students` tables by phone (local `0XXXXXXXXX` and intl `972XXXXXXXXX` formats)
+- **UI:** "כניסה עם WhatsApp" button on login page (below existing email forms), WhatsApp green styling
+
+## Auth Architecture (updated 2026-06-21)
+- **Middleware** (`src/middleware.ts`): uses `getSession()` (local cookie read, no network) — excludes `/api/*` from matcher
+- **Layouts** (`(admin)/layout.tsx`, `(coach)/layout.tsx`): use `getSession()` — no Supabase network call on navigation
+- **API routes** (`requireUser` in `src/lib/auth/requireUser.ts`): use `getUser()` — real server verification, protects data access
+- **Result:** 4–6 Supabase network calls per page load → 1–2 (only in API routes)
+
+## Performance (updated 2026-06-21)
+- **Stats API caching:** `/api/admin/stats` and `/api/coach/stats` use `unstable_cache` with 30s TTL — DB queries skipped on repeated fetches
+- **Recharts lazy-loaded:** charts extracted to `admin-charts.tsx` / `coach-charts.tsx`, imported via `next/dynamic` — removed from initial bundle
+- **Notes batch query:** `fetchNotesForMultipleStudents()` in `src/lib/sheets/notes.ts` — session detail fetches all notes in 1 query instead of N
+- **Loading skeletons:** `src/app/(admin)/admin/loading.tsx` and `src/app/(coach)/coach/loading.tsx`
 
 ## Google Sheets Integration (Pending)
 - **Goal:** Display data from an existing external Google Sheets file in the admin panel, and show events/tournaments from it in the Schedule page

@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { FileText, Search, Send } from "lucide-react";
 import { toast } from "sonner";
-import { TECHNIQUE_CRITERIA, type Assessment } from "@/lib/sheets/assessments";
+import { TECHNIQUE_CRITERIA, type Assessment } from "@/lib/sheets/assessment-types";
 
 function formatDate(d: string) {
   const dt = new Date(d);

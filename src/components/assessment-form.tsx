@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { TECHNIQUE_CRITERIA, type TechniqueKey } from "@/lib/sheets/assessments";
+import { TECHNIQUE_CRITERIA, type TechniqueKey } from "@/lib/sheets/assessment-types";
 
 type HandEye = "right" | "left";
 

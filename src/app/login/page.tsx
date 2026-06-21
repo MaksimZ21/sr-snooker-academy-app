@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -319,6 +319,22 @@ function LoginTabs() {
   );
 }
 
+function HashSessionHandler() {
+  const supabase = createSupabaseBrowserClient();
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash.includes("access_token=")) return;
+    const params = new URLSearchParams(hash.slice(1));
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+    if (!access_token || !refresh_token) return;
+    supabase.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
+      if (!error) window.location.href = "/";
+    });
+  }, [supabase]);
+  return null;
+}
+
 export default function LoginPage() {
   return (
     <main className="min-h-dvh grid place-items-center px-4 bg-brand-gradient">
@@ -346,6 +362,7 @@ export default function LoginPage() {
               ניהול אימונים, נוכחות ומאמנים
             </p>
           </div>
+          <HashSessionHandler />
           <Suspense>
             <LoginTabs />
           </Suspense>

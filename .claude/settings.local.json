@@ -20,7 +20,13 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(findstr \"\\\\\"dev\\\\\"\")",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(node -e \"require\\('@supabase/supabase-js'\\); console.log\\('ok'\\)\")",
+      "Bash(node scripts/import-college-students.mjs)",
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\user\\\\Desktop\\\\snooker-academy\" -Hidden -Filter \"*.local*\")",
+      "Bash(Select-Object Name)",
+      "Bash(Remove-Item -Recurse -Force \"c:\\\\Users\\\\user\\\\Desktop\\\\snooker-academy\\\\src\\\\app\\\\api\\\\admin\\\\import-students-once\")",
+      "Bash(Get-ChildItem -Path . -Force)"
     ]
   }
 }

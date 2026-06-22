@@ -73,25 +73,41 @@ export function SessionsList({
   }
 
   const total = data?.sessions.length ?? 0;
+  const grandTotal = data?.sessions.reduce((s, r) => s + (r.price_nis ?? 0), 0) ?? 0;
 
   return (
     <div className="p-4 flex flex-col gap-6">
-      <p className="text-xs text-muted-foreground">{total} מפגשים סה"כ</p>
-      {grouped.map(([month, sessions]) => (
-        <section key={month} className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold">{monthLabel(month)}</h2>
-            <span className="text-xs text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-full">
-              {sessions.length}
-            </span>
-          </div>
-          <div className="flex flex-col gap-2">
-            {sessions.map((s) => (
-              <SessionCard key={s.id} session={s} basePath={basePath} />
-            ))}
-          </div>
-        </section>
-      ))}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{total} מפגשים סה"כ</p>
+        {grandTotal > 0 && (
+          <p className="text-xs font-semibold tabular-nums">{grandTotal.toLocaleString("he-IL")} ₪ סה"כ</p>
+        )}
+      </div>
+      {grouped.map(([month, sessions]) => {
+        const monthTotal = sessions.reduce((s, r) => s + (r.price_nis ?? 0), 0);
+        return (
+          <section key={month} className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold">{monthLabel(month)}</h2>
+                <span className="text-xs text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-full">
+                  {sessions.length}
+                </span>
+              </div>
+              {monthTotal > 0 && (
+                <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                  {monthTotal.toLocaleString("he-IL")} ₪
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              {sessions.map((s) => (
+                <SessionCard key={s.id} session={s} basePath={basePath} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

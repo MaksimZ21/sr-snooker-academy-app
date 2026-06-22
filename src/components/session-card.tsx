@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, ChevronLeft } from "lucide-react";
+import { Users, ChevronLeft, Banknote } from "lucide-react";
 import type { Session } from "@/lib/sheets/schemas";
 import { formatHebrewDate } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
@@ -53,10 +53,21 @@ export function SessionCard({
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <div className="text-xs text-muted-foreground">
-                {session.name ? session.name : formatHebrewDate(session.date)}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>{session.name ? session.name : formatHebrewDate(session.date)}</span>
+                {session.source ? (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-border/60">
+                    {session.source}
+                  </Badge>
+                ) : null}
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-primary transition-colors duration-200">
+                {session.price_nis != null && (
+                  <span className="flex items-center gap-0.5 font-medium tabular-nums">
+                    <Banknote size={11} />
+                    {session.price_nis}₪
+                  </span>
+                )}
                 <span className="flex items-center gap-0.5">
                   <Users size={11} />
                   {session.student_ids.length}

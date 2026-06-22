@@ -8,12 +8,21 @@ import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 
 const STRIPE: Record<string, string> = {
-  private: "bg-blue-400",
-  group: "bg-emerald-400",
-  beginners: "bg-amber-400",
-  advanced: "bg-violet-400",
-  technique: "bg-orange-400",
-  "match-play": "bg-rose-400",
+  private: "bg-blue-500",
+  group: "bg-emerald-500",
+  beginners: "bg-amber-500",
+  advanced: "bg-violet-500",
+  technique: "bg-orange-500",
+  "match-play": "bg-rose-500",
+};
+
+const STRIPE_GLOW: Record<string, string> = {
+  private: "shadow-blue-500/25",
+  group: "shadow-emerald-500/25",
+  beginners: "shadow-amber-500/25",
+  advanced: "shadow-violet-500/25",
+  technique: "shadow-orange-500/25",
+  "match-play": "shadow-rose-500/25",
 };
 
 export function SessionCard({
@@ -25,21 +34,31 @@ export function SessionCard({
 }) {
   const { label, className } = trainingTypeBadge(session.training_type);
   const stripe = STRIPE[session.training_type] ?? "bg-muted-foreground/40";
+  const glow = STRIPE_GLOW[session.training_type] ?? "";
   const cancelled = session.status === "cancelled";
 
   return (
     <Link href={`/${basePath}/sessions/${session.id}`}>
-      <Card className="group overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer border-border/60">
+      <Card className={cn(
+        "group overflow-hidden transition-all duration-200 cursor-pointer border-border/60",
+        "hover:shadow-lg hover:-translate-y-0.5",
+        !cancelled && glow,
+      )}>
         <CardContent className="p-0 flex">
-          <div className={cn("w-1.5 self-stretch shrink-0", stripe, cancelled && "opacity-40")} />
+          {/* Color stripe */}
+          <div className={cn(
+            "w-1.5 self-stretch shrink-0 transition-all duration-200",
+            stripe,
+            cancelled && "opacity-30",
+          )} />
+
           <div className="flex-1 px-3.5 py-3 flex flex-col gap-1.5 min-w-0">
+            {/* Top row: time + badges */}
             <div className="flex justify-between items-start gap-2">
-              <div
-                className={cn(
-                  "tabular-nums leading-tight",
-                  cancelled && "opacity-40 line-through",
-                )}
-              >
+              <div className={cn(
+                "tabular-nums leading-tight",
+                cancelled && "opacity-40 line-through",
+              )}>
                 <span className="text-base font-bold">{session.start_time}</span>
                 <span className="text-sm font-normal text-muted-foreground"> – {session.end_time}</span>
               </div>
@@ -52,18 +71,23 @@ export function SessionCard({
                 )}
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{session.name ? session.name : formatHebrewDate(session.date)}</span>
+
+            {/* Bottom row: name/date + price + students */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                <span className="truncate">{session.name ? session.name : formatHebrewDate(session.date)}</span>
                 {session.source ? (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-border/60">
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] px-1.5 py-0 h-4 border-border/60 shrink-0"
+                  >
                     {session.source}
                   </Badge>
                 ) : null}
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-primary transition-colors duration-200">
+              <div className="flex items-center gap-2.5 text-xs text-muted-foreground group-hover:text-primary transition-colors duration-200 shrink-0">
                 {session.price_nis != null && (
-                  <span className="flex items-center gap-0.5 font-medium tabular-nums">
+                  <span className="flex items-center gap-0.5 font-semibold tabular-nums text-foreground/70">
                     <Banknote size={11} />
                     {session.price_nis}₪
                   </span>
@@ -72,7 +96,10 @@ export function SessionCard({
                   <Users size={11} />
                   {session.student_ids.length}
                 </span>
-                <ChevronLeft size={12} className="opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all duration-200" />
+                <ChevronLeft
+                  size={12}
+                  className="opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all duration-200"
+                />
               </div>
             </div>
           </div>

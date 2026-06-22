@@ -65,6 +65,8 @@ export function AdminDashboard() {
     refetchInterval: 30_000,
   });
 
+  const hasMessages = (data?.newMessages ?? 0) > 0;
+
   return (
     <div className="p-4 md:p-6 flex flex-col gap-5">
       {/* Header */}
@@ -83,11 +85,54 @@ export function AdminDashboard() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
-        <StatCard icon={<Users size={18} />} label="תלמידים פעילים" value={data?.students.active} sub={data ? `מתוך ${data.students.total}` : undefined} href="/admin/students" isLoading={isLoading} />
-        <StatCard icon={<User size={18} />} label="מאמנים פעילים" value={data?.coaches.active} href="/admin/coaches" isLoading={isLoading} />
-        <StatCard icon={<CalendarDays size={18} />} label="מפגשים היום" value={data?.todaySessions.length} href="/admin/schedule" isLoading={isLoading} highlight />
-        <StatCard icon={<Layers size={18} />} label="קבוצות" value={data?.groups} href="/admin/groups" isLoading={isLoading} />
-        <StatCard icon={<MessageSquare size={18} />} label="פניות חדשות" value={data?.newMessages} href="/admin/messages" isLoading={isLoading} alert={!!data?.newMessages} />
+        <StatCard
+          icon={<Users size={18} />}
+          label="תלמידים פעילים"
+          value={data?.students.active}
+          sub={data ? `מתוך ${data.students.total}` : undefined}
+          href="/admin/students"
+          isLoading={isLoading}
+          gradient="from-blue-500 to-indigo-600"
+          shadow="shadow-blue-500/30"
+        />
+        <StatCard
+          icon={<User size={18} />}
+          label="מאמנים פעילים"
+          value={data?.coaches.active}
+          href="/admin/coaches"
+          isLoading={isLoading}
+          gradient="from-emerald-500 to-teal-600"
+          shadow="shadow-emerald-500/30"
+        />
+        <StatCard
+          icon={<CalendarDays size={18} />}
+          label="מפגשים היום"
+          value={data?.todaySessions.length}
+          href="/admin/schedule"
+          isLoading={isLoading}
+          gradient="from-primary to-teal-500"
+          shadow="shadow-primary/30"
+          gradientClass="bg-brand-gradient"
+        />
+        <StatCard
+          icon={<Layers size={18} />}
+          label="קבוצות"
+          value={data?.groups}
+          href="/admin/groups"
+          isLoading={isLoading}
+          gradient="from-violet-500 to-purple-600"
+          shadow="shadow-violet-500/30"
+        />
+        <StatCard
+          icon={<MessageSquare size={18} />}
+          label="פניות חדשות"
+          value={data?.newMessages}
+          href="/admin/messages"
+          isLoading={isLoading}
+          gradient={hasMessages ? "from-rose-500 to-red-600" : "from-slate-400 to-slate-600"}
+          shadow={hasMessages ? "shadow-rose-500/30" : "shadow-slate-400/20"}
+          alert={hasMessages}
+        />
       </div>
 
       {/* Charts row */}
@@ -181,72 +226,54 @@ export function AdminDashboard() {
 
 /* ─── Sub-components ─────────────────────────────────────────── */
 
-function StatCard({ icon, label, value, sub, href, isLoading, highlight, alert }: {
+function StatCard({
+  icon, label, value, sub, href, isLoading, gradient, shadow, gradientClass, alert,
+}: {
   icon: React.ReactNode;
   label: string;
   value?: number;
   sub?: string;
   href: string;
   isLoading: boolean;
-  highlight?: boolean;
+  gradient: string;
+  shadow: string;
+  gradientClass?: string;
   alert?: boolean;
 }) {
   return (
     <Link href={href} className="block h-full">
       <div className={cn(
-        "group relative h-full rounded-2xl p-4 flex flex-col justify-between gap-3",
-        "transition-all duration-250 hover:-translate-y-1",
-        highlight
-          ? "bg-brand-gradient shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:shadow-xl"
-          : "bg-card ring-1 ring-foreground/[0.07] dark:ring-white/[0.06] hover:ring-primary/25 hover:shadow-md dark:hover:ring-primary/20",
+        "group relative h-full rounded-2xl p-4 flex flex-col justify-between gap-3 overflow-hidden",
+        "shadow-lg transition-all duration-200 hover:-translate-y-1.5 hover:shadow-xl",
+        gradientClass ?? `bg-gradient-to-br ${gradient}`,
+        shadow,
       )}>
-        {/* Top row: icon + alert dot */}
-        <div className="flex items-start justify-between">
-          <span className={cn(
-            "p-2 rounded-xl transition-transform duration-200 group-hover:scale-110",
-            highlight ? "bg-white/20" : "bg-primary/10 text-primary dark:bg-primary/15",
-          )}>
+        {/* Decorative circle */}
+        <div className="absolute -left-4 -top-4 w-20 h-20 rounded-full bg-white/10 pointer-events-none" />
+        <div className="absolute -left-1 -bottom-6 w-24 h-24 rounded-full bg-black/10 pointer-events-none" />
+
+        <div className="flex items-start justify-between relative">
+          <span className="p-2 rounded-xl bg-white/20 text-white transition-transform duration-200 group-hover:scale-110 group-hover:bg-white/30">
             {icon}
           </span>
-          {alert && (value ?? 0) > 0 && (
-            <span className="w-2 h-2 rounded-full bg-rose-500 status-dot mt-0.5" />
+          {alert && (
+            <span className="w-2 h-2 rounded-full bg-white status-dot" />
           )}
         </div>
 
-        {/* Value + label */}
         {isLoading ? (
-          <div>
-            <Skeleton className={cn("h-9 w-14 mb-1.5 rounded-lg", highlight && "bg-white/20")} />
-            <Skeleton className={cn("h-3 w-20 rounded", highlight && "bg-white/20")} />
+          <div className="relative">
+            <Skeleton className="h-9 w-14 mb-1.5 rounded-lg bg-white/20" />
+            <Skeleton className="h-3 w-20 rounded bg-white/20" />
           </div>
         ) : (
-          <div>
-            <div className={cn(
-              "text-3xl font-bold tabular-nums leading-none tracking-tight",
-              highlight ? "text-white" : "text-foreground",
-            )}>
+          <div className="relative">
+            <div className="text-3xl font-bold tabular-nums leading-none tracking-tight text-white">
               {value ?? 0}
             </div>
-            <div className={cn(
-              "text-xs mt-1.5 font-medium",
-              highlight ? "text-white/75" : "text-muted-foreground",
-            )}>
-              {label}
-            </div>
-            {sub && (
-              <div className={cn(
-                "text-[10px] mt-0.5",
-                highlight ? "text-white/50" : "text-muted-foreground/50",
-              )}>
-                {sub}
-              </div>
-            )}
+            <div className="text-xs mt-1.5 font-medium text-white/75">{label}</div>
+            {sub && <div className="text-[10px] mt-0.5 text-white/50">{sub}</div>}
           </div>
-        )}
-
-        {/* Subtle inner glow on hover (non-highlight only) */}
-        {!highlight && (
-          <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gradient-to-br from-primary/[0.04] to-transparent" />
         )}
       </div>
     </Link>

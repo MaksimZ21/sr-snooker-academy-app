@@ -47,9 +47,9 @@ export function CoachDashboard() {
   return (
     <div className="p-4 md:p-6 flex flex-col gap-6">
       {/* Header */}
-      <div>
-        <p className="text-xs text-muted-foreground mb-0.5">סקירה אישית</p>
-        <h1 className="text-2xl font-bold">
+      <div className="animate-fade-in-up">
+        <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider mb-1">סקירה אישית</p>
+        <h1 className="text-2xl font-bold tracking-tight">
           {isLoading || !data ? (
             <Skeleton className="h-8 w-52 inline-block" />
           ) : (
@@ -59,43 +59,48 @@ export function CoachDashboard() {
       </div>
 
       {/* Stat chips */}
-      <div className="grid grid-cols-3 gap-3">
-        <StatChip
-          icon={<CalendarDays size={16} />}
+      <div className="grid grid-cols-3 gap-3 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
+        <StatCard
+          icon={<CalendarDays size={18} />}
           label="מפגשים היום"
           value={data?.todaySessions.length}
-          color="emerald"
+          gradient="from-emerald-500 to-teal-600"
+          shadow="shadow-emerald-500/30"
           isLoading={isLoading}
         />
-        <StatChip
-          icon={<CalendarDays size={16} />}
-          label="מפגשים השבוע"
+        <StatCard
+          icon={<CalendarDays size={18} />}
+          label="השבוע"
           value={data?.weekSessionCount}
-          color="blue"
+          gradient="from-blue-500 to-indigo-600"
+          shadow="shadow-blue-500/30"
           isLoading={isLoading}
         />
-        <StatChip
-          icon={<Users size={16} />}
-          label="תלמידים השבוע"
+        <StatCard
+          icon={<Users size={18} />}
+          label="תלמידים"
           value={data?.weekStudentCount}
-          color="violet"
+          gradient="from-violet-500 to-purple-600"
+          shadow="shadow-violet-500/30"
           isLoading={isLoading}
         />
       </div>
 
       {/* Hero: next session */}
-      {isLoading ? (
-        <HeroSkeleton />
-      ) : nextSession ? (
-        <HeroNextCard session={nextSession} />
-      ) : (
-        <Card className="border-dashed border-2">
-          <CardContent className="flex flex-col items-center gap-3 py-14 text-muted-foreground">
-            <CalendarX size={42} className="opacity-25" />
-            <span className="text-sm">אין מפגש קרוב להיום</span>
-          </CardContent>
-        </Card>
-      )}
+      <div className="animate-fade-in-up" style={{ animationDelay: "120ms" }}>
+        {isLoading ? (
+          <HeroSkeleton />
+        ) : nextSession ? (
+          <HeroNextCard session={nextSession} />
+        ) : (
+          <Card className="border-dashed border-2">
+            <CardContent className="flex flex-col items-center gap-3 py-14 text-muted-foreground">
+              <CalendarX size={42} className="opacity-25" />
+              <span className="text-sm">אין מפגש קרוב להיום</span>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Bar chart */}
       <CoachBarChart data={data} isLoading={isLoading} />
@@ -123,11 +128,7 @@ export function CoachDashboard() {
             ) : (
               <div className="flex flex-col divide-y divide-border/60">
                 {sessions.map((s) => (
-                  <SessionRow
-                    key={s.id}
-                    session={s}
-                    studentMap={data?.studentMap ?? {}}
-                  />
+                  <SessionRow key={s.id} session={s} studentMap={data?.studentMap ?? {}} />
                 ))}
               </div>
             )}
@@ -145,10 +146,7 @@ export function CoachDashboard() {
             {isLoading ? (
               <Skeleton className="h-24 w-full rounded-lg" />
             ) : (
-              <UpcomingList
-                sessions={data!.upcomingSessions}
-                studentMap={data!.studentMap}
-              />
+              <UpcomingList sessions={data!.upcomingSessions} studentMap={data!.studentMap} />
             )}
           </CardContent>
         </Card>
@@ -159,54 +157,39 @@ export function CoachDashboard() {
 
 /* ─── Sub-components ──────────────────────────────────────────── */
 
-const CHIP_COLORS = {
-  emerald: {
-    bg: "bg-emerald-100 dark:bg-emerald-900/40",
-    icon: "text-emerald-600 dark:text-emerald-400",
-  },
-  blue: {
-    bg: "bg-blue-100 dark:bg-blue-900/40",
-    icon: "text-blue-600 dark:text-blue-400",
-  },
-  violet: {
-    bg: "bg-violet-100 dark:bg-violet-900/40",
-    icon: "text-violet-600 dark:text-violet-400",
-  },
-} as const;
-
-function StatChip({
-  icon,
-  label,
-  value,
-  color,
-  isLoading,
+function StatCard({
+  icon, label, value, gradient, shadow, isLoading,
 }: {
   icon: React.ReactNode;
   label: string;
   value?: number;
-  color: keyof typeof CHIP_COLORS;
+  gradient: string;
+  shadow: string;
   isLoading: boolean;
 }) {
-  const c = CHIP_COLORS[color];
   return (
-    <Card>
-      <CardContent className="p-3 flex flex-col gap-2">
-        <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", c.bg)}>
-          <span className={c.icon}>{icon}</span>
-        </div>
-        {isLoading ? (
-          <>
-            <Skeleton className="h-6 w-8" />
-            <Skeleton className="h-3 w-16" />
-          </>
-        ) : (
-          <>
-            <div className="text-xl font-bold tabular-nums leading-none">{value ?? 0}</div>
-            <div className="text-xs text-muted-foreground leading-tight">{label}</div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+    <div className={cn(
+      "relative rounded-2xl p-3.5 flex flex-col gap-2.5 overflow-hidden",
+      "shadow-lg",
+      `bg-gradient-to-br ${gradient}`,
+      shadow,
+    )}>
+      <div className="absolute -left-3 -top-3 w-14 h-14 rounded-full bg-white/10 pointer-events-none" />
+      <span className="p-1.5 rounded-lg bg-white/20 text-white w-fit">
+        {icon}
+      </span>
+      {isLoading ? (
+        <>
+          <Skeleton className="h-7 w-10 rounded-lg bg-white/20" />
+          <Skeleton className="h-3 w-14 rounded bg-white/20" />
+        </>
+      ) : (
+        <>
+          <div className="text-2xl font-bold tabular-nums leading-none text-white">{value ?? 0}</div>
+          <div className="text-xs font-medium text-white/75 leading-tight">{label}</div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -234,12 +217,10 @@ function HeroNextCard({ session }: { session: Session }) {
         <CardContent className="p-5 flex flex-col gap-4">
           <div className="flex items-end justify-between gap-3">
             <div className="flex flex-col">
-              <div
-                className={cn(
-                  "text-5xl md:text-6xl font-bold tabular-nums tracking-tight leading-none text-foreground group-hover:text-primary transition-colors duration-300",
-                  cancelled && "opacity-40 line-through",
-                )}
-              >
+              <div className={cn(
+                "text-5xl md:text-6xl font-bold tabular-nums tracking-tight leading-none text-foreground group-hover:text-primary transition-colors duration-300",
+                cancelled && "opacity-40 line-through",
+              )}>
                 {session.start_time}
               </div>
               <div className="text-muted-foreground mt-2 text-sm">עד {session.end_time}</div>
@@ -285,18 +266,10 @@ function HeroSkeleton() {
   );
 }
 
-function SessionRow({
-  session,
-  studentMap,
-}: {
-  session: Session;
-  studentMap: Record<string, string>;
-}) {
+function SessionRow({ session, studentMap }: { session: Session; studentMap: Record<string, string> }) {
   const { label, className } = trainingTypeBadge(session.training_type);
   const cancelled = session.status === "cancelled";
-  const studentNames = session.student_ids
-    .map((id) => studentMap[id] ?? id)
-    .join(", ");
+  const studentNames = session.student_ids.map((id) => studentMap[id] ?? id).join(", ");
 
   return (
     <Link
@@ -304,41 +277,22 @@ function SessionRow({
       className="flex items-center gap-3 py-3 hover:bg-muted/40 rounded-lg px-2 -mx-2 transition-colors group"
     >
       <div className="w-16 shrink-0 text-left tabular-nums">
-        <div className={cn("text-sm font-semibold", cancelled && "line-through opacity-50")}>
-          {session.start_time}
-        </div>
+        <div className={cn("text-sm font-semibold", cancelled && "line-through opacity-50")}>{session.start_time}</div>
         <div className="text-xs text-muted-foreground">{session.end_time}</div>
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" className={cn("text-xs py-0 h-5 shrink-0", className)}>
-            {label}
-          </Badge>
-          {cancelled && (
-            <Badge variant="destructive" className="text-xs py-0 h-5">
-              בוטל
-            </Badge>
-          )}
+          <Badge variant="outline" className={cn("text-xs py-0 h-5 shrink-0", className)}>{label}</Badge>
+          {cancelled && <Badge variant="destructive" className="text-xs py-0 h-5">בוטל</Badge>}
         </div>
-        {studentNames && (
-          <div className="text-xs text-muted-foreground truncate">{studentNames}</div>
-        )}
+        {studentNames && <div className="text-xs text-muted-foreground truncate">{studentNames}</div>}
       </div>
-      <ChevronLeft
-        size={14}
-        className="text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-      />
+      <ChevronLeft size={14} className="text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
     </Link>
   );
 }
 
-function UpcomingList({
-  sessions,
-  studentMap,
-}: {
-  sessions: Session[];
-  studentMap: Record<string, string>;
-}) {
+function UpcomingList({ sessions, studentMap }: { sessions: Session[]; studentMap: Record<string, string> }) {
   const byDate = sessions.reduce<Record<string, Session[]>>((acc, s) => {
     (acc[s.date] ??= []).push(s);
     return acc;

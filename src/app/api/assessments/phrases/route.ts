@@ -12,6 +12,8 @@ export async function GET() {
     return NextResponse.json({ phrases });
   } catch (e) {
     if (e instanceof Response) return e;
-    return NextResponse.json({ phrases: [] });
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[assessment-phrases]", msg);
+    return NextResponse.json({ phrases: [], error: msg });
   }
 }

@@ -383,7 +383,18 @@ export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
         {(["all", "year", "month"] as Mode[]).map((m) => (
           <button
             key={m}
-            onClick={() => setMode(m)}
+            onClick={() => {
+              if (m === "month" && data?.sessions?.length) {
+                const latest = [...data.sessions].sort((a, b) => b.date.localeCompare(a.date))[0];
+                const [y, mo] = latest.date.split("-");
+                setYear(parseInt(y));
+                setMonth(parseInt(mo));
+              } else if (m === "year" && data?.sessions?.length) {
+                const latest = [...data.sessions].sort((a, b) => b.date.localeCompare(a.date))[0];
+                setYear(parseInt(latest.date.split("-")[0]));
+              }
+              setMode(m);
+            }}
             className={cn(
               "flex-1 text-sm py-1.5 rounded-lg font-medium transition-all duration-200",
               mode === m ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",

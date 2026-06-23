@@ -1,31 +1,15 @@
-import { getSheetsClient } from "@/lib/google/sheets";
-
-const PHRASES_SHEET_ID = "1FEA2UKumCyVjDzZC71rWTbvIunJ_B77wkz7JU7-peS8";
+import { db } from "@/lib/db/client";
 
 export type Phrase = { category: string; text: string };
 
 export async function fetchAssessmentPhrases(): Promise<Phrase[]> {
-  const sheets = getSheetsClient();
+  const { data, error } = await db
+    .from("assessment_phrases")
+    .select("category, phrase")
+    .order("category")
+    .order("sort_order");
 
-  let rows: string[][] = [];
-  try {
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: PHRASES_SHEET_ID,
-      range: "'משפטים מוכנים'!B5:C200",
-    });
-    rows = (res.data.values ?? []) as string[][];
-  } catch (e) {
-    throw new Error(`sheets.get: ${e instanceof Error ? e.message : String(e)}`);
-  }
-  const phrases: Phrase[] = [];
-  let currentCategory = "";
+  if (error) throw new Error(error.message);
 
-  for (const row of rows) {
-    const cat  = (row[0] ?? "").trim();
-    const text = (row[1] ?? "").trim();
-    if (cat) currentCategory = cat;
-    if (text && currentCategory) phrases.push({ category: currentCategory, text });
-  }
-
-  return phrases;
+  return (data ?? []).map((r) => ({ category: r.category as string, text: r.phrase as string }));
 }

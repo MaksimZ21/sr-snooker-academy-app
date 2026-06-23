@@ -108,7 +108,7 @@ export async function GET(req: NextRequest) {
         total_nis: agg.total,
       }));
       const sessions = (sessionsPerCoach.get(email) ?? []).sort((a, b) =>
-        b.date.localeCompare(a.date),
+        a.date.localeCompare(b.date),
       );
       return {
         email,

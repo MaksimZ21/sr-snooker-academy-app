@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
-import { trainingTypeBadge } from "@/lib/training-type";
 import { dayLabelHe } from "@/lib/date";
 import type { SalaryResponse, CoachSalary, SessionDetail } from "@/app/api/admin/salary/route";
 import type { TrendResponse } from "@/app/api/admin/salary/trend/route";
@@ -175,14 +174,9 @@ function StatCards({
 /* ── Session row (no date — date shown as group header) ──────── */
 
 function SessionRow({ session }: { session: SessionDetail }) {
-  const { label: typeLabel, className: typeCls } = trainingTypeBadge(session.training_type);
-
   return (
     <div className="flex items-center gap-3 px-5 py-2 hover:bg-muted/20 transition-colors">
       <div className="flex-1 flex items-center gap-1.5 flex-wrap min-w-0">
-        <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-[18px] border shrink-0", typeCls)}>
-          {typeLabel}
-        </Badge>
         {session.source !== "אחר" && (
           <Badge
             variant="outline"

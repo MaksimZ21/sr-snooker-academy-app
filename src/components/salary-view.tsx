@@ -6,17 +6,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Banknote, ChevronRight, ChevronLeft, ChevronDown, ChevronUp,
-  TrendingUp, TrendingDown, Minus, CalendarDays, Users, Download,
+  TrendingUp, TrendingDown, CalendarDays, Users, Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
-import type { SalaryResponse, CoachSalary } from "@/app/api/admin/salary/route";
+import { trainingTypeBadge } from "@/lib/training-type";
+import { dayLabelHe } from "@/lib/date";
+import type { SalaryResponse, CoachSalary, SessionDetail } from "@/app/api/admin/salary/route";
 import type { TrendResponse } from "@/app/api/admin/salary/trend/route";
 
-const SalaryTrendChart   = dynamic(() => import("@/components/salary-charts").then((m) => m.SalaryTrendChart),   { ssr: false });
+const SalaryTrendChart      = dynamic(() => import("@/components/salary-charts").then((m) => m.SalaryTrendChart),      { ssr: false });
 const SalaryBreakdownCharts = dynamic(() => import("@/components/salary-charts").then((m) => m.SalaryBreakdownCharts), { ssr: false });
 
-type Mode = "all" | "year" | "month";
+type Mode    = "all" | "year" | "month";
 type SortKey = "amount" | "sessions" | "name";
 
 const HEBREW_MONTHS = [
@@ -59,26 +61,23 @@ function currentMonthKey(mode: Mode, year: number, month: number): string | unde
   return `${year}-${String(month).padStart(2, "0")}`;
 }
 
-/* ── CSV export ───────────────────────────────────────────────── */
+/* ── CSV export (session-level with dates) ───────────────────────── */
 
-function exportCsv(
-  data: SalaryResponse,
-  nameMap: Record<string, string>,
-  label: string,
-) {
-  const rows = [["תקופה", "מאמן", "מקור", "אימונים", "סכום (₪)"]];
+function exportCsv(data: SalaryResponse, nameMap: Record<string, string>, label: string) {
+  const rows = [["תקופה", "מאמן", "תאריך", "יום", "סוג אימון", "מקור", "סכום (₪)"]];
   for (const coach of data.coaches) {
     const name = nameMap[coach.email] ?? coach.email;
-    for (const row of coach.rows) {
-      rows.push([label, name, row.source, String(row.count), String(row.total_nis)]);
+    for (const s of coach.sessions) {
+      const day = dayLabelHe(s.date);
+      rows.push([label, name, s.date, day, s.training_type, s.source, String(s.price_nis)]);
     }
   }
-  const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+  const csv  = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement("a");
   a.href     = url;
-  a.download = `finances-${label}.csv`;
+  a.download = `expenses-${label}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -87,9 +86,7 @@ function exportCsv(
 
 function DeltaBadge({ current, prev }: { current: number; prev: number | undefined }) {
   if (prev === undefined || prev === null) return null;
-  if (prev === 0) {
-    return <span className="text-[10px] text-muted-foreground font-medium">אין השוואה</span>;
-  }
+  if (prev === 0) return <span className="text-[10px] text-muted-foreground font-medium">אין השוואה</span>;
   const pct = Math.round(((current - prev) / prev) * 100);
   const up  = pct >= 0;
   return (
@@ -106,9 +103,7 @@ function DeltaBadge({ current, prev }: { current: number; prev: number | undefin
 /* ── Stat cards ───────────────────────────────────────────────── */
 
 function StatCards({
-  data,
-  prevData,
-  isLoading,
+  data, prevData, isLoading,
 }: {
   data: SalaryResponse | undefined;
   prevData: SalaryResponse | undefined;
@@ -116,25 +111,25 @@ function StatCards({
 }) {
   const cards = [
     {
-      icon: <Banknote size={16} />,
-      label: "סה\"כ הכנסות",
-      value: data?.grand_total,
+      icon:      <Banknote size={16} />,
+      label:     "סה\"כ הוצאות",
+      value:     data?.grand_total,
       prevValue: prevData?.grand_total,
-      format: (v: number) => `${v.toLocaleString("he-IL")} ₪`,
+      format:    (v: number) => `${v.toLocaleString("he-IL")} ₪`,
     },
     {
-      icon: <CalendarDays size={16} />,
-      label: "אימונים",
-      value: data?.session_count,
+      icon:      <CalendarDays size={16} />,
+      label:     "אימונים",
+      value:     data?.session_count,
       prevValue: prevData?.session_count,
-      format: (v: number) => String(v),
+      format:    (v: number) => String(v),
     },
     {
-      icon: <Users size={16} />,
-      label: "מאמנים פעילים",
-      value: data?.coach_count,
+      icon:      <Users size={16} />,
+      label:     "מאמנים פעילים",
+      value:     data?.coach_count,
       prevValue: prevData?.coach_count,
-      format: (v: number) => String(v),
+      format:    (v: number) => String(v),
     },
   ];
 
@@ -170,14 +165,59 @@ function StatCards({
   );
 }
 
-/* ── Coach row ────────────────────────────────────────────────── */
+/* ── Session detail row ───────────────────────────────────────── */
 
-function CoachRow({ coach, nameMap, rank }: { coach: CoachSalary; nameMap: Record<string, string>; rank: number }) {
+function SessionDetailRow({ session }: { session: SessionDetail }) {
+  const { label: typeLabel, className: typeCls } = trainingTypeBadge(session.training_type);
+  const [dd, mm] = session.date.slice(5).split("-");
+  const shortDate = `${dd}/${mm}`;
+  const dayName   = dayLabelHe(session.date);
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/20 transition-colors">
+      {/* Date */}
+      <div className="shrink-0 w-16 text-right">
+        <div className="text-xs font-semibold tabular-nums">{shortDate}</div>
+        <div className="text-[10px] text-muted-foreground">{dayName}</div>
+      </div>
+
+      {/* Badges */}
+      <div className="flex-1 flex items-center gap-1.5 flex-wrap min-w-0">
+        <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-[18px] border shrink-0", typeCls)}>
+          {typeLabel}
+        </Badge>
+        {session.source !== "אחר" && (
+          <Badge
+            variant="outline"
+            className={cn("text-[10px] px-1.5 py-0 h-[18px] border shrink-0",
+              SOURCE_STYLE[session.source] ?? "bg-muted text-muted-foreground")}
+          >
+            {session.source}
+          </Badge>
+        )}
+      </div>
+
+      {/* Price */}
+      <span className="text-sm font-semibold tabular-nums shrink-0">
+        {session.price_nis > 0 ? `${session.price_nis.toLocaleString("he-IL")} ₪` : "—"}
+      </span>
+    </div>
+  );
+}
+
+/* ── Coach card ───────────────────────────────────────────────── */
+
+function CoachRow({ coach, nameMap, rank }: {
+  coach: CoachSalary;
+  nameMap: Record<string, string>;
+  rank: number;
+}) {
   const [open, setOpen] = useState(false);
   const name = nameMap[coach.email] ?? coach.email;
 
   return (
     <div className="border border-border/60 rounded-xl overflow-hidden bg-card">
+      {/* Summary header */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -188,12 +228,15 @@ function CoachRow({ coach, nameMap, rank }: { coach: CoachSalary; nameMap: Recor
         </span>
         <div className="flex-1 min-w-0 text-right">
           <p className="font-semibold text-sm leading-tight truncate">{name}</p>
-          <div className="flex flex-wrap gap-1 mt-1">
+          <p className="text-[11px] text-muted-foreground mt-0.5">{coach.email}</p>
+          {/* Source breakdown pills */}
+          <div className="flex flex-wrap gap-1 mt-1.5">
             {coach.rows.map((r) => (
               <Badge
                 key={r.source}
                 variant="outline"
-                className={cn("text-[10px] px-1.5 py-0 h-4 border", SOURCE_STYLE[r.source] ?? "bg-muted text-muted-foreground")}
+                className={cn("text-[10px] px-1.5 py-0 h-4 border",
+                  SOURCE_STYLE[r.source] ?? "bg-muted text-muted-foreground")}
               >
                 {r.count} {r.source}
               </Badge>
@@ -213,24 +256,36 @@ function CoachRow({ coach, nameMap, rank }: { coach: CoachSalary; nameMap: Recor
         </div>
       </button>
 
+      {/* Session list */}
       {open && (
-        <div className="border-t border-border/40 divide-y divide-border/30">
-          {coach.rows.map((row) => (
-            <div key={row.source} className="flex items-center justify-between px-5 py-2.5 bg-muted/20">
-              <div className="flex items-center gap-2">
+        <div className="border-t border-border/40">
+          {/* Source summary bar */}
+          <div className="flex items-center gap-3 px-4 py-2 bg-muted/20 border-b border-border/30 flex-wrap">
+            {coach.rows.map((row) => (
+              <div key={row.source} className="flex items-center gap-1.5">
                 <Badge
                   variant="outline"
                   className={cn("text-xs border", SOURCE_STYLE[row.source] ?? "bg-muted text-muted-foreground")}
                 >
                   {row.source}
                 </Badge>
-                <span className="text-sm text-muted-foreground">{row.count} אימונים</span>
+                <span className="text-xs text-muted-foreground">
+                  {row.count} × {row.count > 0 ? Math.round(row.total_nis / row.count).toLocaleString("he-IL") : 0} ₪
+                  <span className="text-muted-foreground/60 mx-1">·</span>
+                  {row.total_nis.toLocaleString("he-IL")} ₪
+                </span>
               </div>
-              <span className="text-sm font-semibold tabular-nums">
-                {row.total_nis.toLocaleString("he-IL")} ₪
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          {/* Individual sessions */}
+          <div className="divide-y divide-border/30 max-h-80 overflow-y-auto">
+            {coach.sessions.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-6">אין נתונים</p>
+            ) : (
+              coach.sessions.map((s) => <SessionDetailRow key={s.id} session={s} />)
+            )}
+          </div>
         </div>
       )}
     </div>

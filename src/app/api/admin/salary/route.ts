@@ -8,9 +8,18 @@ export type SalaryRow = {
   total_nis: number;
 };
 
+export type SessionDetail = {
+  id: string;
+  date: string;
+  source: string;
+  training_type: string;
+  price_nis: number;
+};
+
 export type CoachSalary = {
   email: string;
   rows: SalaryRow[];
+  sessions: SessionDetail[];
   sessions_total: number;
   amount_total: number;
 };
@@ -35,7 +44,7 @@ export async function GET(req: NextRequest) {
 
     let query = db
       .from("sessions")
-      .select("coach_email, source, price_nis, training_type")
+      .select("id, coach_email, source, price_nis, training_type, date")
       .eq("status", "completed")
       .neq("coach_email", "");
 
@@ -57,6 +66,7 @@ export async function GET(req: NextRequest) {
 
     // Aggregate by coach + source
     const map = new Map<string, Map<string, { count: number; total: number }>>();
+    const sessionsPerCoach = new Map<string, SessionDetail[]>();
     const srcMap: Record<string, number> = {};
     const typeMap: Record<string, number> = {};
 
@@ -66,13 +76,23 @@ export async function GET(req: NextRequest) {
       const type    = (row.training_type as string) || "אחר";
       const price   = (row.price_nis as number) ?? 0;
 
-      // Per coach
+      // Per coach aggregate
       if (!map.has(email)) map.set(email, new Map());
       const inner = map.get(email)!;
       if (!inner.has(source)) inner.set(source, { count: 0, total: 0 });
       const agg = inner.get(source)!;
       agg.count++;
       agg.total += price;
+
+      // Per coach session detail
+      if (!sessionsPerCoach.has(email)) sessionsPerCoach.set(email, []);
+      sessionsPerCoach.get(email)!.push({
+        id: row.id as string,
+        date: row.date as string,
+        source,
+        training_type: type,
+        price_nis: price,
+      });
 
       // Global by source
       srcMap[source] = (srcMap[source] ?? 0) + price;
@@ -87,9 +107,13 @@ export async function GET(req: NextRequest) {
         count: agg.count,
         total_nis: agg.total,
       }));
+      const sessions = (sessionsPerCoach.get(email) ?? []).sort((a, b) =>
+        b.date.localeCompare(a.date),
+      );
       return {
         email,
         rows,
+        sessions,
         sessions_total: rows.reduce((s, r) => s + r.count, 0),
         amount_total:   rows.reduce((s, r) => s + r.total_nis, 0),
       };

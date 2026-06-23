@@ -62,7 +62,7 @@ export function SalaryTrendChart({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold">מגמת הכנסות — 12 חודשים אחרונים</CardTitle>
+        <CardTitle className="text-sm font-semibold">מגמת הוצאות על מאמנים — 12 חודשים אחרונים</CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
         {isLoading || !months ? (
@@ -84,7 +84,7 @@ export function SalaryTrendChart({
                 width={40}
               />
               <Tooltip
-                formatter={(v) => [`${Number(v).toLocaleString("he-IL")} ₪`, "הכנסות"]}
+                formatter={(v) => [`${Number(v).toLocaleString("he-IL")} ₪`, "הוצאות"]}
                 labelFormatter={(label, payload) => payload?.[0]?.payload?.label ?? label}
                 contentStyle={{
                   fontSize: 12,
@@ -182,7 +182,7 @@ function TypeBar({ data }: { data: SalaryResponse["by_training_type"] }) {
           width={52}
         />
         <Tooltip
-          formatter={(v) => [`${Number(v).toLocaleString("he-IL")} ₪`, "הכנסות"]}
+          formatter={(v) => [`${Number(v).toLocaleString("he-IL")} ₪`, "הוצאות"]}
           contentStyle={{
             fontSize: 12,
             borderRadius: 8,

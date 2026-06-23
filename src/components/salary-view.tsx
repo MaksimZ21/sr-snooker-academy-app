@@ -172,23 +172,13 @@ function StatCards({
   );
 }
 
-/* ── Session detail row ───────────────────────────────────────── */
+/* ── Session row (no date — date shown as group header) ──────── */
 
-function SessionDetailRow({ session }: { session: SessionDetail }) {
+function SessionRow({ session }: { session: SessionDetail }) {
   const { label: typeLabel, className: typeCls } = trainingTypeBadge(session.training_type);
-  const [monthStr, dayStr] = session.date.slice(5).split("-");
-  const shortDate = `${dayStr}/${monthStr}`;
-  const dayName   = dayLabelHe(session.date);
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/20 transition-colors">
-      {/* Date */}
-      <div className="shrink-0 w-16 text-right">
-        <div className="text-xs font-semibold tabular-nums">{shortDate}</div>
-        <div className="text-[10px] text-muted-foreground">{dayName}</div>
-      </div>
-
-      {/* Badges */}
+    <div className="flex items-center gap-3 px-5 py-2 hover:bg-muted/20 transition-colors">
       <div className="flex-1 flex items-center gap-1.5 flex-wrap min-w-0">
         <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-[18px] border shrink-0", typeCls)}>
           {typeLabel}
@@ -203,11 +193,53 @@ function SessionDetailRow({ session }: { session: SessionDetail }) {
           </Badge>
         )}
       </div>
-
-      {/* Price */}
       <span className="text-sm font-semibold tabular-nums shrink-0">
         {session.price_nis > 0 ? `${session.price_nis.toLocaleString("he-IL")} ₪` : "—"}
       </span>
+    </div>
+  );
+}
+
+/* ── Group sessions by date ───────────────────────────────────── */
+
+function SessionsByDate({ sessions }: { sessions: SessionDetail[] }) {
+  const groups: { date: string; sessions: SessionDetail[] }[] = [];
+  for (const s of sessions) {
+    const last = groups[groups.length - 1];
+    if (last && last.date === s.date) {
+      last.sessions.push(s);
+    } else {
+      groups.push({ date: s.date, sessions: [s] });
+    }
+  }
+
+  return (
+    <div className="max-h-80 overflow-y-auto">
+      {groups.map(({ date, sessions: daySessions }) => {
+        const [monthStr, dayStr] = date.slice(5).split("-");
+        const shortDate = `${dayStr}/${monthStr}`;
+        const dayName   = dayLabelHe(date);
+        const dayTotal  = daySessions.reduce((s, r) => s + r.price_nis, 0);
+
+        return (
+          <div key={date}>
+            {/* Date header */}
+            <div className="flex items-center gap-2 px-4 py-1.5 bg-muted/40 border-y border-border/30 sticky top-0 z-10">
+              <span className="text-xs font-bold tabular-nums">{shortDate}</span>
+              <span className="text-[10px] text-muted-foreground">{dayName}</span>
+              {daySessions.length > 1 && (
+                <span className="text-[10px] text-muted-foreground/60 mr-auto">
+                  {daySessions.length} אימונים · {dayTotal.toLocaleString("he-IL")} ₪
+                </span>
+              )}
+            </div>
+            {/* Sessions */}
+            <div className="divide-y divide-border/20">
+              {daySessions.map((s) => <SessionRow key={s.id} session={s} />)}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -285,14 +317,12 @@ function CoachRow({ coach, nameMap, rank }: {
             ))}
           </div>
 
-          {/* Individual sessions */}
-          <div className="divide-y divide-border/30 max-h-80 overflow-y-auto">
-            {coach.sessions.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-6">אין נתונים</p>
-            ) : (
-              coach.sessions.map((s) => <SessionDetailRow key={s.id} session={s} />)
-            )}
-          </div>
+          {/* Individual sessions grouped by date */}
+          {coach.sessions.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-6">אין נתונים</p>
+          ) : (
+            <SessionsByDate sessions={coach.sessions} />
+          )}
         </div>
       )}
     </div>

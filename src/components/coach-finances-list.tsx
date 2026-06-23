@@ -62,16 +62,28 @@ function groupByDate(sessions: Session[]) {
   return groups;
 }
 
-function groupByMonthKey(sessions: Session[]) {
-  const sorted = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
-  const groups: { key: string; sessions: Session[] }[] = [];
+type DateGroup  = { date: string; sessions: Session[] };
+type MonthGroup = { key: string; dateGroups: DateGroup[] };
+
+function groupByMonthKey(sessions: Session[]): MonthGroup[] {
+  const sorted = [...sessions].sort((a, b) => {
+    const d = a.date.localeCompare(b.date);
+    return d !== 0 ? d : a.start_time.localeCompare(b.start_time);
+  });
+
+  const months: MonthGroup[] = [];
   for (const s of sorted) {
-    const key  = s.date.slice(0, 7);
-    const last = groups[groups.length - 1];
-    if (last && last.key === key) last.sessions.push(s);
-    else groups.push({ key, sessions: [s] });
+    const monthKey = s.date.slice(0, 7);
+    let month = months[months.length - 1];
+    if (!month || month.key !== monthKey) {
+      month = { key: monthKey, dateGroups: [] };
+      months.push(month);
+    }
+    const lastDg = month.dateGroups[month.dateGroups.length - 1];
+    if (lastDg && lastDg.date === s.date) lastDg.sessions.push(s);
+    else month.dateGroups.push({ date: s.date, sessions: [s] });
   }
-  return groups;
+  return months;
 }
 
 function dateLabel(iso: string) {
@@ -260,7 +272,7 @@ function FilterChips<T extends string>({
 
 export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
   const now = new Date();
-  const [mode, setMode]   = useState<Mode>("month");
+  const [mode, setMode]   = useState<Mode>("all");
   const [year, setYear]   = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [srcFilter, setSrcFilter]   = useState("all");
@@ -327,7 +339,8 @@ export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
   const filtered  = useMemo(() => payFilter === "all" ? bySrc : bySrc.filter((s) => payStatus(s) === payFilter), [bySrc, payFilter]);
 
   const sources   = useMemo(() => [...new Set((data?.sessions ?? []).map((s) => s.source).filter(Boolean))], [data]);
-  const groups    = useMemo(() => mode === "month" ? groupByDate(filtered) : groupByMonthKey(filtered), [filtered, mode]);
+  const groups      = useMemo(() => mode === "month" ? groupByDate(filtered) : null,            [filtered, mode]);
+  const monthGroups = useMemo(() => mode !== "month" ? groupByMonthKey(filtered) : null,        [filtered, mode]);
 
   const label     = periodLabel(mode, year, month);
   const rangeLabel = dateRangeLabel(mode, year, month);
@@ -421,23 +434,38 @@ export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
       {/* Sessions */}
       {filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">אין מפגשים</p>
-      ) : (
+      ) : mode === "month" ? (
         <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
-          {groups.map(({ key, sessions: grpSessions }) => (
+          {groups!.map(({ key, sessions: grpSessions }) => (
             <div key={key}>
-              {mode === "month"
-                ? <DateGroupHeader date={key} sessions={grpSessions} />
-                : <MonthGroupHeader monthKey={key} sessions={grpSessions} />}
+              <DateGroupHeader date={key} sessions={grpSessions} />
               <div className="divide-y divide-border/20">
                 {grpSessions.map((s) => (
-                  <FinanceRow
-                    key={s.id}
-                    session={s}
+                  <FinanceRow key={s.id} session={s}
                     onToggle={(id, next) => toggle({ id, status: next })}
-                    toggling={isToggling && toggleVars?.id === s.id}
-                  />
+                    toggling={isToggling && toggleVars?.id === s.id} />
                 ))}
               </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+          {monthGroups!.map((mg) => (
+            <div key={mg.key}>
+              <MonthGroupHeader monthKey={mg.key} sessions={mg.dateGroups.flatMap((dg) => dg.sessions)} />
+              {mg.dateGroups.map((dg) => (
+                <div key={dg.date}>
+                  <DateGroupHeader date={dg.date} sessions={dg.sessions} />
+                  <div className="divide-y divide-border/20">
+                    {dg.sessions.map((s) => (
+                      <FinanceRow key={s.id} session={s}
+                        onToggle={(id, next) => toggle({ id, status: next })}
+                        toggling={isToggling && toggleVars?.id === s.id} />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           ))}
         </div>

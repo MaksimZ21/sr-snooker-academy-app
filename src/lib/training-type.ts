@@ -7,19 +7,22 @@ export const TRAINING_TYPE_LABEL: Record<string, string> = {
   "match-play": "משחק",
 };
 
+// Colors mapped to actual snooker ball colors:
+// private → red ball, group → blue ball, beginners → yellow ball,
+// advanced → pink ball, technique → brown ball, match-play → green ball (baize)
 export const TRAINING_TYPE_COLOR: Record<string, string> = {
   private:
-    "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-700",
+    "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900",
   group:
-    "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-200 dark:border-emerald-700",
+    "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900",
   beginners:
-    "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/50 dark:text-amber-200 dark:border-amber-700",
+    "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-400 dark:border-yellow-900",
   advanced:
-    "bg-violet-100 text-violet-800 border-violet-300 dark:bg-violet-900/50 dark:text-violet-200 dark:border-violet-700",
+    "bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-950/40 dark:text-pink-400 dark:border-pink-900",
   technique:
-    "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/50 dark:text-orange-200 dark:border-orange-700",
+    "bg-stone-100 text-stone-700 border-stone-200 dark:bg-stone-900/40 dark:text-stone-400 dark:border-stone-800",
   "match-play":
-    "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/50 dark:text-rose-200 dark:border-rose-700",
+    "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900",
 };
 
 export function trainingTypeBadge(type: string) {

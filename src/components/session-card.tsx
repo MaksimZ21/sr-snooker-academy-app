@@ -7,22 +7,23 @@ import { formatHebrewDate } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 
+// Stripe colors mapped to snooker ball colors
 const STRIPE: Record<string, string> = {
-  private: "bg-blue-500",
-  group: "bg-emerald-500",
-  beginners: "bg-amber-500",
-  advanced: "bg-violet-500",
-  technique: "bg-orange-500",
-  "match-play": "bg-rose-500",
+  private: "bg-red-600",
+  group: "bg-blue-500",
+  beginners: "bg-yellow-400",
+  advanced: "bg-pink-500",
+  technique: "bg-stone-500",
+  "match-play": "bg-emerald-600",
 };
 
 const STRIPE_GLOW: Record<string, string> = {
-  private: "shadow-blue-500/25",
-  group: "shadow-emerald-500/25",
-  beginners: "shadow-amber-500/25",
-  advanced: "shadow-violet-500/25",
-  technique: "shadow-orange-500/25",
-  "match-play": "shadow-rose-500/25",
+  private: "shadow-red-600/25",
+  group: "shadow-blue-500/25",
+  beginners: "shadow-yellow-400/25",
+  advanced: "shadow-pink-500/25",
+  technique: "shadow-stone-500/25",
+  "match-play": "shadow-emerald-600/25",
 };
 
 export function SessionCard({

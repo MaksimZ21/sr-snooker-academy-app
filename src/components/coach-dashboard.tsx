@@ -64,24 +64,21 @@ export function CoachDashboard() {
           icon={<CalendarDays size={18} />}
           label="מפגשים היום"
           value={data?.todaySessions.length}
-          gradient="from-emerald-500 to-teal-600"
-          shadow="shadow-emerald-500/30"
+          colorClass="ball-card-red"
           isLoading={isLoading}
         />
         <StatCard
           icon={<CalendarDays size={18} />}
           label="השבוע"
           value={data?.weekSessionCount}
-          gradient="from-blue-500 to-indigo-600"
-          shadow="shadow-blue-500/30"
+          colorClass="ball-card-blue"
           isLoading={isLoading}
         />
         <StatCard
           icon={<Users size={18} />}
           label="תלמידים"
           value={data?.weekStudentCount}
-          gradient="from-violet-500 to-purple-600"
-          shadow="shadow-violet-500/30"
+          colorClass="ball-card-yellow"
           isLoading={isLoading}
         />
       </div>
@@ -158,23 +155,20 @@ export function CoachDashboard() {
 /* ─── Sub-components ──────────────────────────────────────────── */
 
 function StatCard({
-  icon, label, value, gradient, shadow, isLoading,
+  icon, label, value, colorClass, isLoading,
 }: {
   icon: React.ReactNode;
   label: string;
   value?: number;
-  gradient: string;
-  shadow: string;
+  colorClass: string;
   isLoading: boolean;
 }) {
   return (
     <div className={cn(
       "relative rounded-2xl p-3.5 flex flex-col gap-2.5 overflow-hidden",
-      "shadow-lg",
-      `bg-gradient-to-br ${gradient}`,
-      shadow,
+      "transition-all duration-200",
+      colorClass,
     )}>
-      <div className="absolute -left-3 -top-3 w-14 h-14 rounded-full bg-white/10 pointer-events-none" />
       <span className="p-1.5 rounded-lg bg-white/20 text-white w-fit">
         {icon}
       </span>
@@ -185,7 +179,7 @@ function StatCard({
         </>
       ) : (
         <>
-          <div className="text-2xl font-bold tabular-nums leading-none text-white">{value ?? 0}</div>
+          <div className="text-3xl font-extrabold tabular-nums leading-none text-white scoreboard-num">{value ?? 0}</div>
           <div className="text-xs font-medium text-white/75 leading-tight">{label}</div>
         </>
       )}

@@ -30,13 +30,14 @@ const AdminChartsRow = dynamic(
   { ssr: false },
 );
 
+// Snooker ball color mapping for session type indicators
 const TYPE_COLORS: Record<string, string> = {
-  private: "#3b82f6",
-  group: "#10b981",
-  beginners: "#f59e0b",
-  advanced: "#8b5cf6",
-  technique: "#f97316",
-  "match-play": "#f43f5e",
+  private: "#c0392b",
+  group: "#2980b9",
+  beginners: "#d4a017",
+  advanced: "#e91e8c",
+  technique: "#78716c",
+  "match-play": "#1a7a4a",
 };
 
 export function AdminDashboard() {
@@ -92,8 +93,7 @@ export function AdminDashboard() {
           sub={data ? `מתוך ${data.students.total}` : undefined}
           href="/admin/students"
           isLoading={isLoading}
-          gradient="from-blue-500 to-indigo-600"
-          shadow="shadow-blue-500/30"
+          colorClass="ball-card-yellow"
         />
         <StatCard
           icon={<User size={18} />}
@@ -101,8 +101,7 @@ export function AdminDashboard() {
           value={data?.coaches.active}
           href="/admin/coaches"
           isLoading={isLoading}
-          gradient="from-emerald-500 to-teal-600"
-          shadow="shadow-emerald-500/30"
+          colorClass="ball-card-green"
         />
         <StatCard
           icon={<CalendarDays size={18} />}
@@ -110,9 +109,7 @@ export function AdminDashboard() {
           value={data?.todaySessions.length}
           href="/admin/schedule"
           isLoading={isLoading}
-          gradient="from-primary to-teal-500"
-          shadow="shadow-primary/30"
-          gradientClass="bg-brand-gradient"
+          colorClass="ball-card-red"
         />
         <StatCard
           icon={<Layers size={18} />}
@@ -120,8 +117,7 @@ export function AdminDashboard() {
           value={data?.groups}
           href="/admin/groups"
           isLoading={isLoading}
-          gradient="from-violet-500 to-purple-600"
-          shadow="shadow-violet-500/30"
+          colorClass="ball-card-blue"
         />
         <StatCard
           icon={<MessageSquare size={18} />}
@@ -129,8 +125,7 @@ export function AdminDashboard() {
           value={data?.newMessages}
           href="/admin/messages"
           isLoading={isLoading}
-          gradient={hasMessages ? "from-rose-500 to-red-600" : "from-slate-400 to-slate-600"}
-          shadow={hasMessages ? "shadow-rose-500/30" : "shadow-slate-400/20"}
+          colorClass={hasMessages ? "ball-card-pink" : "ball-card-dark"}
           alert={hasMessages}
         />
       </div>
@@ -227,7 +222,7 @@ export function AdminDashboard() {
 /* ─── Sub-components ─────────────────────────────────────────── */
 
 function StatCard({
-  icon, label, value, sub, href, isLoading, gradient, shadow, gradientClass, alert,
+  icon, label, value, sub, href, isLoading, colorClass, alert,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -235,23 +230,16 @@ function StatCard({
   sub?: string;
   href: string;
   isLoading: boolean;
-  gradient: string;
-  shadow: string;
-  gradientClass?: string;
+  colorClass: string;
   alert?: boolean;
 }) {
   return (
     <Link href={href} className="block h-full">
       <div className={cn(
         "group relative h-full rounded-2xl p-4 flex flex-col justify-between gap-3 overflow-hidden",
-        "shadow-lg transition-all duration-200 hover:-translate-y-1.5 hover:shadow-xl",
-        gradientClass ?? `bg-gradient-to-br ${gradient}`,
-        shadow,
+        "transition-all duration-200 hover:-translate-y-1.5",
+        colorClass,
       )}>
-        {/* Decorative circle */}
-        <div className="absolute -left-4 -top-4 w-20 h-20 rounded-full bg-white/10 pointer-events-none" />
-        <div className="absolute -left-1 -bottom-6 w-24 h-24 rounded-full bg-black/10 pointer-events-none" />
-
         <div className="flex items-start justify-between relative">
           <span className="p-2 rounded-xl bg-white/20 text-white transition-transform duration-200 group-hover:scale-110 group-hover:bg-white/30">
             {icon}
@@ -268,10 +256,10 @@ function StatCard({
           </div>
         ) : (
           <div className="relative">
-            <div className="text-3xl font-bold tabular-nums leading-none tracking-tight text-white">
+            <div className="text-4xl font-extrabold tabular-nums leading-none text-white scoreboard-num">
               {value ?? 0}
             </div>
-            <div className="text-xs mt-1.5 font-medium text-white/75">{label}</div>
+            <div className="text-xs mt-2 font-medium text-white/75">{label}</div>
             {sub && <div className="text-[10px] mt-0.5 text-white/50">{sub}</div>}
           </div>
         )}

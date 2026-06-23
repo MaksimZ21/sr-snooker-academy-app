@@ -113,234 +113,211 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl flex flex-col gap-5">
+    <div className="p-4 md:p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 
-      {/* Participant info + photo */}
-      <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">פרטי משתתף</p>
-        <div className="flex gap-4 items-start">
+        {/* ── Right column (mobile: first) — info + attributes + notes ── */}
+        <div className="flex flex-col gap-5">
 
-          {/* Photo upload */}
-          <div className="shrink-0 flex flex-col items-center gap-1">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handlePhotoChange}
+          {/* Participant info + photo */}
+          <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">פרטי משתתף</p>
+            <div className="flex gap-4 items-start">
+
+              {/* Photo */}
+              <div className="shrink-0 flex flex-col items-center gap-1">
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={cn(
+                    "relative w-20 h-24 rounded-xl border-2 border-dashed transition-all duration-150 overflow-hidden flex flex-col items-center justify-center gap-1",
+                    photoDataUrl ? "border-transparent" : "border-border/60 hover:border-primary/50 bg-muted/30 hover:bg-muted/50",
+                  )}
+                >
+                  {photoDataUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={photoDataUrl} alt="תמונת שחקן" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <>
+                      <Camera size={20} className="text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">תמונה</span>
+                    </>
+                  )}
+                </button>
+                {photoDataUrl && (
+                  <button type="button" onClick={removePhoto} className="text-[10px] text-muted-foreground hover:text-destructive transition-colors">
+                    הסר
+                  </button>
+                )}
+              </div>
+
+              {/* Text fields */}
+              <div className="flex-1 flex flex-col gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">שם מלא *</Label>
+                    <Input value={participantName} onChange={(e) => setParticipantName(e.target.value)} placeholder="שם המשתתף" dir="rtl" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">טלפון</Label>
+                    <Input value={participantPhone} onChange={(e) => setParticipantPhone(e.target.value)} placeholder="05X-XXXXXXX" dir="ltr" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">תאריך האירוע</Label>
+                  <input
+                    type="date"
+                    className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Player attributes */}
+          <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-4 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">מאפייני השחקן</p>
+            <div className="grid grid-cols-2 gap-4">
+              <HandEyePicker label="יד חזקה" value={strongHand} onChange={setStrongHand} />
+              <HandEyePicker label="עין חזקה" value={strongEye}  onChange={setStrongEye}  />
+            </div>
+          </section>
+
+          {/* Notes + phrase suggestions */}
+          <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">נקודות עיקריות לשיפור</p>
+            <Textarea
+              rows={6}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="כתוב כאן את הנקודות העיקריות לשיפור..."
+              className="resize-none text-sm leading-relaxed lg:min-h-[140px]"
+              dir="rtl"
             />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                "relative w-20 h-24 rounded-xl border-2 border-dashed transition-all duration-150 overflow-hidden flex flex-col items-center justify-center gap-1",
-                photoDataUrl
-                  ? "border-transparent"
-                  : "border-border/60 hover:border-primary/50 bg-muted/30 hover:bg-muted/50",
-              )}
-            >
-              {photoDataUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={photoDataUrl} alt="תמונת שחקן" className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <>
-                  <Camera size={20} className="text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground">תמונה</span>
-                </>
-              )}
-            </button>
-            {photoDataUrl && (
+
+            {/* Phrase suggestions */}
+            <div className="border-t border-border/40 pt-2.5">
               <button
                 type="button"
-                onClick={removePhoto}
-                className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                onClick={() => {
+                  const next = !phrasesOpen;
+                  setPhrasesOpen(next);
+                  if (next && !selectedCategory && categories.length > 0) setSelectedCategory(categories[0]);
+                }}
+                className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                הסר
+                {phrasesOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                <span>💡 משפטים מוכנים</span>
               </button>
-            )}
-          </div>
 
-          {/* Text fields */}
-          <div className="flex-1 flex flex-col gap-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">שם מלא *</Label>
-                <Input
-                  value={participantName}
-                  onChange={(e) => setParticipantName(e.target.value)}
-                  placeholder="שם המשתתף"
-                  dir="rtl"
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">טלפון</Label>
-                <Input
-                  value={participantPhone}
-                  onChange={(e) => setParticipantPhone(e.target.value)}
-                  placeholder="05X-XXXXXXX"
-                  dir="ltr"
-                />
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">תאריך האירוע</Label>
-              <input
-                type="date"
-                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Player attributes */}
-      <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-4 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">מאפייני השחקן</p>
-        <div className="grid grid-cols-2 gap-4">
-          <HandEyePicker label="יד חזקה" value={strongHand} onChange={setStrongHand} />
-          <HandEyePicker label="עין חזקה" value={strongEye}  onChange={setStrongEye}  />
-        </div>
-      </section>
-
-      {/* Technique */}
-      <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">טכניקה</p>
-          {ratedCount > 0 && (
-            <span className="text-xs text-muted-foreground">{passCount}/{ratedCount} ✓</span>
-          )}
-        </div>
-        <div className="flex flex-col divide-y divide-border/40">
-          {TECHNIQUE_CRITERIA.map((c) => {
-            const val = technique[c.key];
-            return (
-              <div key={c.key} className="flex items-center justify-between py-2.5 gap-3">
-                <span className="text-sm text-right flex-1">{c.label}</span>
-                <div className="flex gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setTech(c.key, true)}
-                    className={cn(
-                      "h-8 w-8 rounded-lg border text-sm font-bold transition-all duration-150 flex items-center justify-center",
-                      val === true
-                        ? "bg-emerald-500 border-emerald-500 text-white shadow-sm"
-                        : "border-border/60 text-muted-foreground hover:border-emerald-400 hover:text-emerald-600",
-                    )}
-                  >
-                    <Check size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTech(c.key, false)}
-                    className={cn(
-                      "h-8 w-8 rounded-lg border text-sm font-bold transition-all duration-150 flex items-center justify-center",
-                      val === false
-                        ? "bg-red-500 border-red-500 text-white shadow-sm"
-                        : "border-border/60 text-muted-foreground hover:border-red-400 hover:text-red-600",
-                    )}
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Notes + phrase suggestions */}
-      <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">נקודות עיקריות לשיפור</p>
-        <Textarea
-          rows={5}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="כתוב כאן את הנקודות העיקריות לשיפור..."
-          className="resize-none text-sm leading-relaxed"
-          dir="rtl"
-        />
-
-        {/* Phrase suggestions */}
-        <div className="border-t border-border/40 pt-2.5">
-          <button
-            type="button"
-            onClick={() => {
-              const next = !phrasesOpen;
-              setPhrasesOpen(next);
-              if (next && !selectedCategory && categories.length > 0) {
-                setSelectedCategory(categories[0]);
-              }
-            }}
-            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {phrasesOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-            <span>💡 משפטים מוכנים</span>
-          </button>
-
-          {phrasesOpen && (
-            <div className="mt-3 flex flex-col gap-3">
-              {phrasesLoading ? (
-                <div className="flex flex-col gap-2">
-                  <Skeleton className="h-7 w-full rounded-full" />
-                  <Skeleton className="h-20 w-full rounded-xl" />
-                </div>
-              ) : categories.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-3">לא נמצאו משפטים</p>
-              ) : (
-                <>
-                  {/* Category pills */}
-                  <div className="flex gap-1.5 flex-wrap" dir="rtl">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setSelectedCategory(cat)}
-                        className={cn(
-                          "text-[11px] px-2.5 py-1 rounded-full border transition-all font-medium",
-                          selectedCategory === cat
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-background text-muted-foreground border-border/60 hover:border-primary/50 hover:text-foreground",
-                        )}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Sentences */}
-                  {activePhrases.length > 0 && (
-                    <div className="flex flex-col gap-1.5" dir="rtl">
-                      {activePhrases.map((phrase, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => appendPhrase(phrase.text)}
-                          className="text-right text-xs px-3 py-2 rounded-lg bg-muted/40 hover:bg-primary/8 hover:text-primary border border-transparent hover:border-primary/20 transition-all text-muted-foreground leading-relaxed"
-                        >
-                          {phrase.text}
-                        </button>
-                      ))}
+              {phrasesOpen && (
+                <div className="mt-3 flex flex-col gap-3">
+                  {phrasesLoading ? (
+                    <div className="flex flex-col gap-2">
+                      <Skeleton className="h-7 w-full rounded-full" />
+                      <Skeleton className="h-20 w-full rounded-xl" />
                     </div>
+                  ) : categories.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-3">לא נמצאו משפטים</p>
+                  ) : (
+                    <>
+                      <div className="flex gap-1.5 flex-wrap" dir="rtl">
+                        {categories.map((cat) => (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => setSelectedCategory(cat)}
+                            className={cn(
+                              "text-[11px] px-2.5 py-1 rounded-full border transition-all font-medium",
+                              selectedCategory === cat
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-background text-muted-foreground border-border/60 hover:border-primary/50 hover:text-foreground",
+                            )}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                      {activePhrases.length > 0 && (
+                        <div className="flex flex-col gap-1.5" dir="rtl">
+                          {activePhrases.map((phrase, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => appendPhrase(phrase.text)}
+                              className="text-right text-xs px-3 py-2 rounded-lg bg-muted/40 hover:bg-primary/8 hover:text-primary border border-transparent hover:border-primary/20 transition-all text-muted-foreground leading-relaxed"
+                            >
+                              {phrase.text}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
-                </>
+                </div>
               )}
             </div>
-          )}
-        </div>
-      </section>
+          </section>
 
-      {/* Submit */}
-      <div className="flex items-center justify-between gap-3">
-        <Button variant="outline" onClick={() => router.back()} disabled={saving}>
-          ביטול
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={saving || !participantName.trim()}
-          className="min-w-28"
-        >
+          {/* Submit — visible on desktop inside left col */}
+          <div className="hidden lg:flex items-center justify-between gap-3">
+            <Button variant="outline" onClick={() => router.back()} disabled={saving}>ביטול</Button>
+            <Button onClick={handleSubmit} disabled={saving || !participantName.trim()} className="min-w-28">
+              {saving ? "שומר..." : "שמור דוח"}
+            </Button>
+          </div>
+        </div>
+
+        {/* ── Left column — technique ── */}
+        <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">טכניקה</p>
+            {ratedCount > 0 && (
+              <span className="text-xs text-muted-foreground">{passCount}/{ratedCount} ✓</span>
+            )}
+          </div>
+          <div className="flex flex-col divide-y divide-border/40">
+            {TECHNIQUE_CRITERIA.map((c) => {
+              const val = technique[c.key];
+              return (
+                <div key={c.key} className="flex items-center justify-between py-2.5 gap-3">
+                  <span className="text-sm text-right flex-1">{c.label}</span>
+                  <div className="flex gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setTech(c.key, true)}
+                      className={cn(
+                        "h-8 w-8 rounded-lg border transition-all duration-150 flex items-center justify-center",
+                        val === true ? "bg-emerald-500 border-emerald-500 text-white shadow-sm" : "border-border/60 text-muted-foreground hover:border-emerald-400 hover:text-emerald-600",
+                      )}
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTech(c.key, false)}
+                      className={cn(
+                        "h-8 w-8 rounded-lg border transition-all duration-150 flex items-center justify-center",
+                        val === false ? "bg-red-500 border-red-500 text-white shadow-sm" : "border-border/60 text-muted-foreground hover:border-red-400 hover:text-red-600",
+                      )}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+
+      {/* Submit — visible only on mobile (full width below grid) */}
+      <div className="flex lg:hidden items-center justify-between gap-3 mt-5">
+        <Button variant="outline" onClick={() => router.back()} disabled={saving}>ביטול</Button>
+        <Button onClick={handleSubmit} disabled={saving || !participantName.trim()} className="min-w-28">
           {saving ? "שומר..." : "שמור דוח"}
         </Button>
       </div>

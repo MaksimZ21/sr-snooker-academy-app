@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Plus, Send } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { toast } from "sonner";
 import { TECHNIQUE_CRITERIA, type Assessment } from "@/lib/sheets/assessment-types";
 
@@ -50,20 +51,19 @@ export default function CoachAssessmentsPage() {
 
   return (
     <div className="flex flex-col">
-      <div className="px-4 pt-5 pb-2 flex items-start justify-between gap-2">
-        <div>
-          <h1 className="text-xl font-bold">דוחות אבחון</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {isLoading ? "טוען..." : `${assessments.length} דוחות`}
-          </p>
-        </div>
-        <Link href="/coach/assessments/new">
-          <Button size="sm">
-            <Plus size={14} className="ml-1.5" />
-            דוח חדש
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        icon={<FileText size={20} />}
+        title="דוחות אבחון"
+        subtitle={isLoading ? "טוען..." : `${assessments.length} דוחות`}
+        action={
+          <Link href="/coach/assessments/new">
+            <Button size="sm">
+              <Plus size={14} className="ml-1.5" />
+              דוח חדש
+            </Button>
+          </Link>
+        }
+      />
 
       <div className="p-4 md:p-6">
         <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm dark:ring-1 dark:ring-white/[0.06]">

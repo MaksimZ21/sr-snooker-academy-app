@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { FileText, Plus, Search, Send } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { toast } from "sonner";
 import { TECHNIQUE_CRITERIA, type Assessment } from "@/lib/sheets/assessment-types";
 
@@ -58,21 +59,21 @@ export default function AdminAssessmentsPage() {
   }, [data, search]);
 
   return (
-    <div className="p-4 md:p-6 flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h2 className="font-semibold text-base">דוחות אבחון</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {isLoading ? "טוען..." : `${filtered.length} דוחות`}
-          </p>
-        </div>
-        <Link href="/admin/assessments/new">
-          <Button size="sm">
-            <Plus size={14} className="ml-1.5" />
-            דוח חדש
-          </Button>
-        </Link>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        icon={<FileText size={20} />}
+        title="דוחות אבחון"
+        subtitle={isLoading ? "טוען..." : `${filtered.length} דוחות`}
+        action={
+          <Link href="/admin/assessments/new">
+            <Button size="sm">
+              <Plus size={14} className="ml-1.5" />
+              דוח חדש
+            </Button>
+          </Link>
+        }
+      />
+      <div className="px-4 md:px-6 flex flex-col gap-4">
 
       <div className="relative">
         <Search className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -157,6 +158,7 @@ export default function AdminAssessmentsPage() {
             })}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

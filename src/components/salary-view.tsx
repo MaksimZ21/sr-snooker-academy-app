@@ -61,6 +61,13 @@ function currentMonthKey(mode: Mode, year: number, month: number): string | unde
   return `${year}-${String(month).padStart(2, "0")}`;
 }
 
+function dateRange(mode: Mode, year: number, month: number): string | null {
+  if (mode !== "month") return null;
+  const lastDay = new Date(year, month, 0).getDate();
+  const mm = String(month).padStart(2, "0");
+  return `01/${mm} — ${String(lastDay).padStart(2, "0")}/${mm}`;
+}
+
 /* ── CSV export (session-level with dates) ───────────────────────── */
 
 function exportCsv(data: SalaryResponse, nameMap: Record<string, string>, label: string) {
@@ -169,8 +176,8 @@ function StatCards({
 
 function SessionDetailRow({ session }: { session: SessionDetail }) {
   const { label: typeLabel, className: typeCls } = trainingTypeBadge(session.training_type);
-  const [dd, mm] = session.date.slice(5).split("-");
-  const shortDate = `${dd}/${mm}`;
+  const [monthStr, dayStr] = session.date.slice(5).split("-");
+  const shortDate = `${dayStr}/${monthStr}`;
   const dayName   = dayLabelHe(session.date);
 
   return (
@@ -319,9 +326,10 @@ export function SalaryView() {
     }
   }
 
-  const url     = apiUrl(mode, year, month);
-  const prevUrl = prevApiUrl(mode, year, month);
-  const label   = periodLabel(mode, year, month);
+  const url        = apiUrl(mode, year, month);
+  const prevUrl    = prevApiUrl(mode, year, month);
+  const label      = periodLabel(mode, year, month);
+  const rangeLabel = dateRange(mode, year, month);
 
   const { data, isLoading } = useQuery<SalaryResponse>({
     queryKey: ["salary", mode, year, month],
@@ -390,7 +398,12 @@ export function SalaryView() {
           >
             <ChevronRight size={18} />
           </button>
-          <span className="font-semibold text-sm">{label}</span>
+          <div className="text-center">
+            <div className="font-semibold text-sm leading-tight">{label}</div>
+            {rangeLabel && (
+              <div className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">{rangeLabel}</div>
+            )}
+          </div>
           <button
             onClick={prev}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"

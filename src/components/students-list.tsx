@@ -9,7 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AddStudentDialog } from "@/components/forms/add-student-dialog";
 import { EditStudentDialog } from "@/components/forms/edit-student-dialog";
 import { StudentHistoryDialog } from "@/components/student-history-dialog";
-import { History, Pencil, Search, Trash2, X, Check } from "lucide-react";
+import { History, Pencil, Search, Trash2, X, Check, GraduationCap } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Student } from "@/lib/sheets/schemas";
@@ -73,17 +74,14 @@ export function StudentsList() {
   const hasFilters = search || statusFilter !== "all" || collegeFilter !== "all";
 
   return (
-    <div className="p-4 md:p-6 flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h2 className="font-semibold text-base">מתאמנים</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {isLoading ? "טוען..." : `${filtered.length} מתאמנים${hasFilters ? ` מתוך ${data?.students.length ?? 0}` : ""}`}
-          </p>
-        </div>
-        <AddStudentDialog />
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        icon={<GraduationCap size={20} />}
+        title="מתאמנים"
+        subtitle={isLoading ? "טוען..." : `${filtered.length} מתאמנים${hasFilters ? ` מתוך ${data?.students.length ?? 0}` : ""}`}
+        action={<AddStudentDialog />}
+      />
+      <div className="px-4 md:px-6 flex flex-col gap-4">
 
       {/* Filters */}
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -186,6 +184,7 @@ export function StudentsList() {
           onOpenChange={(v) => { if (!v) setEditing(null); }}
         />
       )}
+      </div>
     </div>
   );
 }

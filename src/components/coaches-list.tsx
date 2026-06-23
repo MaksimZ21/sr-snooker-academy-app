@@ -12,7 +12,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { History, Trash2, Pencil } from "lucide-react";
+import { History, Trash2, Pencil, Users } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AddCoachDialog } from "@/components/forms/add-coach-dialog";
@@ -85,17 +86,14 @@ export function CoachesList() {
   const coaches = data?.coaches ?? [];
 
   return (
-    <div className="p-4 md:p-6 flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h2 className="font-semibold text-base">מאמנים</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {isLoading ? "טוען..." : `${coaches.length} מאמנים`}
-          </p>
-        </div>
-        <AddCoachDialog />
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        icon={<Users size={20} />}
+        title="מאמנים"
+        subtitle={isLoading ? "טוען..." : `${coaches.length} מאמנים רשומים`}
+        action={<AddCoachDialog />}
+      />
+      <div className="px-4 md:px-6 flex flex-col gap-4">
 
       {/* List */}
       <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm shadow-foreground/[0.04] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
@@ -175,6 +173,7 @@ export function CoachesList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

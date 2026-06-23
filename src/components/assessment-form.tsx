@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, X, Camera, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, X, Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TECHNIQUE_CRITERIA, type TechniqueKey } from "@/lib/sheets/assessment-types";
@@ -25,10 +25,8 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
 
-  /* Photo */
-  const [photoUrl,      setPhotoUrl]      = useState<string | null>(null);
-  const [photoPreview,  setPhotoPreview]  = useState<string | null>(null);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  /* Photo — stored as base64 data URL, never uploaded to storage */
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
 
   /* Fields */
   const [participantName,  setParticipantName]  = useState("");
@@ -66,29 +64,16 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("התמונה גדולה מדי (מקסימום 5MB)"); return; }
-
-    setPhotoPreview(URL.createObjectURL(file));
-    setUploadingPhoto(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const r = await fetch("/api/assessments/upload", { method: "POST", body: fd });
-      if (!r.ok) throw new Error("upload failed");
-      const { url } = (await r.json()) as { url: string };
-      setPhotoUrl(url);
+      const dataUrl = await resizeToDataUrl(file, 400, 500);
+      setPhotoDataUrl(dataUrl);
     } catch {
-      toast.error("שגיאה בהעלאת התמונה");
-      setPhotoPreview(null);
-      setPhotoUrl(null);
-    } finally {
-      setUploadingPhoto(false);
+      toast.error("שגיאה בטעינת התמונה");
     }
   }
 
   function removePhoto() {
-    setPhotoUrl(null);
-    setPhotoPreview(null);
+    setPhotoDataUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -114,7 +99,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
           strong_eye:  strongEye,
           technique,
           notes:     notes.trim(),
-          photo_url: photoUrl,
+          photo_url: photoDataUrl,
         }),
       });
       if (!r.ok) throw new Error("failed");
@@ -147,24 +132,16 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingPhoto}
               className={cn(
                 "relative w-20 h-24 rounded-xl border-2 border-dashed transition-all duration-150 overflow-hidden flex flex-col items-center justify-center gap-1",
-                photoPreview
+                photoDataUrl
                   ? "border-transparent"
                   : "border-border/60 hover:border-primary/50 bg-muted/30 hover:bg-muted/50",
               )}
             >
-              {photoPreview ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photoPreview} alt="תמונת שחקן" className="absolute inset-0 w-full h-full object-cover" />
-                  {uploadingPhoto && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      <Loader2 size={20} className="text-white animate-spin" />
-                    </div>
-                  )}
-                </>
+              {photoDataUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={photoDataUrl} alt="תמונת שחקן" className="absolute inset-0 w-full h-full object-cover" />
               ) : (
                 <>
                   <Camera size={20} className="text-muted-foreground" />
@@ -172,7 +149,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                 </>
               )}
             </button>
-            {photoPreview && !uploadingPhoto && (
+            {photoDataUrl && (
               <button
                 type="button"
                 onClick={removePhoto}
@@ -361,7 +338,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={saving || !participantName.trim() || uploadingPhoto}
+          disabled={saving || !participantName.trim()}
           className="min-w-28"
         >
           {saving ? "שומר..." : "שמור דוח"}
@@ -369,6 +346,24 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
       </div>
     </div>
   );
+}
+
+function resizeToDataUrl(file: File, maxW: number, maxH: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const blobUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(blobUrl);
+      const ratio = Math.min(maxW / img.width, maxH / img.height, 1);
+      const canvas = document.createElement("canvas");
+      canvas.width  = Math.round(img.width  * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", 0.82));
+    };
+    img.onerror = reject;
+    img.src = blobUrl;
+  });
 }
 
 function HandEyePicker({

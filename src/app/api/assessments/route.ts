@@ -13,7 +13,7 @@ const CreateSchema = z.object({
   strong_eye: z.enum(["right", "left"]).optional(),
   technique: TechniqueSchema.default({}),
   notes: z.string().optional().default(""),
-  photo_url: z.string().url().nullable().optional(),
+  photo_url: z.string().nullable().optional(),
 });
 
 export async function GET() {

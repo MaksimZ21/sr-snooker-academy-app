@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, X } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Check, X, Camera, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TECHNIQUE_CRITERIA, type TechniqueKey } from "@/lib/sheets/assessment-types";
+import type { Phrase } from "@/lib/sheets/assessment-phrases";
 
 type HandEye = "right" | "left";
 
@@ -18,45 +21,100 @@ function today() {
 }
 
 export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPath?: string }) {
-  const router = useRouter();
+  const router      = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
 
-  const [participantName, setParticipantName] = useState("");
+  /* Photo */
+  const [photoUrl,      setPhotoUrl]      = useState<string | null>(null);
+  const [photoPreview,  setPhotoPreview]  = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  /* Fields */
+  const [participantName,  setParticipantName]  = useState("");
   const [participantPhone, setParticipantPhone] = useState("");
-  const [eventDate, setEventDate] = useState(today());
-  const [strongHand, setStrongHand] = useState<HandEye | undefined>();
-  const [strongEye, setStrongEye] = useState<HandEye | undefined>();
-  const [technique, setTechnique] = useState<Partial<Record<TechniqueKey, boolean>>>({});
-  const [notes, setNotes] = useState("");
+  const [eventDate,        setEventDate]        = useState(today());
+  const [strongHand,       setStrongHand]       = useState<HandEye | undefined>();
+  const [strongEye,        setStrongEye]        = useState<HandEye | undefined>();
+  const [technique,        setTechnique]        = useState<Partial<Record<TechniqueKey, boolean>>>({});
+  const [notes,            setNotes]            = useState("");
+
+  /* Phrases */
+  const [phrasesOpen,       setPhrasesOpen]       = useState(false);
+  const [selectedCategory,  setSelectedCategory]  = useState<string | null>(null);
+
+  const { data: phrasesData, isLoading: phrasesLoading } = useQuery({
+    queryKey: ["assessment-phrases"],
+    queryFn: async () => {
+      const r = await fetch("/api/assessments/phrases");
+      if (!r.ok) return { phrases: [] as Phrase[] };
+      return (await r.json()) as { phrases: Phrase[] };
+    },
+    staleTime: Infinity,
+  });
+
+  const allPhrases    = phrasesData?.phrases ?? [];
+  const categories    = [...new Set(allPhrases.map((p) => p.category))];
+  const activePhrases = selectedCategory
+    ? allPhrases.filter((p) => p.category === selectedCategory)
+    : [];
 
   function setTech(key: TechniqueKey, value: boolean) {
-    setTechnique((prev) => ({
-      ...prev,
-      [key]: prev[key] === value ? undefined : value,
-    }));
+    setTechnique((prev) => ({ ...prev, [key]: prev[key] === value ? undefined : value }));
+  }
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("התמונה גדולה מדי (מקסימום 5MB)"); return; }
+
+    setPhotoPreview(URL.createObjectURL(file));
+    setUploadingPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch("/api/assessments/upload", { method: "POST", body: fd });
+      if (!r.ok) throw new Error("upload failed");
+      const { url } = (await r.json()) as { url: string };
+      setPhotoUrl(url);
+    } catch {
+      toast.error("שגיאה בהעלאת התמונה");
+      setPhotoPreview(null);
+      setPhotoUrl(null);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  function removePhoto() {
+    setPhotoUrl(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function appendPhrase(text: string) {
+    setNotes((prev) => (prev ? `${prev}\n${text}` : text));
   }
 
   const ratedCount = Object.keys(technique).length;
-  const passCount = Object.values(technique).filter(Boolean).length;
+  const passCount  = Object.values(technique).filter(Boolean).length;
 
   async function handleSubmit() {
-    if (!participantName.trim()) {
-      toast.error("יש להזין שם משתתף");
-      return;
-    }
+    if (!participantName.trim()) { toast.error("יש להזין שם משתתף"); return; }
     setSaving(true);
     try {
       const r = await fetch("/api/assessments", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          participant_name: participantName.trim(),
+          participant_name:  participantName.trim(),
           participant_phone: participantPhone.trim(),
           event_date: eventDate,
           strong_hand: strongHand,
-          strong_eye: strongEye,
+          strong_eye:  strongEye,
           technique,
-          notes: notes.trim(),
+          notes:     notes.trim(),
+          photo_url: photoUrl,
         }),
       });
       if (!r.ok) throw new Error("failed");
@@ -72,37 +130,91 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
   return (
     <div className="p-4 md:p-6 max-w-2xl flex flex-col gap-5">
 
-      {/* Participant info */}
+      {/* Participant info + photo */}
       <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">פרטי משתתף</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">שם מלא *</Label>
-            <Input
-              value={participantName}
-              onChange={(e) => setParticipantName(e.target.value)}
-              placeholder="שם המשתתף"
-              dir="rtl"
+        <div className="flex gap-4 items-start">
+
+          {/* Photo upload */}
+          <div className="shrink-0 flex flex-col items-center gap-1">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoChange}
             />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              className={cn(
+                "relative w-20 h-24 rounded-xl border-2 border-dashed transition-all duration-150 overflow-hidden flex flex-col items-center justify-center gap-1",
+                photoPreview
+                  ? "border-transparent"
+                  : "border-border/60 hover:border-primary/50 bg-muted/30 hover:bg-muted/50",
+              )}
+            >
+              {photoPreview ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photoPreview} alt="תמונת שחקן" className="absolute inset-0 w-full h-full object-cover" />
+                  {uploadingPhoto && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <Loader2 size={20} className="text-white animate-spin" />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Camera size={20} className="text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">תמונה</span>
+                </>
+              )}
+            </button>
+            {photoPreview && !uploadingPhoto && (
+              <button
+                type="button"
+                onClick={removePhoto}
+                className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+              >
+                הסר
+              </button>
+            )}
           </div>
-          <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">טלפון</Label>
-            <Input
-              value={participantPhone}
-              onChange={(e) => setParticipantPhone(e.target.value)}
-              placeholder="05X-XXXXXXX"
-              dir="ltr"
-            />
+
+          {/* Text fields */}
+          <div className="flex-1 flex flex-col gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">שם מלא *</Label>
+                <Input
+                  value={participantName}
+                  onChange={(e) => setParticipantName(e.target.value)}
+                  placeholder="שם המשתתף"
+                  dir="rtl"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">טלפון</Label>
+                <Input
+                  value={participantPhone}
+                  onChange={(e) => setParticipantPhone(e.target.value)}
+                  placeholder="05X-XXXXXXX"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">תאריך האירוע</Label>
+              <input
+                type="date"
+                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+              />
+            </div>
           </div>
-        </div>
-        <div>
-          <Label className="text-xs text-muted-foreground mb-1 block">תאריך האירוע</Label>
-          <input
-            type="date"
-            className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
-            value={eventDate}
-            onChange={(e) => setEventDate(e.target.value)}
-          />
         </div>
       </section>
 
@@ -111,7 +223,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">מאפייני השחקן</p>
         <div className="grid grid-cols-2 gap-4">
           <HandEyePicker label="יד חזקה" value={strongHand} onChange={setStrongHand} />
-          <HandEyePicker label="עין חזקה" value={strongEye} onChange={setStrongEye} />
+          <HandEyePicker label="עין חזקה" value={strongEye}  onChange={setStrongEye}  />
         </div>
       </section>
 
@@ -120,9 +232,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">טכניקה</p>
           {ratedCount > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {passCount}/{ratedCount} ✓
-            </span>
+            <span className="text-xs text-muted-foreground">{passCount}/{ratedCount} ✓</span>
           )}
         </div>
         <div className="flex flex-col divide-y divide-border/40">
@@ -139,7 +249,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                       "h-8 w-8 rounded-lg border text-sm font-bold transition-all duration-150 flex items-center justify-center",
                       val === true
                         ? "bg-emerald-500 border-emerald-500 text-white shadow-sm"
-                        : "border-border/60 text-muted-foreground hover:border-emerald-400 hover:text-emerald-600"
+                        : "border-border/60 text-muted-foreground hover:border-emerald-400 hover:text-emerald-600",
                     )}
                   >
                     <Check size={14} />
@@ -151,7 +261,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                       "h-8 w-8 rounded-lg border text-sm font-bold transition-all duration-150 flex items-center justify-center",
                       val === false
                         ? "bg-red-500 border-red-500 text-white shadow-sm"
-                        : "border-border/60 text-muted-foreground hover:border-red-400 hover:text-red-600"
+                        : "border-border/60 text-muted-foreground hover:border-red-400 hover:text-red-600",
                     )}
                   >
                     <X size={14} />
@@ -163,7 +273,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
         </div>
       </section>
 
-      {/* Notes */}
+      {/* Notes + phrase suggestions */}
       <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">נקודות עיקריות לשיפור</p>
         <Textarea
@@ -174,6 +284,74 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
           className="resize-none text-sm leading-relaxed"
           dir="rtl"
         />
+
+        {/* Phrase suggestions */}
+        <div className="border-t border-border/40 pt-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !phrasesOpen;
+              setPhrasesOpen(next);
+              if (next && !selectedCategory && categories.length > 0) {
+                setSelectedCategory(categories[0]);
+              }
+            }}
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {phrasesOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            <span>💡 משפטים מוכנים</span>
+          </button>
+
+          {phrasesOpen && (
+            <div className="mt-3 flex flex-col gap-3">
+              {phrasesLoading ? (
+                <div className="flex flex-col gap-2">
+                  <Skeleton className="h-7 w-full rounded-full" />
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                </div>
+              ) : categories.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-3">לא נמצאו משפטים</p>
+              ) : (
+                <>
+                  {/* Category pills */}
+                  <div className="flex gap-1.5 flex-wrap" dir="rtl">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setSelectedCategory(cat)}
+                        className={cn(
+                          "text-[11px] px-2.5 py-1 rounded-full border transition-all font-medium",
+                          selectedCategory === cat
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-muted-foreground border-border/60 hover:border-primary/50 hover:text-foreground",
+                        )}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Sentences */}
+                  {activePhrases.length > 0 && (
+                    <div className="flex flex-col gap-1.5" dir="rtl">
+                      {activePhrases.map((phrase, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => appendPhrase(phrase.text)}
+                          className="text-right text-xs px-3 py-2 rounded-lg bg-muted/40 hover:bg-primary/8 hover:text-primary border border-transparent hover:border-primary/20 transition-all text-muted-foreground leading-relaxed"
+                        >
+                          {phrase.text}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Submit */}
@@ -181,7 +359,11 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
         <Button variant="outline" onClick={() => router.back()} disabled={saving}>
           ביטול
         </Button>
-        <Button onClick={handleSubmit} disabled={saving || !participantName.trim()} className="min-w-28">
+        <Button
+          onClick={handleSubmit}
+          disabled={saving || !participantName.trim() || uploadingPhoto}
+          className="min-w-28"
+        >
           {saving ? "שומר..." : "שמור דוח"}
         </Button>
       </div>
@@ -211,7 +393,7 @@ function HandEyePicker({
               "flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-150",
               value === side
                 ? "border-primary bg-primary/5 text-primary dark:bg-primary/10"
-                : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+                : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border",
             )}
           >
             {side === "right" ? "ימין" : "שמאל"}

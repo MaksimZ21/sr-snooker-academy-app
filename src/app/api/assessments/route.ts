@@ -13,6 +13,7 @@ const CreateSchema = z.object({
   strong_eye: z.enum(["right", "left"]).optional(),
   technique: TechniqueSchema.default({}),
   notes: z.string().optional().default(""),
+  photo_url: z.string().url().nullable().optional(),
 });
 
 export async function GET() {
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
       strong_eye: body.strong_eye ?? null,
       technique: body.technique,
       notes: body.notes || null,
-      photo_url: null,
+      photo_url: body.photo_url ?? null,
     });
     return NextResponse.json({ assessment }, { status: 201 });
   } catch (e) {

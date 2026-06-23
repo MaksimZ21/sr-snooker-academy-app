@@ -5,24 +5,18 @@ const PHRASES_SHEET_ID = "1FEA2UKumCyVjDzZC71rWTbvIunJ_B77wkz7JU7-peS8";
 export type Phrase = { category: string; text: string };
 
 export async function fetchAssessmentPhrases(): Promise<Phrase[]> {
-  let sheets: ReturnType<typeof getSheetsClient>;
-  try {
-    sheets = getSheetsClient();
-  } catch (e) {
-    throw new Error(`getSheetsClient: ${e instanceof Error ? e.message : String(e)}`);
-  }
+  const sheets = getSheetsClient();
 
-  let res: Awaited<ReturnType<typeof sheets.spreadsheets.values.get>>;
+  let rows: string[][] = [];
   try {
-    res = await sheets.spreadsheets.values.get({
+    const res = await sheets.spreadsheets.values.get({
       spreadsheetId: PHRASES_SHEET_ID,
       range: "'משפטים מוכנים'!B5:C200",
     });
+    rows = (res.data.values ?? []) as string[][];
   } catch (e) {
     throw new Error(`sheets.get: ${e instanceof Error ? e.message : String(e)}`);
   }
-
-  const rows = (res.data.values ?? []) as string[][];
   const phrases: Phrase[] = [];
   let currentCategory = "";
 

@@ -19,7 +19,10 @@ export type SalaryResponse = {
   period: string;
   coaches: CoachSalary[];
   grand_total: number;
+  session_count: number;
+  coach_count: number;
   by_source: { source: string; total: number }[];
+  by_training_type: { type: string; total: number }[];
 };
 
 export async function GET(req: NextRequest) {
@@ -32,7 +35,7 @@ export async function GET(req: NextRequest) {
 
     let query = db
       .from("sessions")
-      .select("coach_email, source, price_nis")
+      .select("coach_email, source, price_nis, training_type")
       .eq("status", "completed")
       .neq("coach_email", "");
 
@@ -54,16 +57,28 @@ export async function GET(req: NextRequest) {
 
     // Aggregate by coach + source
     const map = new Map<string, Map<string, { count: number; total: number }>>();
+    const srcMap: Record<string, number> = {};
+    const typeMap: Record<string, number> = {};
+
     for (const row of data ?? []) {
-      const email  = row.coach_email as string;
-      const source = (row.source as string) || "אחר";
-      const price  = (row.price_nis as number) ?? 0;
+      const email   = row.coach_email as string;
+      const source  = (row.source as string) || "אחר";
+      const type    = (row.training_type as string) || "אחר";
+      const price   = (row.price_nis as number) ?? 0;
+
+      // Per coach
       if (!map.has(email)) map.set(email, new Map());
       const inner = map.get(email)!;
       if (!inner.has(source)) inner.set(source, { count: 0, total: 0 });
       const agg = inner.get(source)!;
       agg.count++;
       agg.total += price;
+
+      // Global by source
+      srcMap[source] = (srcMap[source] ?? 0) + price;
+
+      // Global by training type
+      typeMap[type] = (typeMap[type] ?? 0) + price;
     }
 
     const coaches: CoachSalary[] = Array.from(map.entries()).map(([email, sourceMap]) => {
@@ -81,15 +96,26 @@ export async function GET(req: NextRequest) {
     });
 
     const grand_total = coaches.reduce((s, c) => s + c.amount_total, 0);
+    const session_count = (data ?? []).length;
+    const coach_count = map.size;
 
-    // Global breakdown by source
-    const srcMap: Record<string, number> = {};
-    for (const c of coaches) for (const r of c.rows) srcMap[r.source] = (srcMap[r.source] ?? 0) + r.total_nis;
     const by_source = Object.entries(srcMap)
       .map(([source, total]) => ({ source, total }))
       .sort((a, b) => b.total - a.total);
 
-    return NextResponse.json({ period: periodLabel, coaches, grand_total, by_source } satisfies SalaryResponse);
+    const by_training_type = Object.entries(typeMap)
+      .map(([type, total]) => ({ type, total }))
+      .sort((a, b) => b.total - a.total);
+
+    return NextResponse.json({
+      period: periodLabel,
+      coaches,
+      grand_total,
+      session_count,
+      coach_count,
+      by_source,
+      by_training_type,
+    } satisfies SalaryResponse);
   } catch (e) {
     if (e instanceof Response) return e;
     return new NextResponse("error", { status: 500 });

@@ -1,6 +1,6 @@
 import { Banknote } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { SessionsList } from "@/components/sessions-list";
+import { CoachFinancesList } from "@/components/coach-finances-list";
 
 export default function CoachSalaryPage() {
   return (
@@ -10,7 +10,7 @@ export default function CoachSalaryPage() {
         title="פיננסים"
         subtitle="אימונים ותשלומים לפי חודש"
       />
-      <SessionsList basePath="coach" />
+      <CoachFinancesList />
     </div>
   );
 }

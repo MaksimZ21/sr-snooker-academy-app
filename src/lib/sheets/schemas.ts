@@ -57,6 +57,7 @@ export const SessionRow = z.object({
   status: z.enum(["scheduled", "completed", "cancelled"]),
   price_nis: z.coerce.number().int().nullable().default(null),
   source: z.string().default(""),
+  payment_status: z.enum(["pending", "paid"]).catch("pending"),
 });
 export type Session = z.infer<typeof SessionRow>;
 

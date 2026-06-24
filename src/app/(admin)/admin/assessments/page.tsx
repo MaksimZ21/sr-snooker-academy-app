@@ -26,7 +26,11 @@ function ratedCount(a: Assessment) {
 
 async function sendWhatsApp(a: Assessment) {
   if (!a.participant_phone) { toast.error("אין מספר טלפון"); return; }
-  const msg = `שלום ${a.participant_name},\nהדוח האבחון שלך:\n${window.location.origin}/api/assessments/${a.id}/pdf`;
+  const tokenRes = await fetch(`/api/assessments/${a.id}/share-token`);
+  if (!tokenRes.ok) { toast.error("שגיאה ביצירת קישור"); return; }
+  const { token } = await tokenRes.json() as { token: string };
+  const pdfUrl = `${window.location.origin}/api/assessments/${a.id}/pdf?token=${token}`;
+  const msg = `שלום ${a.participant_name},\nהדוח האבחון שלך:\n${pdfUrl}`;
   const r = await fetch("/api/whatsapp/send", {
     method: "POST",
     headers: { "content-type": "application/json" },

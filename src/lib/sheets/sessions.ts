@@ -167,7 +167,10 @@ export async function upsertSessionFromCrm(input: {
   crm_event_type?: string;
   group_name?: string;
 }): Promise<{ id: string; action: "created" | "updated" }> {
-  // Resolve existing session — prefer appointment_id lookup, fall back to event_id
+  // Resolve existing session.
+  // appointment_id is unique per occurrence — use it when available, never fall back to event_id.
+  // event_id identifies the recurring series and is reused across sessions, so only use it as
+  // a fallback when no appointment_id was provided (legacy / non-recurring events).
   let existing: { id: string } | null = null;
   if (input.crm_appointment_id) {
     const { data } = await db
@@ -176,8 +179,7 @@ export async function upsertSessionFromCrm(input: {
       .eq("crm_appointment_id", input.crm_appointment_id)
       .maybeSingle();
     existing = data as { id: string } | null;
-  }
-  if (!existing) {
+  } else {
     const { data } = await db
       .from("sessions")
       .select("id")

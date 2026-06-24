@@ -48,11 +48,11 @@ export async function GET(
 }
 
 function pdfResponse(buffer: Buffer, participantName: string) {
-  const name = encodeURIComponent(participantName);
+  const name = encodeURIComponent(`${participantName} - דוח אבחון`);
   return new NextResponse(buffer as unknown as BodyInit, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename*=UTF-8''${name}-assessment.pdf`,
+      "Content-Disposition": `inline; filename*=UTF-8''${name}.pdf`,
     },
   });
 }

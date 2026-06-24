@@ -20,29 +20,36 @@ Font.register({
   ],
 });
 
-const GREEN      = "#0b7b50";
+const GREEN       = "#0b7b50";
 const LIGHT_GREEN = "#e8f5ef";
-const RED        = "#cc2222";
-const LIGHT_RED  = "#fff0f0";
-const BORDER     = "#d0e8db";
+const RED         = "#cc2222";
+const LIGHT_RED   = "#fff0f0";
+const BORDER      = "#d0e8db";
 
 const s = StyleSheet.create({
   page: { fontFamily: "Heebo", backgroundColor: "#fff", padding: 28, fontSize: 10 },
 
-  header: { flexDirection: "row-reverse", alignItems: "center", marginBottom: 14, gap: 12 },
-  logo:   { width: 44, height: 44, objectFit: "contain" },
-  headerText: { flex: 1, textAlign: "right" },
-  academyName: { fontSize: 8, color: "#666", marginBottom: 2 },
-  title:    { fontSize: 14, fontWeight: 700, color: GREEN },
-  subtitle: { fontSize: 9, color: "#555", marginTop: 2 },
-  playerPhoto: { width: 52, height: 64, objectFit: "cover", borderRadius: 4, borderWidth: 1, borderColor: BORDER },
+  /* ── Header ── */
+  header: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  logo:        { width: 44, height: 44, objectFit: "contain" },
+  headerCenter: { flex: 1, alignItems: "center" },
+  academyName:  { fontSize: 8, color: "#888", marginBottom: 3, textAlign: "center" },
+  title:        { fontSize: 15, fontWeight: 700, color: GREEN, textAlign: "center" },
+  subtitle:     { fontSize: 9, color: "#666", marginTop: 3, textAlign: "center" },
 
   divider: { height: 1.5, backgroundColor: GREEN, marginBottom: 14, borderRadius: 1 },
 
-  body:     { flexDirection: "row-reverse", gap: 14 },
-  leftCol:  { flex: 2 },
+  /* ── Body ── */
+  body:    { flexDirection: "row-reverse", gap: 14 },
+  leftCol: { flex: 2 },
   rightCol: { flex: 1 },
 
+  /* ── Section headers ── */
   sectionHeader: {
     color: "#fff",
     fontSize: 9,
@@ -56,6 +63,7 @@ const s = StyleSheet.create({
   sectionHeaderGreen: { backgroundColor: GREEN },
   sectionHeaderRed:   { backgroundColor: RED },
 
+  /* ── Attribute rows ── */
   attrRow: {
     flexDirection: "row-reverse",
     justifyContent: "space-between",
@@ -67,6 +75,7 @@ const s = StyleSheet.create({
   attrLabel: { color: "#333", textAlign: "right" },
   attrValue: { color: GREEN, fontWeight: 700, textAlign: "left" },
 
+  /* ── Technique table ── */
   techTable: { borderWidth: 1, borderColor: BORDER, borderRadius: 4, overflow: "hidden", marginBottom: 8 },
   techRow: {
     flexDirection: "row-reverse",
@@ -77,11 +86,12 @@ const s = StyleSheet.create({
   },
   techRowGreen: { backgroundColor: LIGHT_GREEN },
   techRowRed:   { backgroundColor: LIGHT_RED },
-  techLabel: { flex: 1, textAlign: "right", color: "#333" },
-  techMark:  { width: 20, textAlign: "center", fontWeight: 700, fontSize: 11 },
-  markGreen: { color: GREEN },
-  markRed:   { color: RED },
+  techLabel:    { flex: 1, textAlign: "right", color: "#333" },
+  techMark:     { width: 20, textAlign: "center", fontWeight: 700, fontSize: 11 },
+  markGreen:    { color: GREEN },
+  markRed:      { color: RED },
 
+  /* ── Score bar ── */
   scoreBar: {
     flexDirection: "row-reverse",
     justifyContent: "space-between",
@@ -96,18 +106,45 @@ const s = StyleSheet.create({
   scoreLabel: { color: "#555", fontSize: 9 },
   scoreValue: { color: GREEN, fontWeight: 700, fontSize: 11 },
 
+  /* ── Photo in notes column ── */
+  playerPhoto: {
+    width: "100%",
+    height: 140,
+    objectFit: "cover",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: BORDER,
+    marginBottom: 10,
+  },
+  photoPlaceholder: {
+    width: "100%",
+    height: 140,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: BORDER,
+    backgroundColor: "#f3f3f3",
+    marginBottom: 10,
+  },
+
+  /* ── Notes ── */
   notesBox: {
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 4,
     padding: 8,
-    minHeight: 120,
-    textAlign: "right",
-    color: "#333",
-    lineHeight: 1.6,
+    minHeight: 80,
     backgroundColor: "#fafffe",
   },
+  noteItem: {
+    flexDirection: "row-reverse",
+    gap: 5,
+    marginBottom: 4,
+    alignItems: "flex-start",
+  },
+  noteBullet: { color: GREEN, fontWeight: 700, fontSize: 11, lineHeight: 1.4 },
+  noteText:   { flex: 1, textAlign: "right", color: "#333", lineHeight: 1.6 },
 
+  /* ── Footer ── */
   footer: {
     marginTop: 18,
     paddingTop: 6,
@@ -126,6 +163,21 @@ function formatDate(d: string) {
 
 const HAND_EYE: Record<string, string> = { right: "ימין", left: "שמאל" };
 
+function NotesWithBullets({ text }: { text: string }) {
+  const lines = text.split("\n").filter((l) => l.trim() !== "");
+  if (lines.length === 0) return null;
+  return (
+    <>
+      {lines.map((line, i) => (
+        <View key={i} style={s.noteItem}>
+          <Text style={s.noteBullet}>•</Text>
+          <Text style={s.noteText}>{line.trim()}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
+
 export function AssessmentPdfDocument({ assessment: a }: { assessment: Assessment }) {
   const logoPath = path.join(process.cwd(), "public", "logo.png");
 
@@ -136,33 +188,26 @@ export function AssessmentPdfDocument({ assessment: a }: { assessment: Assessmen
     <Document>
       <Page size="A4" style={s.page}>
 
-        {/* Header */}
+        {/* ── Header ── */}
         <View style={s.header}>
-          <PDFImage src={logoPath} style={s.logo} />
-          <View style={s.headerText}>
+          {/* Spacer to balance logo width */}
+          <View style={{ width: 44 }} />
+          <View style={s.headerCenter}>
             <Text style={s.academyName}>SHACHAR RUBERG SNOOKER ACADEMY</Text>
-            <Text style={s.title}>סיווג דירוג שחקן עבור: {a.participant_name}</Text>
-            <Text style={s.subtitle}>
-              {a.participant_phone ? `טלפון: ${a.participant_phone}  |  ` : ""}
-              תאריך: {formatDate(a.event_date)}
-            </Text>
+            <Text style={s.title}>{a.participant_name} – דוח אבחון</Text>
+            <Text style={s.subtitle}>תאריך: {formatDate(a.event_date)}</Text>
           </View>
-          {a.photo_url ? (
-            <PDFImage src={a.photo_url} style={s.playerPhoto} />
-          ) : (
-            <View style={[s.playerPhoto, { backgroundColor: "#f0f0f0" }]} />
-          )}
+          <PDFImage src={logoPath} style={s.logo} />
         </View>
 
         <View style={s.divider} />
 
-        {/* Body */}
+        {/* ── Body ── */}
         <View style={s.body}>
 
           {/* Left col — attributes + technique */}
           <View style={s.leftCol}>
 
-            {/* Player attributes */}
             <Text style={[s.sectionHeader, s.sectionHeaderGreen]}>מאפייני השחקן</Text>
             <View style={s.attrRow}>
               <Text style={s.attrLabel}>יד חזקה</Text>
@@ -173,7 +218,6 @@ export function AssessmentPdfDocument({ assessment: a }: { assessment: Assessmen
               <Text style={s.attrValue}>{a.strong_eye ? HAND_EYE[a.strong_eye] : "—"}</Text>
             </View>
 
-            {/* Score summary */}
             {(strongItems.length + weakItems.length) > 0 && (
               <View style={[s.scoreBar, { marginTop: 10 }]}>
                 <Text style={s.scoreLabel}>ציון טכניקה</Text>
@@ -183,7 +227,6 @@ export function AssessmentPdfDocument({ assessment: a }: { assessment: Assessmen
               </View>
             )}
 
-            {/* Strong technique */}
             {strongItems.length > 0 && (
               <>
                 <Text style={[s.sectionHeader, s.sectionHeaderGreen, { marginTop: 4 }]}>
@@ -203,7 +246,6 @@ export function AssessmentPdfDocument({ assessment: a }: { assessment: Assessmen
               </>
             )}
 
-            {/* Weak technique */}
             {weakItems.length > 0 && (
               <>
                 <Text style={[s.sectionHeader, s.sectionHeaderRed, { marginTop: 4 }]}>
@@ -224,14 +266,22 @@ export function AssessmentPdfDocument({ assessment: a }: { assessment: Assessmen
             )}
           </View>
 
-          {/* Right col — notes */}
+          {/* Right col — photo + notes */}
           <View style={s.rightCol}>
+            {a.photo_url ? (
+              <PDFImage src={a.photo_url} style={s.playerPhoto} />
+            ) : (
+              <View style={s.photoPlaceholder} />
+            )}
+
             <Text style={[s.sectionHeader, s.sectionHeaderGreen]}>נקודות עיקריות לשיפור</Text>
-            <Text style={s.notesBox}>{a.notes ?? ""}</Text>
+            <View style={s.notesBox}>
+              <NotesWithBullets text={a.notes ?? ""} />
+            </View>
           </View>
         </View>
 
-        {/* Footer */}
+        {/* ── Footer ── */}
         <View style={s.footer}>
           <Text style={s.footerText}>Shachar Ruberg Snooker Academy</Text>
           <Text style={s.footerText}>נוצר ב-{new Date().toLocaleDateString("he-IL")}</Text>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { upsertStudentFromCrm } from "@/lib/sheets/students";
+import { logWebhook } from "@/lib/sheets/webhook-log";
 
 const CrmQuery = z.object({
   first_name: z.string().min(1),
@@ -17,9 +18,11 @@ export async function GET(req: Request) {
 
   const parsed = CrmQuery.safeParse(raw);
   if (!parsed.success) {
+    void logWebhook({ route: "crm", event_type: "student_upsert", params: raw, status: "invalid", result: parsed.error.flatten() });
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
 
   const result = await upsertStudentFromCrm(parsed.data);
+  void logWebhook({ route: "crm", event_type: "student_upsert", params: raw, status: "ok", result });
   return NextResponse.json(result, { status: 200 });
 }

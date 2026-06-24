@@ -4,6 +4,7 @@ import { db } from "@/lib/db/client";
 import { upsertAttendance } from "@/lib/sheets/attendance";
 import { studentFullName } from "@/lib/sheets/schemas";
 import type { Student } from "@/lib/sheets/schemas";
+import { logWebhook } from "@/lib/sheets/webhook-log";
 
 const CrmStatus = z.enum(["confirmed", "declined", "present", "absent"]);
 
@@ -19,6 +20,7 @@ export async function GET(req: Request) {
 
   const parsed = AttendanceQuery.safeParse(raw);
   if (!parsed.success) {
+    void logWebhook({ route: "attendance", params: raw, status: "invalid", result: parsed.error.flatten() });
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
 
@@ -32,6 +34,7 @@ export async function GET(req: Request) {
     .maybeSingle();
 
   if (!sessionData) {
+    void logWebhook({ route: "attendance", event_type: status, params: raw, status: "not_found", result: { reason: "session not found", event_id } });
     return NextResponse.json({ error: "session not found" }, { status: 404 });
   }
 
@@ -42,6 +45,7 @@ export async function GET(req: Request) {
   );
 
   if (!student) {
+    void logWebhook({ route: "attendance", event_type: status, params: raw, status: "not_found", result: { reason: "student not found", name } });
     return NextResponse.json({ error: "student not found", name }, { status: 404 });
   }
 
@@ -53,5 +57,6 @@ export async function GET(req: Request) {
     marked_at: new Date().toISOString(),
   });
 
+  void logWebhook({ route: "attendance", event_type: status, params: raw, status: "ok", result: { session_id: sessionData.id, student_id: student.id } });
   return NextResponse.json({ session_id: sessionData.id, student_id: student.id }, { status: 200 });
 }

@@ -5,6 +5,7 @@ import { upsertAttendance } from "@/lib/sheets/attendance";
 import { db } from "@/lib/db/client";
 import { studentFullName } from "@/lib/sheets/schemas";
 import type { Student } from "@/lib/sheets/schemas";
+import { logWebhook } from "@/lib/sheets/webhook-log";
 
 function parseMeetingTime(raw: string): { date: string; startTime: string } | null {
   const [datePart, timePart] = raw.trim().split(" ");
@@ -34,11 +35,13 @@ const AppointmentApprovedPayload = BasePayload.extend({
 async function handleEventCreated(raw: Record<string, unknown>) {
   const parsed = BasePayload.safeParse(raw);
   if (!parsed.success) {
+    void logWebhook({ route: "training", event_type: "event_created", params: raw, status: "invalid", result: parsed.error.flatten() });
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
   const { event_id, appointment_id, meeting_time, meeting_type } = parsed.data;
   const time = parseMeetingTime(meeting_time);
   if (!time) {
+    void logWebhook({ route: "training", event_type: "event_created", params: raw, status: "invalid", result: { reason: "invalid meeting_time" } });
     return NextResponse.json({ error: "invalid meeting_time format, expected DD/MM/YYYY HH:MM" }, { status: 422 });
   }
   const result = await upsertSessionFromCrm({
@@ -51,19 +54,21 @@ async function handleEventCreated(raw: Record<string, unknown>) {
     group_name: meeting_type || undefined,
     crm_event_type: "event_created",
   });
+  void logWebhook({ route: "training", event_type: "event_created", params: raw, status: "ok", result });
   return NextResponse.json(result, { status: 200 });
 }
 
 async function handleAppointmentApproved(raw: Record<string, unknown>) {
   const parsed = AppointmentApprovedPayload.safeParse(raw);
   if (!parsed.success) {
+    void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "invalid", result: parsed.error.flatten() });
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
   const { appointment_id, first_name, last_name, phone } = parsed.data;
 
   const session = await fetchSessionByCrmAppointmentId(appointment_id);
   if (!session) {
-    console.warn(`[crm/training] session not found for appointment_id=${appointment_id}`);
+    void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "not_found", result: { reason: "session not found", appointment_id } });
     return NextResponse.json({ ok: true, warning: "session not found" }, { status: 200 });
   }
 
@@ -82,7 +87,7 @@ async function handleAppointmentApproved(raw: Record<string, unknown>) {
   }
 
   if (!student) {
-    console.warn(`[crm/training] student not found: phone=${phone}, name=${first_name} ${last_name}`);
+    void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "not_found", result: { reason: "student not found", phone, name: `${first_name} ${last_name}` } });
     return NextResponse.json({ ok: true, warning: "student not found" }, { status: 200 });
   }
 
@@ -94,14 +99,15 @@ async function handleAppointmentApproved(raw: Record<string, unknown>) {
     marked_at: new Date().toISOString(),
   });
 
+  void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "ok", result: { session_id: session.id, student_id: student.id } });
   return NextResponse.json({ ok: true, session_id: session.id, student_id: student.id });
 }
 
 async function handle(raw: Record<string, unknown>) {
-  console.log("[crm/training] received:", JSON.stringify(raw));
   const eventType = String(raw.event_type ?? "");
   if (eventType === "event_created") return handleEventCreated(raw);
   if (eventType === "appointment_approved") return handleAppointmentApproved(raw);
+  void logWebhook({ route: "training", event_type: eventType || "unknown", params: raw, status: "skipped" });
   return NextResponse.json({ ok: true, skipped: true, event_type: eventType });
 }
 
@@ -110,7 +116,6 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     return await handle(Object.fromEntries(searchParams.entries()));
   } catch (e) {
-    console.error("[crm/training] error", e);
     return NextResponse.json({ error: "internal error" }, { status: 500 });
   }
 }
@@ -127,7 +132,6 @@ export async function POST(req: Request) {
     }
     return await handle(body);
   } catch (e) {
-    console.error("[crm/training] error", e);
     return NextResponse.json({ error: "internal error" }, { status: 500 });
   }
 }

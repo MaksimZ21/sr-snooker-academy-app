@@ -25,6 +25,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/groups", label: "קבוצות", icon: "UsersRound" },
   { href: "/admin/messages", label: "פניות", icon: "MessageSquare" },
   { href: "/admin/whatsapp", label: "WhatsApp", icon: "MessageCircle" },
+  { href: "/admin/webhook-logs", label: "לוגים CRM", icon: "Activity" },
   { href: "/admin/salary", label: "פיננסים", icon: "Banknote" },
   { href: "/admin/assessments", label: "דוחות אבחון", icon: "ClipboardList" },
   { href: "/admin/guidelines", label: "שליפים למאמן", icon: "FolderOpen" },

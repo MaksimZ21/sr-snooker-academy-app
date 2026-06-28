@@ -103,10 +103,55 @@ async function handleAppointmentApproved(raw: Record<string, unknown>) {
   return NextResponse.json({ ok: true, session_id: session.id, student_id: student.id });
 }
 
+async function handleAppointmentRejected(raw: Record<string, unknown>) {
+  const parsed = AppointmentApprovedPayload.safeParse(raw);
+  if (!parsed.success) {
+    void logWebhook({ route: "training", event_type: "appointment_rejected", params: raw, status: "invalid", result: parsed.error.flatten() });
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
+  }
+  const { appointment_id, first_name, last_name, phone } = parsed.data;
+
+  const session = await fetchSessionByCrmAppointmentId(appointment_id);
+  if (!session) {
+    void logWebhook({ route: "training", event_type: "appointment_rejected", params: raw, status: "not_found", result: { reason: "session not found", appointment_id } });
+    return NextResponse.json({ ok: true, warning: "session not found" }, { status: 200 });
+  }
+
+  let student: Student | null = null;
+  if (phone) {
+    const { data } = await db.from("students").select("*").eq("phone", phone.trim()).maybeSingle();
+    if (data) student = data as Student;
+  }
+  if (!student) {
+    const fullName = [first_name, last_name].filter(Boolean).join(" ").trim().toLowerCase();
+    const { data: all } = await db.from("students").select("*");
+    student = ((all ?? []) as Student[]).find(
+      (s) => studentFullName(s).toLowerCase() === fullName,
+    ) ?? null;
+  }
+
+  if (!student) {
+    void logWebhook({ route: "training", event_type: "appointment_rejected", params: raw, status: "not_found", result: { reason: "student not found", phone, name: `${first_name} ${last_name}` } });
+    return NextResponse.json({ ok: true, warning: "student not found" }, { status: 200 });
+  }
+
+  await upsertAttendance({
+    session_id: session.id,
+    student_id: student.id,
+    status: "absent",
+    marked_by: "crm",
+    marked_at: new Date().toISOString(),
+  });
+
+  void logWebhook({ route: "training", event_type: "appointment_rejected", params: raw, status: "ok", result: { session_id: session.id, student_id: student.id } });
+  return NextResponse.json({ ok: true, session_id: session.id, student_id: student.id });
+}
+
 async function handle(raw: Record<string, unknown>) {
   const eventType = String(raw.event_type ?? "");
   if (eventType === "event_created") return handleEventCreated(raw);
   if (eventType === "appointment_approved") return handleAppointmentApproved(raw);
+  if (eventType === "appointment_rejected") return handleAppointmentRejected(raw);
   void logWebhook({ route: "training", event_type: eventType || "unknown", params: raw, status: "skipped" });
   return NextResponse.json({ ok: true, skipped: true, event_type: eventType });
 }

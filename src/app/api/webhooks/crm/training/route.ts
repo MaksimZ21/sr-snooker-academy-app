@@ -3,9 +3,24 @@ import { z } from "zod";
 import { upsertSessionFromCrm, fetchSessionByCrmAppointmentId } from "@/lib/sheets/sessions";
 import { upsertAttendance } from "@/lib/sheets/attendance";
 import { db } from "@/lib/db/client";
-import { studentFullName } from "@/lib/sheets/schemas";
 import type { Student } from "@/lib/sheets/schemas";
 import { logWebhook } from "@/lib/sheets/webhook-log";
+
+function normalizePhone(raw: string): { local: string; intl: string } {
+  const d = raw.replace(/\D/g, "");
+  const core = d.startsWith("972") ? d.slice(3) : d.startsWith("0") ? d.slice(1) : d;
+  return { local: `0${core}`, intl: `972${core}` };
+}
+
+async function findStudentByPhone(phone: string): Promise<Student | null> {
+  const { local, intl } = normalizePhone(phone);
+  const { data } = await db
+    .from("students")
+    .select("*")
+    .or(`phone.eq.${local},phone.eq.${intl}`)
+    .maybeSingle();
+  return (data as Student) ?? null;
+}
 
 function parseMeetingTime(raw: string): { date: string; startTime: string } | null {
   const [datePart, timePart] = raw.trim().split(" ");
@@ -64,7 +79,7 @@ async function handleAppointmentApproved(raw: Record<string, unknown>) {
     void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "invalid", result: parsed.error.flatten() });
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
-  const { appointment_id, first_name, last_name, phone } = parsed.data;
+  const { appointment_id, phone } = parsed.data;
 
   const session = await fetchSessionByCrmAppointmentId(appointment_id);
   if (!session) {
@@ -72,22 +87,9 @@ async function handleAppointmentApproved(raw: Record<string, unknown>) {
     return NextResponse.json({ ok: true, warning: "session not found" }, { status: 200 });
   }
 
-  // Find student by phone first, then by full name
-  let student: Student | null = null;
-  if (phone) {
-    const { data } = await db.from("students").select("*").eq("phone", phone.trim()).maybeSingle();
-    if (data) student = data as Student;
-  }
+  const student = phone ? await findStudentByPhone(phone) : null;
   if (!student) {
-    const fullName = [first_name, last_name].filter(Boolean).join(" ").trim().toLowerCase();
-    const { data: all } = await db.from("students").select("*");
-    student = ((all ?? []) as Student[]).find(
-      (s) => studentFullName(s).toLowerCase() === fullName,
-    ) ?? null;
-  }
-
-  if (!student) {
-    void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "not_found", result: { reason: "student not found", phone, name: `${first_name} ${last_name}` } });
+    void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "not_found", result: { reason: "student not found by phone", phone } });
     return NextResponse.json({ ok: true, warning: "student not found" }, { status: 200 });
   }
 
@@ -109,7 +111,7 @@ async function handleAppointmentRejected(raw: Record<string, unknown>) {
     void logWebhook({ route: "training", event_type: "appointment_rejected", params: raw, status: "invalid", result: parsed.error.flatten() });
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
-  const { appointment_id, first_name, last_name, phone } = parsed.data;
+  const { appointment_id, phone } = parsed.data;
 
   const session = await fetchSessionByCrmAppointmentId(appointment_id);
   if (!session) {
@@ -117,21 +119,9 @@ async function handleAppointmentRejected(raw: Record<string, unknown>) {
     return NextResponse.json({ ok: true, warning: "session not found" }, { status: 200 });
   }
 
-  let student: Student | null = null;
-  if (phone) {
-    const { data } = await db.from("students").select("*").eq("phone", phone.trim()).maybeSingle();
-    if (data) student = data as Student;
-  }
+  const student = phone ? await findStudentByPhone(phone) : null;
   if (!student) {
-    const fullName = [first_name, last_name].filter(Boolean).join(" ").trim().toLowerCase();
-    const { data: all } = await db.from("students").select("*");
-    student = ((all ?? []) as Student[]).find(
-      (s) => studentFullName(s).toLowerCase() === fullName,
-    ) ?? null;
-  }
-
-  if (!student) {
-    void logWebhook({ route: "training", event_type: "appointment_rejected", params: raw, status: "not_found", result: { reason: "student not found", phone, name: `${first_name} ${last_name}` } });
+    void logWebhook({ route: "training", event_type: "appointment_rejected", params: raw, status: "not_found", result: { reason: "student not found by phone", phone } });
     return NextResponse.json({ ok: true, warning: "student not found" }, { status: 200 });
   }
 

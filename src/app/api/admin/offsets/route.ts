@@ -9,6 +9,7 @@ const PostBody = z.object({
   coach_email: z.string().min(1),
   amount: z.number(),
   description: z.string().min(1),
+  month: z.string().regex(/^\d{4}-\d{2}$/),
 });
 
 const DeleteBody = z.object({
@@ -21,11 +22,11 @@ export async function POST(req: Request) {
     const user = await requireUser();
     if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
 
-    const { coach_email, amount, description } = PostBody.parse(await req.json());
+    const { coach_email, amount, description, month } = PostBody.parse(await req.json());
 
     const { data } = await db.from("coaches").select("offsets").eq("email", coach_email).single();
     const current = (data?.offsets ?? []) as OffsetEntry[];
-    const entry: OffsetEntry = { id: crypto.randomUUID(), amount, description };
+    const entry: OffsetEntry = { id: crypto.randomUUID(), amount, description, month };
 
     await db.from("coaches").update({ offsets: [...current, entry] }).eq("email", coach_email);
     revalidateTag("coaches", { expire: 0 });

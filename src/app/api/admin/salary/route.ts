@@ -20,6 +20,7 @@ export type OffsetEntry = {
   id: string;
   amount: number;
   description: string;
+  month: string; // YYYY-MM
 };
 
 export type CoachSalary = {
@@ -128,7 +129,12 @@ export async function GET(req: NextRequest) {
         a.date.localeCompare(b.date),
       );
       const amount_total = rows.reduce((s, r) => s + r.total_nis, 0);
-      const offsets = offsetsByCoach.get(email) ?? [];
+      const allOffsets = offsetsByCoach.get(email) ?? [];
+      const offsets = allOffsets.filter((o) => {
+        if (month) return o.month === month;
+        if (year)  return o.month?.startsWith(year);
+        return true;
+      });
       const offsets_total = offsets.reduce((s, o) => s + o.amount, 0);
       return {
         email,

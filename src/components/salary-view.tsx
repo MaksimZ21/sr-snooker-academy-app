@@ -242,11 +242,12 @@ function SessionsByDate({ sessions }: { sessions: SessionDetail[] }) {
 
 /* ── Offsets section ──────────────────────────────────────────── */
 
-function OffsetsSection({ coach, queryKey }: { coach: CoachSalary; queryKey: unknown[] }) {
+function OffsetsSection({ coach, queryKey, currentMonth }: { coach: CoachSalary; queryKey: unknown[]; currentMonth: string }) {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState("");
+  const [month, setMonth] = useState(currentMonth);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -258,11 +259,11 @@ function OffsetsSection({ coach, queryKey }: { coach: CoachSalary; queryKey: unk
       const r = await fetch("/api/admin/offsets", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ coach_email: coach.email, amount: num, description: desc.trim() }),
+        body: JSON.stringify({ coach_email: coach.email, amount: num, description: desc.trim(), month }),
       });
       if (!r.ok) throw new Error();
       await qc.invalidateQueries({ queryKey });
-      setDesc(""); setAmount(""); setAdding(false);
+      setDesc(""); setAmount(""); setMonth(currentMonth); setAdding(false);
       toast.success("קיזוז נוסף");
     } catch {
       toast.error("שגיאה בהוספת קיזוז");
@@ -311,6 +312,7 @@ function OffsetsSection({ coach, queryKey }: { coach: CoachSalary; queryKey: unk
       )}
       {coach.offsets.map((o) => (
         <div key={o.id} className="flex items-center gap-2 text-sm">
+          <span className="text-[10px] text-muted-foreground/50 tabular-nums shrink-0">{o.month}</span>
           <span className="flex-1 text-muted-foreground truncate">{o.description}</span>
           <span className="tabular-nums font-medium text-rose-600 shrink-0">
             -{o.amount.toLocaleString("he-IL")} ₪
@@ -342,13 +344,19 @@ function OffsetsSection({ coach, queryKey }: { coach: CoachSalary; queryKey: unk
               placeholder="סכום ₪"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="h-8 text-sm w-28 tabular-nums"
+              className="h-8 text-sm w-24 tabular-nums"
               min="0"
+            />
+            <Input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="h-8 text-sm w-32 tabular-nums"
             />
             <Button size="sm" className="h-8 text-xs flex-1" disabled={saving} onClick={addOffset}>
               {saving ? "שומר..." : "הוסף"}
             </Button>
-            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setAdding(false); setDesc(""); setAmount(""); }}>
+            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setAdding(false); setDesc(""); setAmount(""); setMonth(currentMonth); }}>
               ביטול
             </Button>
           </div>
@@ -375,11 +383,12 @@ function OffsetsSection({ coach, queryKey }: { coach: CoachSalary; queryKey: unk
 
 /* ── Coach card ───────────────────────────────────────────────── */
 
-function CoachRow({ coach, nameMap, rank, queryKey }: {
+function CoachRow({ coach, nameMap, rank, queryKey, currentMonth }: {
   coach: CoachSalary;
   nameMap: Record<string, string>;
   rank: number;
   queryKey: unknown[];
+  currentMonth: string;
 }) {
   const [open, setOpen] = useState(false);
   const name = nameMap[coach.email] ?? coach.email;
@@ -455,7 +464,7 @@ function CoachRow({ coach, nameMap, rank, queryKey }: {
           )}
 
           {/* Offsets */}
-          <OffsetsSection coach={coach} queryKey={queryKey} />
+          <OffsetsSection coach={coach} queryKey={queryKey} currentMonth={currentMonth} />
         </div>
       )}
     </div>
@@ -629,7 +638,14 @@ export function SalaryView() {
       ) : (
         <div className="flex flex-col gap-2">
           {sorted.map((coach, i) => (
-            <CoachRow key={coach.email} coach={coach} nameMap={nameMap} rank={i + 1} queryKey={["salary", mode, year, month]} />
+            <CoachRow
+              key={coach.email}
+              coach={coach}
+              nameMap={nameMap}
+              rank={i + 1}
+              queryKey={["salary", mode, year, month]}
+              currentMonth={mode === "month" ? `${year}-${String(month).padStart(2, "0")}` : `${year}-${String(new Date().getMonth() + 1).padStart(2, "0")}`}
+            />
           ))}
         </div>
       )}

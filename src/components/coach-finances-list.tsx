@@ -3,7 +3,8 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { CalendarX, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { CalendarX, ChevronLeft, ChevronRight, Check, Minus } from "lucide-react";
+import type { OffsetEntry } from "@/app/api/admin/salary/route";
 import { cn } from "@/lib/utils";
 import { dayLabelHe } from "@/lib/date";
 import { TRAINING_TYPE_LABEL } from "@/lib/training-type";
@@ -200,6 +201,36 @@ function MonthGroupHeader({ monthKey, sessions }: { monthKey: string; sessions: 
   );
 }
 
+/* ── Offsets bar (read-only for coach) ───────────────────────── */
+
+function OffsetsBar({ offsets }: { offsets: OffsetEntry[] }) {
+  if (offsets.length === 0) return null;
+  const total = offsets.reduce((s, o) => s + o.amount, 0);
+  return (
+    <div className="rounded-xl border border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/20 px-3 py-2.5 flex flex-col gap-1.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1 text-rose-700 dark:text-rose-400">
+          <Minus size={11} />
+          <span className="text-[10px] font-medium">קיזוזים</span>
+        </div>
+        <span className="text-sm font-bold tabular-nums text-rose-800 dark:text-rose-300">
+          -{total.toLocaleString("he-IL")} ₪
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        {offsets.map((o) => (
+          <div key={o.id} className="flex items-center justify-between text-[11px]">
+            <span className="text-rose-700/80 dark:text-rose-400/80 truncate">{o.description}</span>
+            <span className="tabular-nums text-rose-600 dark:text-rose-400 shrink-0 mr-2">
+              -{o.amount.toLocaleString("he-IL")} ₪
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Summary bar ─────────────────────────────────────────────── */
 
 function SummaryBar({ sessions }: { sessions: Session[] }) {
@@ -294,6 +325,17 @@ export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
     staleTime: 30_000,
   });
 
+  const { data: offsetsData } = useQuery({
+    queryKey: ["coach:offsets"],
+    queryFn: async () => {
+      const r = await fetch("/api/coach/offsets");
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as { offsets: OffsetEntry[] };
+    },
+    staleTime: 60_000,
+    enabled: !coachEmail, // only fetch for the logged-in coach
+  });
+
   const { mutate: toggle, variables: toggleVars, isPending: isToggling } = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "paid" | "pending" }) => {
       const r = await fetch(`/api/sessions/${id}/payment`, {
@@ -339,6 +381,14 @@ export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
   const filtered  = useMemo(() => payFilter === "all" ? bySrc : bySrc.filter((s) => payStatus(s) === payFilter), [bySrc, payFilter]);
 
   const sources   = useMemo(() => [...new Set((data?.sessions ?? []).map((s) => s.source).filter(Boolean))], [data]);
+
+  const filteredOffsets = useMemo(() => {
+    const all = offsetsData?.offsets ?? [];
+    if (mode === "all") return all;
+    const mm = String(month).padStart(2, "0");
+    if (mode === "month") return all.filter((o) => o.month === `${year}-${mm}`);
+    return all.filter((o) => o.month?.startsWith(String(year)));
+  }, [offsetsData, mode, year, month]);
   const groups      = useMemo(() => mode === "month" ? groupByDate(filtered) : null,            [filtered, mode]);
   const monthGroups = useMemo(() => mode !== "month" ? groupByMonthKey(filtered) : null,        [filtered, mode]);
 
@@ -423,6 +473,9 @@ export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
 
       {/* Summary: paid vs pending */}
       <SummaryBar sessions={bySrc} />
+
+      {/* Offsets (read-only) */}
+      <OffsetsBar offsets={filteredOffsets} />
 
       {/* Filters */}
       <div className="flex flex-col gap-2 bg-muted/30 rounded-xl px-3 py-2.5">

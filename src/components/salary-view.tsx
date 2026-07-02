@@ -1,17 +1,19 @@
 "use client";
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Banknote, ChevronRight, ChevronLeft, ChevronDown, ChevronUp,
-  TrendingUp, TrendingDown, CalendarDays, Users, Download,
+  TrendingUp, TrendingDown, CalendarDays, Users, Download, Minus, Plus, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { dayLabelHe } from "@/lib/date";
-import type { SalaryResponse, CoachSalary, SessionDetail } from "@/app/api/admin/salary/route";
+import { toast } from "sonner";
+import type { SalaryResponse, CoachSalary, SessionDetail, OffsetEntry } from "@/app/api/admin/salary/route";
 import type { TrendResponse } from "@/app/api/admin/salary/trend/route";
 
 const SalaryTrendChart      = dynamic(() => import("@/components/salary-charts").then((m) => m.SalaryTrendChart),      { ssr: false });
@@ -238,12 +240,146 @@ function SessionsByDate({ sessions }: { sessions: SessionDetail[] }) {
   );
 }
 
+/* ── Offsets section ──────────────────────────────────────────── */
+
+function OffsetsSection({ coach, queryKey }: { coach: CoachSalary; queryKey: unknown[] }) {
+  const qc = useQueryClient();
+  const [adding, setAdding] = useState(false);
+  const [desc, setDesc] = useState("");
+  const [amount, setAmount] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function addOffset() {
+    const num = parseFloat(amount);
+    if (!desc.trim() || isNaN(num) || num <= 0) return;
+    setSaving(true);
+    try {
+      const r = await fetch("/api/admin/offsets", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ coach_email: coach.email, amount: num, description: desc.trim() }),
+      });
+      if (!r.ok) throw new Error();
+      await qc.invalidateQueries({ queryKey });
+      setDesc(""); setAmount(""); setAdding(false);
+      toast.success("קיזוז נוסף");
+    } catch {
+      toast.error("שגיאה בהוספת קיזוז");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeOffset(id: string) {
+    setDeletingId(id);
+    try {
+      const r = await fetch("/api/admin/offsets", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ coach_email: coach.email, id }),
+      });
+      if (!r.ok) throw new Error();
+      await qc.invalidateQueries({ queryKey });
+      toast.success("קיזוז הוסר");
+    } catch {
+      toast.error("שגיאה בהסרת קיזוז");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  return (
+    <div className="border-t border-border/40 px-4 py-3 flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+          <Minus size={12} /> קיזוזים
+        </span>
+        {!adding && (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Plus size={12} /> הוסף
+          </button>
+        )}
+      </div>
+
+      {/* Existing offsets */}
+      {coach.offsets.length === 0 && !adding && (
+        <p className="text-xs text-muted-foreground/60 text-center py-1">אין קיזוזים</p>
+      )}
+      {coach.offsets.map((o) => (
+        <div key={o.id} className="flex items-center gap-2 text-sm">
+          <span className="flex-1 text-muted-foreground truncate">{o.description}</span>
+          <span className="tabular-nums font-medium text-rose-600 shrink-0">
+            -{o.amount.toLocaleString("he-IL")} ₪
+          </span>
+          <button
+            onClick={() => removeOffset(o.id)}
+            disabled={deletingId === o.id}
+            className="text-muted-foreground/40 hover:text-rose-500 transition-colors disabled:opacity-30"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      ))}
+
+      {/* Add form */}
+      {adding && (
+        <div className="flex flex-col gap-2 pt-1">
+          <Input
+            autoFocus
+            placeholder="תיאור (לדוג׳: החזר על ציוד)"
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            className="h-8 text-sm"
+            dir="rtl"
+          />
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              placeholder="סכום ₪"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="h-8 text-sm w-28 tabular-nums"
+              min="0"
+            />
+            <Button size="sm" className="h-8 text-xs flex-1" disabled={saving} onClick={addOffset}>
+              {saving ? "שומר..." : "הוסף"}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setAdding(false); setDesc(""); setAmount(""); }}>
+              ביטול
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Summary row */}
+      {(coach.offsets.length > 0 || coach.amount_total > 0) && (
+        <div className="flex items-center justify-between pt-2 border-t border-border/30 mt-1">
+          <span className="text-xs text-muted-foreground">
+            גרוס {coach.amount_total.toLocaleString("he-IL")} ₪
+            {coach.offsets_total > 0 && (
+              <> · קיזוזים -{coach.offsets_total.toLocaleString("he-IL")} ₪</>
+            )}
+          </span>
+          <span className="text-sm font-bold tabular-nums">
+            {coach.net_total.toLocaleString("he-IL")} ₪
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Coach card ───────────────────────────────────────────────── */
 
-function CoachRow({ coach, nameMap, rank }: {
+function CoachRow({ coach, nameMap, rank, queryKey }: {
   coach: CoachSalary;
   nameMap: Record<string, string>;
   rank: number;
+  queryKey: unknown[];
 }) {
   const [open, setOpen] = useState(false);
   const name = nameMap[coach.email] ?? coach.email;
@@ -317,6 +453,9 @@ function CoachRow({ coach, nameMap, rank }: {
           ) : (
             <SessionsByDate sessions={coach.sessions} />
           )}
+
+          {/* Offsets */}
+          <OffsetsSection coach={coach} queryKey={queryKey} />
         </div>
       )}
     </div>
@@ -490,7 +629,7 @@ export function SalaryView() {
       ) : (
         <div className="flex flex-col gap-2">
           {sorted.map((coach, i) => (
-            <CoachRow key={coach.email} coach={coach} nameMap={nameMap} rank={i + 1} />
+            <CoachRow key={coach.email} coach={coach} nameMap={nameMap} rank={i + 1} queryKey={["salary", mode, year, month]} />
           ))}
         </div>
       )}

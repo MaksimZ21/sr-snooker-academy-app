@@ -16,12 +16,21 @@ export type SessionDetail = {
   price_nis: number;
 };
 
+export type OffsetEntry = {
+  id: string;
+  amount: number;
+  description: string;
+};
+
 export type CoachSalary = {
   email: string;
   rows: SalaryRow[];
   sessions: SessionDetail[];
   sessions_total: number;
   amount_total: number;
+  offsets: OffsetEntry[];
+  offsets_total: number;
+  net_total: number;
 };
 
 export type SalaryResponse = {
@@ -42,7 +51,7 @@ export async function GET(req: NextRequest) {
     const month = req.nextUrl.searchParams.get("month"); // YYYY-MM
     const year  = req.nextUrl.searchParams.get("year");  // YYYY
 
-    let query = db
+    let sessionQuery = db
       .from("sessions")
       .select("id, coach_email, source, price_nis, training_type, date")
       .eq("status", "completed")
@@ -54,15 +63,23 @@ export async function GET(req: NextRequest) {
       const [y, m] = month.split("-").map(Number);
       const start = `${month}-01`;
       const nextMonth = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
-      query = query.gte("date", start).lt("date", nextMonth);
+      sessionQuery = sessionQuery.gte("date", start).lt("date", nextMonth);
       periodLabel = month;
     } else if (year && /^\d{4}$/.test(year)) {
-      query = query.gte("date", `${year}-01-01`).lt("date", `${Number(year) + 1}-01-01`);
+      sessionQuery = sessionQuery.gte("date", `${year}-01-01`).lt("date", `${Number(year) + 1}-01-01`);
       periodLabel = year;
     }
 
-    const { data, error } = await query;
+    const [{ data, error }, { data: coachRows }] = await Promise.all([
+      sessionQuery,
+      db.from("coaches").select("email, offsets"),
+    ]);
     if (error) throw error;
+
+    const offsetsByCoach = new Map<string, OffsetEntry[]>();
+    for (const c of coachRows ?? []) {
+      offsetsByCoach.set(c.email as string, (c.offsets ?? []) as OffsetEntry[]);
+    }
 
     // Aggregate by coach + source
     const map = new Map<string, Map<string, { count: number; total: number }>>();
@@ -110,12 +127,18 @@ export async function GET(req: NextRequest) {
       const sessions = (sessionsPerCoach.get(email) ?? []).sort((a, b) =>
         a.date.localeCompare(b.date),
       );
+      const amount_total = rows.reduce((s, r) => s + r.total_nis, 0);
+      const offsets = offsetsByCoach.get(email) ?? [];
+      const offsets_total = offsets.reduce((s, o) => s + o.amount, 0);
       return {
         email,
         rows,
         sessions,
         sessions_total: rows.reduce((s, r) => s + r.count, 0),
-        amount_total:   rows.reduce((s, r) => s + r.total_nis, 0),
+        amount_total,
+        offsets,
+        offsets_total,
+        net_total: amount_total - offsets_total,
       };
     });
 

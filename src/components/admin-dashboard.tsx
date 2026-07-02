@@ -18,11 +18,12 @@ import {
   MessageSquare,
   Send,
   Loader2,
+  UserX,
 } from "lucide-react";
 import { formatHebrewDate, dayLabelHe } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
-import type { AdminStats } from "@/app/api/admin/stats/route";
+import type { AdminStats, AbsentStudent } from "@/app/api/admin/stats/route";
 import type { Session } from "@/lib/sheets/schemas";
 
 const AdminChartsRow = dynamic(
@@ -197,7 +198,7 @@ export function AdminDashboard() {
         </Card>
       )}
 
-      {/* Alerts */}
+      {/* Alerts: no coach */}
       {(isLoading || (data?.alerts.noCoach.length ?? 0) > 0) && (
         <Card className="border-amber-200 dark:border-amber-800">
           <CardHeader className="pb-3">
@@ -211,6 +212,25 @@ export function AdminDashboard() {
               <Skeleton className="h-12 w-full rounded-lg" />
             ) : (
               data!.alerts.noCoach.map((s) => <AlertRow key={s.id} session={s} />)
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Alerts: absent students (3 weeks) */}
+      {(isLoading || (data?.alerts.absentStudents.length ?? 0) > 0) && (
+        <Card className="border-rose-200 dark:border-rose-800">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <UserX size={14} className="text-rose-500" />
+              לא הגיעו 3 שבועות
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 flex flex-col gap-1.5">
+            {isLoading ? (
+              <Skeleton className="h-12 w-full rounded-lg" />
+            ) : (
+              data!.alerts.absentStudents.map((s) => <AbsentStudentRow key={s.id} student={s} />)
             )}
           </CardContent>
         </Card>
@@ -320,6 +340,21 @@ function UpcomingList({ sessions, coachMap }: { sessions: Session[]; coachMap: R
         </div>
       ))}
     </div>
+  );
+}
+
+function AbsentStudentRow({ student }: { student: AbsentStudent }) {
+  return (
+    <Link
+      href={`/admin/students?highlight=${student.id}`}
+      className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100/60 dark:hover:bg-rose-950/40 transition-colors"
+    >
+      <div className="flex items-center gap-2">
+        <UserX size={13} className="text-rose-400 shrink-0" />
+        <span className="text-sm">{student.name}</span>
+      </div>
+      <ChevronLeft size={14} className="text-muted-foreground shrink-0" />
+    </Link>
   );
 }
 

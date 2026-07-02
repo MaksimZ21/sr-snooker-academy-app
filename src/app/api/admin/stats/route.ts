@@ -13,6 +13,8 @@ import type { Session } from "@/lib/sheets/schemas";
 export type DayBar = { date: string; day: string; count: number };
 export type TypeSlice = { type: string; label: string; count: number };
 
+export type AbsentStudent = { id: string; name: string };
+
 export type AdminStats = {
   today: string;
   students: { total: number; active: number };
@@ -22,7 +24,7 @@ export type AdminStats = {
   todaySessions: Session[];
   upcomingSessions: Session[];
   coachMap: Record<string, string>;
-  alerts: { noCoach: Session[] };
+  alerts: { noCoach: Session[]; absentStudents: AbsentStudent[] };
   sessionsByDay: DayBar[];
   sessionsByType: TypeSlice[];
   newMessages: number;
@@ -33,6 +35,8 @@ const fetchAdminStatsData = unstable_cache(
     const { startIso, endIso } = weekRangeFor(today);
     const nextWeekEnd = format(addDays(parseISO(today), 7), "yyyy-MM-dd");
 
+    const past21 = format(addDays(parseISO(today), -21), "yyyy-MM-dd");
+
     const [
       students,
       todayRows,
@@ -42,6 +46,7 @@ const fetchAdminStatsData = unstable_cache(
       groups,
       coachRows,
       newMessages,
+      recentSessionRows,
     ] = await Promise.all([
       fetchStudents(),
       db.from("sessions").select("*").eq("date", today).order("start_time"),
@@ -51,11 +56,34 @@ const fetchAdminStatsData = unstable_cache(
       fetchGroupsAll(),
       db.from("coaches").select("email, name, active"),
       countNewContactRequests(),
+      db.from("sessions").select("id, student_ids").gte("date", past21).lte("date", today).neq("status", "cancelled"),
     ]);
 
     const coachMap: Record<string, string> = {};
     for (const c of (coachRows.data ?? []) as { email: string; name: string }[]) {
       coachMap[c.email] = c.name;
+    }
+
+    // Absent students: scheduled in last 21 days but never present/late
+    const recentSessions = (recentSessionRows.data ?? []) as { id: string; student_ids: string[] }[];
+    const scheduledIds = new Set<string>();
+    const recentSessionIds: string[] = [];
+    for (const s of recentSessions) {
+      recentSessionIds.push(s.id);
+      for (const sid of s.student_ids ?? []) scheduledIds.add(sid);
+    }
+    let absentStudents: AbsentStudent[] = [];
+    if (recentSessionIds.length > 0 && scheduledIds.size > 0) {
+      const { data: presentRows } = await db
+        .from("attendance")
+        .select("student_id")
+        .in("session_id", recentSessionIds)
+        .in("status", ["present", "late"]);
+      const presentIds = new Set((presentRows ?? []).map((r) => r.student_id as string));
+      const absentIds = [...scheduledIds].filter((id) => !presentIds.has(id));
+      absentStudents = students
+        .filter((s) => absentIds.includes(s.id) && s.active)
+        .map((s) => ({ id: s.id, name: [s.first_name, s.last_name].filter(Boolean).join(" ") }));
     }
 
     const todaySessions = (todayRows.data ?? []) as Session[];
@@ -95,7 +123,7 @@ const fetchAdminStatsData = unstable_cache(
       todaySessions,
       upcomingSessions,
       coachMap,
-      alerts: { noCoach: noCoachSessions },
+      alerts: { noCoach: noCoachSessions, absentStudents },
       sessionsByDay,
       sessionsByType,
       newMessages,

@@ -34,7 +34,7 @@ export async function POST(req: Request) {
   const [{ data: coaches }, { data: sessions }] = await Promise.all([
     db.from("coaches").select("email, name, phone, offsets").eq("active", true),
     db.from("sessions")
-      .select("coach_email, price_nis, student_ids")
+      .select("coach_email, price_nis")
       .eq("status", "completed")
       .gte("date", start)
       .lt("date", end),
@@ -62,10 +62,6 @@ export async function POST(req: Request) {
     }
 
     const gross = coachSessions.reduce((s, r) => s + ((r.price_nis as number) ?? 0), 0);
-    const uniqueStudents = new Set(
-      coachSessions.flatMap((s) => (s.student_ids as string[]) ?? []),
-    );
-
     const allOffsets = (coach.offsets ?? []) as OffsetEntry[];
     const monthOffsets = allOffsets.filter((o) => o.month === monthKey);
     const offsetsTotal = monthOffsets.reduce((s, o) => s + o.amount, 0);
@@ -78,7 +74,6 @@ export async function POST(req: Request) {
       `הנה סיכום ${label}:`,
       ``,
       `🗓 אימונים: ${coachSessions.length}`,
-      `👥 תלמידים: ${uniqueStudents.size}`,
       `💰 הכנסה גולמית: ${gross.toLocaleString("he-IL")} ₪`,
     ];
 

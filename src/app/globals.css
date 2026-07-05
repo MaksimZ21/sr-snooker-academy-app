@@ -195,6 +195,21 @@
   to   { background-position:  200% 0; }
 }
 
+@keyframes drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%       { transform: translate(-18px, 14px) scale(1.08); }
+  70%       { transform: translate(10px, -8px) scale(0.94); }
+}
+@keyframes drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  35%       { transform: translate(14px, -12px) scale(0.9); }
+  65%       { transform: translate(-10px, 16px) scale(1.1); }
+}
+@keyframes drift-3 {
+  0%, 100% { transform: translate(0, 0); }
+  50%       { transform: translate(-10px, 8px); }
+}
+
 @keyframes glow-pulse {
   0%, 100% { box-shadow: 0 0 16px oklch(0.72 0.22 145 / 0.25); }
   50%       { box-shadow: 0 0 28px oklch(0.72 0.22 145 / 0.45); }
@@ -278,6 +293,15 @@
   /* Dot status indicator */
   .status-dot {
     animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  /* Session header orb animations */
+  .animate-drift-1 { animation: drift-1 14s ease-in-out infinite; }
+  .animate-drift-2 { animation: drift-2 19s ease-in-out infinite 5s; }
+  .animate-drift-3 { animation: drift-3 11s ease-in-out infinite 2.5s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-drift-1, .animate-drift-2, .animate-drift-3 { animation: none; }
   }
 
   /* Scoreboard numbers — precise, tabular */

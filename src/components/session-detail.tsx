@@ -10,8 +10,6 @@ import { toast } from "sonner";
 import type { Session, Student, Attendance, Note } from "@/lib/sheets/schemas";
 import { AttendancePanel } from "./attendance-panel";
 import { NotesPanel } from "./notes-panel";
-import { SyllabusPanel } from "./syllabus-panel";
-import { GuidelinesPanel } from "./guidelines-panel";
 import { EditSessionDialog } from "./forms/edit-session-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatHebrewDate } from "@/lib/date";
@@ -108,60 +106,72 @@ export function SessionDetail({
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="bg-brand-gradient px-5 pt-4 pb-5 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/5 blur-2xl" />
-          <div className="absolute -bottom-6 left-4 w-28 h-28 rounded-full bg-white/5 blur-xl" />
+      <div className="bg-brand-gradient px-5 pt-4 pb-6 relative overflow-hidden">
+        {/* Animated background orbs */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* White drift — large, slow */}
+          <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/6 blur-3xl animate-drift-1" />
+          {/* Amber glow — snooker yellow ball reference */}
+          <div
+            className="absolute -bottom-16 -left-8 w-56 h-56 rounded-full blur-3xl animate-drift-2"
+            style={{ background: "radial-gradient(circle, oklch(0.85 0.17 80 / 0.14) 0%, transparent 70%)" }}
+          />
+          {/* Soft mid accent */}
+          <div className="absolute top-1/2 right-1/2 w-24 h-24 rounded-full bg-white/4 blur-2xl animate-drift-3" />
         </div>
 
         {/* Top row: date + actions */}
-        <div className="flex items-center justify-between relative mb-3">
-          <p className="text-white/50 text-xs">{formatHebrewDate(session.date)}</p>
+        <div className="flex items-center justify-between relative mb-5">
+          <p className="text-white/45 text-xs tracking-wide">{formatHebrewDate(session.date)}</p>
           {isAdmin && (
             <div className="flex items-center gap-1">
               <EditSessionDialog session={session} />
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/15"
+                className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/12 rounded-lg"
                 onClick={() => setConfirmDelete(true)}
               >
-                <Trash2 size={15} />
+                <Trash2 size={14} />
               </Button>
             </div>
           )}
         </div>
 
-        {/* Time range */}
-        <div className={cn("flex items-baseline gap-2 relative mb-3", cancelled && "opacity-40 line-through")}>
-          <span className="text-5xl font-bold tabular-nums text-white leading-none">
+        {/* Times — equal weight, scoreboard */}
+        <div className={cn("flex items-center gap-3 relative mb-4", cancelled && "opacity-35")}>
+          <span className="text-5xl font-bold tabular-nums text-white leading-none tracking-tight scoreboard-num">
             {session.start_time}
           </span>
-          {session.end_time && (
-            <>
-              <span className="text-white/40 text-2xl font-light">—</span>
-              <span className="text-2xl font-semibold tabular-nums text-white/75 leading-none">
-                {session.end_time}
-              </span>
-            </>
+          <span className="text-white/25 text-2xl font-extralight select-none">—</span>
+          <span className={cn(
+            "text-5xl font-bold tabular-nums leading-none tracking-tight scoreboard-num",
+            session.end_time ? "text-white" : "text-white/30",
+          )}>
+            {session.end_time || "--:--"}
+          </span>
+          {cancelled && (
+            <span className="text-white/60 text-sm font-medium mr-1">בוטל</span>
           )}
         </div>
 
         {/* Info strip */}
-        <div className="flex items-center gap-3 flex-wrap relative">
-          <Badge className={cn("border text-xs font-medium", className)} variant="outline">
+        <div className="flex items-center gap-2.5 flex-wrap relative">
+          <Badge
+            className={cn("border text-xs font-medium px-2.5 py-0.5", className)}
+            variant="outline"
+          >
             {label}
           </Badge>
-          {cancelled && <Badge variant="destructive">בוטל</Badge>}
           {coachName && (
-            <span className="flex items-center gap-1 text-white/70 text-xs">
-              <User size={11} />
+            <span className="flex items-center gap-1.5 text-white/65 text-xs">
+              <User size={11} className="shrink-0" />
               {coachName}
             </span>
           )}
-          <span className="flex items-center gap-1 text-white/55 text-xs">
-            <Users size={11} />
-            {session.student_ids.length} מתאמנים
+          <span className="flex items-center gap-1.5 text-white/45 text-xs">
+            <Users size={11} className="shrink-0" />
+            {session.student_ids.length}
           </span>
         </div>
       </div>
@@ -193,11 +203,9 @@ export function SessionDetail({
       {/* Tabs */}
       <div className="p-4 flex flex-col gap-4">
         <Tabs defaultValue="attendance">
-          <TabsList className="grid grid-cols-4">
+          <TabsList className="grid grid-cols-2">
             <TabsTrigger value="attendance">נוכחות</TabsTrigger>
             <TabsTrigger value="notes">הערות</TabsTrigger>
-            <TabsTrigger value="syllabus">סילבוס</TabsTrigger>
-            <TabsTrigger value="guidelines">הנחיות</TabsTrigger>
           </TabsList>
           <TabsContent value="attendance">
             <AttendancePanel
@@ -214,12 +222,6 @@ export function SessionDetail({
               notesByStudent={notesByStudent}
               readOnly={!canEditNotes}
             />
-          </TabsContent>
-          <TabsContent value="syllabus">
-            <SyllabusPanel sessionId={sessionId} />
-          </TabsContent>
-          <TabsContent value="guidelines">
-            <GuidelinesPanel trainingType={session.training_type} />
           </TabsContent>
         </Tabs>
       </div>

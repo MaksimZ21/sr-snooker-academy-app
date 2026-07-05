@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Send } from "lucide-react";
 import type { Note, Student } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
 
@@ -29,7 +30,7 @@ export function NotesPanel({
   readOnly: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-3 mt-4">
+    <div className="flex flex-col gap-2.5 mt-3">
       {students.map((s) => (
         <StudentNotes
           key={s.id}
@@ -55,7 +56,9 @@ function StudentNotes({
   readOnly: boolean;
 }) {
   const [text, setText] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const qc = useQueryClient();
+
   const mut = useMutation({
     mutationFn: async (t: string) => {
       const r = await fetch(`/api/sessions/${sessionId}/notes`, {
@@ -68,67 +71,83 @@ function StudentNotes({
     },
     onSuccess: () => {
       setText("");
+      textareaRef.current?.focus();
       qc.invalidateQueries({ queryKey: ["session", sessionId] });
     },
     onError: () => toast.error("שגיאה בשמירת ההערה"),
   });
 
+  function submit() {
+    if (text.trim() && !mut.isPending) mut.mutate(text.trim());
+  }
+
+  const name = studentFullName(student);
+
   return (
     <div className="border border-border/60 rounded-xl overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3 bg-muted/40 border-b border-border/60">
-        <div className="w-8 h-8 rounded-full bg-primary/12 text-primary flex items-center justify-center text-xs font-bold shrink-0 select-none">
-          {getInitials(studentFullName(student))}
+      {/* Student header */}
+      <div className="flex items-center gap-2.5 px-3 py-2.5 bg-muted/30">
+        <div className="w-7 h-7 rounded-full bg-primary/12 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 select-none">
+          {getInitials(name)}
         </div>
-        <div className="flex-1 flex items-baseline justify-between gap-2 min-w-0">
-          <h3 className="font-semibold text-sm truncate">{studentFullName(student)}</h3>
-          {notes.length > 0 && (
-            <span className="text-xs text-muted-foreground shrink-0">{notes.length} הערות</span>
-          )}
-        </div>
+        <span className="font-semibold text-sm flex-1 truncate">{name}</span>
+        {notes.length > 0 && (
+          <span className="text-xs text-muted-foreground/70 tabular-nums shrink-0">
+            {notes.length}
+          </span>
+        )}
       </div>
 
-      {notes.length > 0 && (
-        <div className="flex flex-col gap-2 p-3">
-          {notes.map((n) => (
-            <div
-              key={n.id}
-              className="bg-muted/50 border border-border/40 rounded-lg px-3 py-2.5"
-            >
-              <p className="text-sm leading-relaxed">{n.text}</p>
-              <p className="text-xs text-muted-foreground mt-1.5">
-                {new Date(n.created_at).toLocaleString("he-IL")} · {n.coach_email}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {!readOnly && (
+      {/* Existing notes */}
+      {notes.map((n, i) => (
         <div
+          key={n.id}
           className={cn(
-            "p-3 bg-background",
-            notes.length > 0 && "border-t border-border/60",
+            "px-3 py-2.5 border-t border-border/40",
+            i % 2 === 0 ? "bg-background" : "bg-muted/20",
           )}
         >
+          <p className="text-sm leading-relaxed">{n.text}</p>
+          <p className="text-[11px] text-muted-foreground/55 mt-1">
+            {new Date(n.created_at).toLocaleString("he-IL", {
+              day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit",
+            })}
+          </p>
+        </div>
+      ))}
+
+      {/* Chat-style input */}
+      {!readOnly && (
+        <div className="flex items-end gap-2 p-2 border-t border-border/40 bg-background/60">
           <Textarea
+            ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="הוסף הערה..."
-            className="min-h-[72px] resize-none text-sm"
+            onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            placeholder="הערה... (Ctrl+Enter לשמירה)"
+            className="flex-1 min-h-[38px] max-h-28 resize-none text-sm py-2 leading-snug border-border/50"
+            rows={1}
           />
           <Button
+            size="icon"
+            className="h-9 w-9 shrink-0"
             disabled={!text.trim() || mut.isPending}
-            onClick={() => mut.mutate(text.trim())}
-            size="sm"
-            className="mt-2"
+            onClick={submit}
           >
-            שמור
+            <Send size={14} />
           </Button>
         </div>
       )}
 
       {readOnly && notes.length === 0 && (
-        <div className="p-4 text-center text-xs text-muted-foreground/60">אין הערות</div>
+        <div className="px-3 py-3 text-center text-xs text-muted-foreground/50 border-t border-border/40">
+          אין הערות
+        </div>
       )}
     </div>
   );

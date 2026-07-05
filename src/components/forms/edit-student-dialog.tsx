@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import type { Student } from "@/lib/sheets/schemas";
+import type { College } from "@/lib/sheets/colleges";
 
 export function EditStudentDialog({
   student,
@@ -29,12 +30,22 @@ export function EditStudentDialog({
   const [lastName, setLastName] = useState(student.last_name);
   const [phone, setPhone] = useState(student.phone);
   const [email, setEmail] = useState(student.email);
-  const [collegeName, setCollegeName] = useState(student.college_name);
+  const [collegeName, setCollegeName] = useState(student.college_name || "__none__");
   const [subscriptionType, setSubscriptionType] = useState(student.subscription_type);
   const [notes, setNotes] = useState(student.general_notes);
   const [birthDate, setBirthDate] = useState(student.birth_date ?? "");
   const [active, setActive] = useState(student.active);
   const qc = useQueryClient();
+
+  const collegesQ = useQuery({
+    queryKey: ["colleges"],
+    queryFn: async () => {
+      const r = await fetch("/api/colleges");
+      if (!r.ok) throw new Error("failed");
+      return (await r.json()) as { colleges: College[] };
+    },
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
     if (open) {
@@ -42,7 +53,7 @@ export function EditStudentDialog({
       setLastName(student.last_name);
       setPhone(student.phone);
       setEmail(student.email);
-      setCollegeName(student.college_name);
+      setCollegeName(student.college_name || "__none__");
       setSubscriptionType(student.subscription_type);
       setNotes(student.general_notes);
       setBirthDate(student.birth_date ?? "");
@@ -60,7 +71,7 @@ export function EditStudentDialog({
           last_name: lastName.trim(),
           phone: phone.trim(),
           email: email.trim(),
-          college_name: collegeName.trim(),
+          college_name: collegeName === "__none__" ? "" : collegeName,
           subscription_type: subscriptionType.trim(),
           general_notes: notes.trim(),
           birth_date: birthDate || null,
@@ -103,8 +114,18 @@ export function EditStudentDialog({
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div>
-            <Label>שם מכללה</Label>
-            <Input value={collegeName} onChange={(e) => setCollegeName(e.target.value)} />
+            <Label>מכללה</Label>
+            <Select value={collegeName} onValueChange={setCollegeName}>
+              <SelectTrigger>
+                <SelectValue placeholder="בחר מכללה..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">ללא מכללה</SelectItem>
+                {(collegesQ.data?.colleges ?? []).map((c) => (
+                  <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label>סוג מנוי</Label>

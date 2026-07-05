@@ -25,6 +25,7 @@ import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 import type { AdminStats, AbsentStudent } from "@/app/api/admin/stats/route";
 import type { Session } from "@/lib/sheets/schemas";
+import { CollegesCard } from "@/components/colleges-card";
 
 const AdminChartsRow = dynamic(
   () => import("@/components/admin-charts").then((m) => m.AdminChartsRow),
@@ -216,6 +217,9 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* Colleges management */}
+      <CollegesCard />
 
       {/* Alerts: absent students (3 weeks) */}
       {(isLoading || (data?.alerts.absentStudents.length ?? 0) > 0) && (

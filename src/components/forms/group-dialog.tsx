@@ -31,10 +31,12 @@ function GroupForm({
   const [name, setName] = useState(group?.name ?? "");
   const [collegeName, setCollegeName] = useState(group?.college_name ?? "");
   const [coachEmail, setCoachEmail] = useState(group?.coach_email ?? "");
-  const [startTime, setStartTime] = useState(group?.start_time ?? "");
+  const [startHour, setStartHour] = useState(() => group?.start_time?.split(":")[0] ?? "");
+  const [startMin, setStartMin] = useState(() => group?.start_time?.split(":")[1] ?? "00");
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(group?.student_ids ?? []),
   );
+  const startTime = startHour ? `${startHour}:${startMin}` : "";
   const qc = useQueryClient();
 
   const studentsQ = useQuery({
@@ -123,31 +125,51 @@ function GroupForm({
           </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label>מאמן</Label>
-          <Select
-            value={coachEmail || "__none__"}
-            onValueChange={(v) => setCoachEmail(!v || v === "__none__" ? "" : v)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="בחר מאמן..." />
+      <div>
+        <Label>מאמן</Label>
+        <Select
+          value={coachEmail || "__none__"}
+          onValueChange={(v) => setCoachEmail(!v || v === "__none__" ? "" : v)}
+        >
+          <SelectTrigger>
+            <SelectValue>
+              {coachEmail
+                ? (activeCoaches.find((c) => c.email === coachEmail)?.name ?? coachEmail)
+                : "ללא מאמן"}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">ללא מאמן</SelectItem>
+            {activeCoaches.map((c) => (
+              <SelectItem key={c.email} value={c.email}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>שעת התחלה קבועה</Label>
+        <div className="flex gap-2">
+          <Select value={startHour} onValueChange={(v) => setStartHour(v ?? "")}>
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="שעה" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__none__">ללא מאמן</SelectItem>
-              {activeCoaches.map((c) => (
-                <SelectItem key={c.email} value={c.email}>{c.name}</SelectItem>
+              {Array.from({ length: 17 }, (_, i) => i + 6).map((h) => {
+                const val = String(h).padStart(2, "0");
+                return <SelectItem key={val} value={val}>{val}</SelectItem>;
+              })}
+            </SelectContent>
+          </Select>
+          <Select value={startMin} onValueChange={(v) => setStartMin(v ?? "00")} disabled={!startHour}>
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="דקות" />
+            </SelectTrigger>
+            <SelectContent>
+              {["00", "15", "30", "45"].map((m) => (
+                <SelectItem key={m} value={m}>{m}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <div>
-          <Label>שעת התחלה קבועה</Label>
-          <Input
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-          />
         </div>
       </div>
       <div>

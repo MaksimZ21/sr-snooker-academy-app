@@ -25,6 +25,7 @@ export function AddStudentDialog() {
   const [collegeName, setCollegeName] = useState("");
   const [subscriptionType, setSubscriptionType] = useState("");
   const [notes, setNotes] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const qc = useQueryClient();
 
   const reset = () => {
@@ -35,6 +36,7 @@ export function AddStudentDialog() {
     setCollegeName("");
     setSubscriptionType("");
     setNotes("");
+    setBirthDate("");
   };
 
   const mut = useMutation({
@@ -50,6 +52,7 @@ export function AddStudentDialog() {
           college_name: collegeName,
           subscription_type: subscriptionType,
           general_notes: notes,
+          birth_date: birthDate || null,
         }),
       });
       if (!r.ok) throw new Error("failed");
@@ -100,6 +103,10 @@ export function AddStudentDialog() {
           <div>
             <Label>סוג מנוי</Label>
             <Input value={subscriptionType} onChange={(e) => setSubscriptionType(e.target.value)} />
+          </div>
+          <div>
+            <Label>תאריך לידה</Label>
+            <Input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
           </div>
           <div>
             <Label>הערות כלליות</Label>

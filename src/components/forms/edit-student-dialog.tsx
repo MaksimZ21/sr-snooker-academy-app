@@ -32,6 +32,7 @@ export function EditStudentDialog({
   const [collegeName, setCollegeName] = useState(student.college_name);
   const [subscriptionType, setSubscriptionType] = useState(student.subscription_type);
   const [notes, setNotes] = useState(student.general_notes);
+  const [birthDate, setBirthDate] = useState(student.birth_date ?? "");
   const [active, setActive] = useState(student.active);
   const qc = useQueryClient();
 
@@ -44,6 +45,7 @@ export function EditStudentDialog({
       setCollegeName(student.college_name);
       setSubscriptionType(student.subscription_type);
       setNotes(student.general_notes);
+      setBirthDate(student.birth_date ?? "");
       setActive(student.active);
     }
   }, [open, student]);
@@ -61,6 +63,7 @@ export function EditStudentDialog({
           college_name: collegeName.trim(),
           subscription_type: subscriptionType.trim(),
           general_notes: notes.trim(),
+          birth_date: birthDate || null,
           active,
         }),
       });
@@ -106,6 +109,10 @@ export function EditStudentDialog({
           <div>
             <Label>סוג מנוי</Label>
             <Input value={subscriptionType} onChange={(e) => setSubscriptionType(e.target.value)} />
+          </div>
+          <div>
+            <Label>תאריך לידה</Label>
+            <Input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
           </div>
           <div>
             <Label>הערות כלליות</Label>

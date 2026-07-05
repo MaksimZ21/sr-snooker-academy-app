@@ -28,6 +28,7 @@ export async function POST(req: Request) {
         college_name: z.string().optional(),
         subscription_type: z.string().optional(),
         general_notes: z.string().optional(),
+        birth_date: z.string().nullable().optional(),
       })
       .parse(await req.json());
     const id = await appendStudent(body);

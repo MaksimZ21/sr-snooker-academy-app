@@ -110,7 +110,7 @@ export function AddStudentDialog() {
           </div>
           <div>
             <Label>מכללה</Label>
-            <Select value={collegeName} onValueChange={setCollegeName}>
+            <Select value={collegeName} onValueChange={(v) => setCollegeName(v ?? "__none__")}>
               <SelectTrigger>
                 <SelectValue placeholder="בחר מכללה..." />
               </SelectTrigger>

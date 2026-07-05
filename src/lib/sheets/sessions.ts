@@ -100,6 +100,34 @@ export async function updateSessionEndTime(sessionId: string, endTime: string): 
   invalidateSessions();
 }
 
+export async function updateSession(
+  id: string,
+  input: {
+    date?: string;
+    start_time?: string;
+    end_time?: string;
+    coach_email?: string;
+    training_type?: string;
+    status?: string;
+  },
+): Promise<void> {
+  const patch: Record<string, string> = {};
+  if (input.date !== undefined) patch.date = input.date;
+  if (input.start_time !== undefined) patch.start_time = input.start_time;
+  if (input.end_time !== undefined) patch.end_time = input.end_time;
+  if (input.coach_email !== undefined) patch.coach_email = input.coach_email.trim().toLowerCase();
+  if (input.training_type !== undefined) patch.training_type = input.training_type;
+  if (input.status !== undefined) patch.status = input.status;
+  if (Object.keys(patch).length === 0) return;
+  await db.from("sessions").update(patch).eq("id", id);
+  invalidateSessions();
+}
+
+export async function deleteSession(id: string): Promise<void> {
+  await db.from("sessions").delete().eq("id", id);
+  invalidateSessions();
+}
+
 export function invalidateSessions() {
   revalidateTag("sessions:week", { expire: 0 });
   revalidateTag("sessions:today", { expire: 0 });

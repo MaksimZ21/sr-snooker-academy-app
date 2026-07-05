@@ -1,19 +1,25 @@
 "use client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import type { Session, Student, Attendance, Note } from "@/lib/sheets/schemas";
 import { AttendancePanel } from "./attendance-panel";
 import { NotesPanel } from "./notes-panel";
 import { SyllabusPanel } from "./syllabus-panel";
 import { GuidelinesPanel } from "./guidelines-panel";
-import { CoachSelector } from "./coach-selector";
+import { EditSessionDialog } from "./forms/edit-session-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatHebrewDate } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
+import { User, Users, Trash2 } from "lucide-react";
+
+type Coach = { email: string; name: string; active: boolean };
 
 type Detail = {
   session: Session;
@@ -34,8 +40,8 @@ export function SessionDetail({
   isAdmin?: boolean;
 }) {
   const qc = useQueryClient();
-  const [savingEnd, setSavingEnd] = useState(false);
-  const endTimeRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["session", sessionId],
@@ -47,41 +53,43 @@ export function SessionDetail({
     refetchInterval: 30_000,
   });
 
-  async function saveEndTime(value: string) {
-    setSavingEnd(true);
-    try {
-      const r = await fetch(`/api/sessions/${sessionId}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ end_time: value }),
-      });
+  const coachesQ = useQuery({
+    queryKey: ["coaches"],
+    queryFn: async () => {
+      const r = await fetch("/api/coaches");
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as { coaches: Coach[] };
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/sessions/${sessionId}`, { method: "DELETE" });
       if (!r.ok) throw new Error("failed");
-      await qc.invalidateQueries({ queryKey: ["session", sessionId] });
-      toast.success("שעת סיום עודכנה");
-    } catch {
-      toast.error("שגיאה בשמירת שעת הסיום");
-    } finally {
-      setSavingEnd(false);
-    }
-  }
+    },
+    onSuccess: () => {
+      toast.success("המפגש נמחק");
+      qc.invalidateQueries({ queryKey: ["sessions:week"] });
+      router.push("/admin/schedule");
+    },
+    onError: () => toast.error("שגיאה במחיקה"),
+  });
 
   if (isLoading || !data) {
     return (
       <div className="flex flex-col">
         <div className="bg-brand-gradient px-5 py-5">
-          <div className="flex items-end justify-between gap-3">
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-14 w-28 bg-white/20" />
-              <Skeleton className="h-4 w-16 bg-white/15" />
-            </div>
-            <Skeleton className="h-6 w-20 bg-white/20" />
+          <div className="flex items-center justify-between mb-3">
+            <Skeleton className="h-3 w-24 bg-white/15" />
+            <Skeleton className="h-7 w-16 bg-white/15" />
           </div>
-          <Skeleton className="h-3 w-28 bg-white/15 mt-3" />
+          <Skeleton className="h-12 w-40 bg-white/20 mb-3" />
+          <Skeleton className="h-5 w-32 bg-white/15" />
         </div>
         <div className="p-4 flex flex-col gap-4">
           <Skeleton className="h-9 w-full rounded-md" />
           <div className="flex flex-col gap-3 mt-2">
-            <Skeleton className="h-16 w-full rounded-md" />
             <Skeleton className="h-16 w-full rounded-md" />
             <Skeleton className="h-16 w-full rounded-md" />
           </div>
@@ -89,71 +97,100 @@ export function SessionDetail({
       </div>
     );
   }
+
   const { session, students, attendance, notesByStudent } = data;
   const { label, className } = trainingTypeBadge(session.training_type);
   const cancelled = session.status === "cancelled";
+  const coachName = session.coach_email
+    ? ((coachesQ.data?.coaches ?? []).find((c) => c.email === session.coach_email)?.name ?? session.coach_email.split("@")[0])
+    : null;
 
   return (
     <div className="flex flex-col">
-      <div className="bg-brand-gradient px-5 pt-5 pb-6 relative overflow-hidden">
+      {/* Header */}
+      <div className="bg-brand-gradient px-5 pt-4 pb-5 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/5 blur-2xl" />
           <div className="absolute -bottom-6 left-4 w-28 h-28 rounded-full bg-white/5 blur-xl" />
         </div>
-        <div className="flex items-end justify-between gap-3 relative">
-          <div>
-            <div
-              className={cn(
-                "text-5xl font-bold tabular-nums tracking-tight text-white leading-none",
-                cancelled && "opacity-40 line-through",
-              )}
-            >
-              {session.start_time}
+
+        {/* Top row: date + actions */}
+        <div className="flex items-center justify-between relative mb-3">
+          <p className="text-white/50 text-xs">{formatHebrewDate(session.date)}</p>
+          {isAdmin && (
+            <div className="flex items-center gap-1">
+              <EditSessionDialog session={session} />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/15"
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 size={15} />
+              </Button>
             </div>
-            <div className="text-white/60 text-sm mt-1.5 flex items-center gap-1">
-              <span>עד</span>
-              {isAdmin ? (
-                <input
-                  ref={endTimeRef}
-                  type="text"
-                  inputMode="numeric"
-                  defaultValue={session.end_time || ""}
-                  placeholder="--:--"
-                  disabled={savingEnd}
-                  onBlur={(e) => {
-                    const val = e.target.value.trim();
-                    if (!val || /^([01]\d|2[0-3]):[0-5]\d$/.test(val)) {
-                      saveEndTime(val);
-                    } else {
-                      toast.error("פורמט: HH:MM (24 שעות)");
-                      e.target.value = session.end_time || "";
-                    }
-                  }}
-                  onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
-                  className="bg-transparent text-white/60 text-sm outline-none w-12 border-b border-transparent focus:border-white/40 tabular-nums placeholder:text-white/25 transition-colors disabled:opacity-50"
-                />
-              ) : (
-                <span>{session.end_time || "—"}</span>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <Badge className={cn("border text-xs font-medium", className)} variant="outline">
-              {label}
-            </Badge>
-            {cancelled && <Badge variant="destructive">בוטל</Badge>}
-          </div>
+          )}
         </div>
-        <p className="text-white/50 text-xs mt-3 relative">
-          {session.name ? `${session.name} · ` : ""}{formatHebrewDate(session.date)}
-        </p>
-        {isAdmin && (
-          <div className="mt-3 relative">
-            <CoachSelector sessionId={sessionId} currentCoachEmail={session.coach_email} />
-          </div>
-        )}
+
+        {/* Time range */}
+        <div className={cn("flex items-baseline gap-2 relative mb-3", cancelled && "opacity-40 line-through")}>
+          <span className="text-5xl font-bold tabular-nums text-white leading-none">
+            {session.start_time}
+          </span>
+          {session.end_time && (
+            <>
+              <span className="text-white/40 text-2xl font-light">—</span>
+              <span className="text-2xl font-semibold tabular-nums text-white/75 leading-none">
+                {session.end_time}
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* Info strip */}
+        <div className="flex items-center gap-3 flex-wrap relative">
+          <Badge className={cn("border text-xs font-medium", className)} variant="outline">
+            {label}
+          </Badge>
+          {cancelled && <Badge variant="destructive">בוטל</Badge>}
+          {coachName && (
+            <span className="flex items-center gap-1 text-white/70 text-xs">
+              <User size={11} />
+              {coachName}
+            </span>
+          )}
+          <span className="flex items-center gap-1 text-white/55 text-xs">
+            <Users size={11} />
+            {session.student_ids.length} מתאמנים
+          </span>
+        </div>
       </div>
 
+      {/* Delete confirmation dialog */}
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>מחיקת מפגש</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            האם למחוק את המפגש מ-{formatHebrewDate(session.date)} בשעה {session.start_time}? פעולה זו אינה הפיכה.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDelete(false)} disabled={deleteMut.isPending}>
+              ביטול
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteMut.mutate()}
+              disabled={deleteMut.isPending}
+            >
+              {deleteMut.isPending ? "מוחק..." : "מחק"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tabs */}
       <div className="p-4 flex flex-col gap-4">
         <Tabs defaultValue="attendance">
           <TabsList className="grid grid-cols-4">

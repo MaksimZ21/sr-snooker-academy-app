@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
-import { fetchSessionById, updateSessionCoach, updateSessionEndTime } from "@/lib/sheets/sessions";
+import { fetchSessionById, updateSession, deleteSession } from "@/lib/sheets/sessions";
 import { fetchAttendanceForSession } from "@/lib/sheets/attendance";
 import { fetchStudents } from "@/lib/sheets/students";
 import { fetchNotesForMultipleStudents } from "@/lib/sheets/notes";
@@ -41,8 +41,12 @@ export async function GET(
 }
 
 const PatchBody = z.object({
-  coach_email: z.string().optional(),
+  date: z.string().optional(),
+  start_time: z.string().optional(),
   end_time: z.string().optional(),
+  coach_email: z.string().optional(),
+  training_type: z.string().optional(),
+  status: z.string().optional(),
 });
 
 export async function PATCH(
@@ -54,8 +58,23 @@ export async function PATCH(
     if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
     const { id } = await params;
     const body = PatchBody.parse(await req.json());
-    if (body.coach_email !== undefined) await updateSessionCoach(id, body.coach_email);
-    if (body.end_time !== undefined) await updateSessionEndTime(id, body.end_time);
+    await updateSession(id, body);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    if (e instanceof Response) return e;
+    return new NextResponse("error", { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const user = await requireUser();
+    if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
+    const { id } = await params;
+    await deleteSession(id);
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;

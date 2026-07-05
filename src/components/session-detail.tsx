@@ -106,73 +106,89 @@ export function SessionDetail({
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="bg-brand-gradient px-5 pt-4 pb-6 relative overflow-hidden">
-        {/* Animated background orbs */}
+      <div className="bg-brand-gradient relative overflow-hidden">
+        {/* Orbs — inline animation to guarantee browser picks it up */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {/* White drift — large, slow */}
-          <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/6 blur-3xl animate-drift-1" />
-          {/* Amber glow — snooker yellow ball reference */}
-          <div
-            className="absolute -bottom-16 -left-8 w-56 h-56 rounded-full blur-3xl animate-drift-2"
-            style={{ background: "radial-gradient(circle, oklch(0.85 0.17 80 / 0.14) 0%, transparent 70%)" }}
-          />
-          {/* Soft mid accent */}
-          <div className="absolute top-1/2 right-1/2 w-24 h-24 rounded-full bg-white/4 blur-2xl animate-drift-3" />
+          <div className="session-orb absolute rounded-full" style={{
+            top: "-40px", right: "-40px", width: "220px", height: "220px",
+            background: "radial-gradient(circle, rgba(255,255,255,0.32) 0%, transparent 65%)",
+            filter: "blur(36px)",
+            animation: "drift-1 10s ease-in-out infinite",
+          }} />
+          <div className="session-orb absolute rounded-full" style={{
+            bottom: "-30px", left: "-10px", width: "180px", height: "180px",
+            background: "radial-gradient(circle, rgba(251,191,36,0.42) 0%, transparent 65%)",
+            filter: "blur(28px)",
+            animation: "drift-2 14s ease-in-out infinite 4s",
+          }} />
+          <div className="session-orb absolute rounded-full" style={{
+            top: "30px", left: "42%", width: "90px", height: "90px",
+            background: "radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 70%)",
+            filter: "blur(18px)",
+            animation: "drift-3 9s ease-in-out infinite 1.5s",
+          }} />
         </div>
 
-        {/* Top row: date + actions */}
-        <div className="flex items-center justify-between relative mb-5">
-          <p className="text-white/45 text-xs tracking-wide">{formatHebrewDate(session.date)}</p>
-          {isAdmin && (
-            <div className="flex items-center gap-1">
-              <EditSessionDialog session={session} />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/12 rounded-lg"
-                onClick={() => setConfirmDelete(true)}
-              >
-                <Trash2 size={14} />
-              </Button>
-            </div>
-          )}
-        </div>
+        {/* Admin action buttons — absolute top corner */}
+        {isAdmin && (
+          <div className="absolute top-3 end-3 flex items-center gap-1 z-10">
+            <EditSessionDialog session={session} />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/15 rounded-lg"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 size={14} />
+            </Button>
+          </div>
+        )}
 
-        {/* Times — equal weight, scoreboard */}
-        <div className={cn("flex items-center gap-3 relative mb-4", cancelled && "opacity-35")}>
-          <span className="text-5xl font-bold tabular-nums text-white leading-none tracking-tight scoreboard-num">
-            {session.start_time}
-          </span>
-          <span className="text-white/25 text-2xl font-extralight select-none">—</span>
-          <span className={cn(
-            "text-5xl font-bold tabular-nums leading-none tracking-tight scoreboard-num",
-            session.end_time ? "text-white" : "text-white/30",
-          )}>
-            {session.end_time || "--:--"}
-          </span>
-          {cancelled && (
-            <span className="text-white/60 text-sm font-medium mr-1">בוטל</span>
-          )}
-        </div>
+        {/* Centered content */}
+        <div className="relative z-10 flex flex-col items-center text-center px-5 pt-5 pb-7">
+          {/* Date */}
+          <p className="text-white/55 text-xs tracking-widest mb-5">
+            {formatHebrewDate(session.date)}
+          </p>
 
-        {/* Info strip */}
-        <div className="flex items-center gap-2.5 flex-wrap relative">
-          <Badge
-            className={cn("border text-xs font-medium px-2.5 py-0.5", className)}
-            variant="outline"
-          >
-            {label}
-          </Badge>
-          {coachName && (
-            <span className="flex items-center gap-1.5 text-white/65 text-xs">
-              <User size={11} className="shrink-0" />
-              {coachName}
+          {/* Times */}
+          <div className={cn("flex items-baseline gap-3 mb-5", cancelled && "opacity-40")}>
+            <span className="text-6xl font-bold tabular-nums text-white leading-none tracking-tight scoreboard-num">
+              {session.start_time}
             </span>
-          )}
-          <span className="flex items-center gap-1.5 text-white/45 text-xs">
-            <Users size={11} className="shrink-0" />
-            {session.student_ids.length}
-          </span>
+            <span className="text-white/30 text-3xl font-extralight select-none">—</span>
+            <span className={cn(
+              "text-6xl font-bold tabular-nums leading-none tracking-tight scoreboard-num",
+              session.end_time ? "text-white/85" : "text-white/30",
+            )}>
+              {session.end_time || "--:--"}
+            </span>
+          </div>
+
+          {/* Info chips */}
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            <Badge
+              className={cn("border text-xs font-medium px-2.5 py-0.5", className)}
+              variant="outline"
+            >
+              {label}
+            </Badge>
+            {cancelled && (
+              <span className="text-red-300/80 text-xs font-medium border border-red-300/30 rounded-full px-2 py-0.5">
+                בוטל
+              </span>
+            )}
+            {coachName && (
+              <span className="flex items-center gap-1.5 text-white/65 text-xs">
+                <User size={11} className="shrink-0" />
+                {coachName}
+              </span>
+            )}
+            <span className="flex items-center gap-1.5 text-white/45 text-xs">
+              <Users size={11} className="shrink-0" />
+              {session.student_ids.length}
+            </span>
+          </div>
         </div>
       </div>
 

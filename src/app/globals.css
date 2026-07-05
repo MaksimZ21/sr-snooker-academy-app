@@ -301,7 +301,7 @@
   .animate-drift-3 { animation: drift-3 11s ease-in-out infinite 2.5s; }
 
   @media (prefers-reduced-motion: reduce) {
-    .animate-drift-1, .animate-drift-2, .animate-drift-3 { animation: none; }
+    .animate-drift-1, .animate-drift-2, .animate-drift-3, .session-orb { animation: none !important; }
   }
 
   /* Scoreboard numbers — precise, tabular */

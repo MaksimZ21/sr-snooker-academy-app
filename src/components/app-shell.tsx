@@ -81,16 +81,21 @@ export function AppShell({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto pb-28 md:pb-4 min-w-0 animate-fade-in">
+      <main className="flex-1 overflow-y-auto pb-32 md:pb-4 min-w-0 animate-fade-in">
         {children}
       </main>
 
-      {/* Mobile bottom nav — floating pill */}
-      <nav className="fixed bottom-3 inset-x-3 md:hidden bg-background/95 backdrop-blur-2xl border border-border/50 rounded-2xl flex justify-around shadow-2xl shadow-black/15">
-        {items.slice(0, 5).map((it) => (
-          <NavLink key={it.href} item={it} active={isActiveRoute(pathname, it.href)} compact />
-        ))}
-      </nav>
+      {/* Mobile bottom nav — floating pill, safe-area-aware */}
+      <div
+        className="fixed bottom-0 inset-x-0 md:hidden pointer-events-none"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <nav className="mx-3 mb-3 pointer-events-auto bg-background/95 backdrop-blur-2xl border border-border/50 rounded-2xl flex justify-around shadow-2xl shadow-black/15">
+          {items.slice(0, 5).map((it) => (
+            <NavLink key={it.href} item={it} active={isActiveRoute(pathname, it.href)} compact />
+          ))}
+        </nav>
+      </div>
     </div>
   );
 }

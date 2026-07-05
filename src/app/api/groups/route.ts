@@ -17,9 +17,9 @@ export async function POST(req: Request) {
   try {
     const user = await requireUser();
     if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
-    const { name, student_ids, college_name } = await req.json();
+    const { name, student_ids, college_name, coach_email, start_time } = await req.json();
     if (!name?.trim()) return new NextResponse("missing name", { status: 400 });
-    const id = await appendGroup(name.trim(), student_ids ?? [], college_name?.trim() || undefined);
+    const id = await appendGroup(name.trim(), student_ids ?? [], college_name?.trim() || undefined, coach_email?.trim() || undefined, start_time?.trim() || undefined);
     return NextResponse.json({ id });
   } catch (e) {
     if (e instanceof Response) return e;

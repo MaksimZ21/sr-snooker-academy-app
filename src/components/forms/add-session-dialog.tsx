@@ -80,10 +80,21 @@ export function AddSessionDialog() {
     staleTime: 60_000,
   });
 
+  function addMinutes(time: string, minutes: number): string {
+    const [h, m] = time.split(":").map(Number);
+    const total = h * 60 + m + minutes;
+    return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+  }
+
   function applyGroup(groupId: string | null) {
     const group = groupsQ.data?.groups.find((g) => g.id === groupId);
     if (!group) return;
     setStudentIds((prev) => [...new Set([...prev, ...group.student_ids])]);
+    if (group.coach_email) setCoachEmail(group.coach_email);
+    if (group.start_time) {
+      setStartTime(group.start_time);
+      setEndTime(addMinutes(group.start_time, 90));
+    }
   }
 
   const reset = () => {

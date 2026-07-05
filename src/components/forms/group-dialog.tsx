@@ -19,6 +19,8 @@ import { Plus, Pencil } from "lucide-react";
 import type { Group, Student } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
 
+type Coach = { email: string; name: string; active: boolean };
+
 function GroupForm({
   group,
   onClose,
@@ -28,12 +30,14 @@ function GroupForm({
 }) {
   const [name, setName] = useState(group?.name ?? "");
   const [collegeName, setCollegeName] = useState(group?.college_name ?? "");
+  const [coachEmail, setCoachEmail] = useState(group?.coach_email ?? "");
+  const [startTime, setStartTime] = useState(group?.start_time ?? "");
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(group?.student_ids ?? []),
   );
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const studentsQ = useQuery({
     queryKey: ["students"],
     queryFn: async () => {
       const r = await fetch("/api/students");
@@ -43,14 +47,32 @@ function GroupForm({
     staleTime: 60_000,
   });
 
+  const coachesQ = useQuery({
+    queryKey: ["coaches"],
+    queryFn: async () => {
+      const r = await fetch("/api/coaches");
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as { coaches: Coach[] };
+    },
+    staleTime: 60_000,
+  });
+
   const colleges = useMemo(() => {
-    const names = (data?.students ?? []).map((s) => s.college_name).filter(Boolean);
+    const names = (studentsQ.data?.students ?? []).map((s) => s.college_name).filter(Boolean);
     return Array.from(new Set(names)).sort();
-  }, [data]);
+  }, [studentsQ.data]);
+
+  const activeCoaches = (coachesQ.data?.coaches ?? []).filter((c) => c.active);
 
   const mut = useMutation({
     mutationFn: async () => {
-      const body = { name, student_ids: Array.from(selected), college_name: collegeName };
+      const body = {
+        name,
+        student_ids: Array.from(selected),
+        college_name: collegeName,
+        coach_email: coachEmail,
+        start_time: startTime,
+      };
       const r = group
         ? await fetch(`/api/groups/${group.id}`, {
             method: "PATCH",
@@ -72,7 +94,7 @@ function GroupForm({
     onError: () => toast.error("שגיאה בשמירה"),
   });
 
-  const activeStudents = (data?.students ?? []).filter((s) => s.active);
+  const activeStudents = (studentsQ.data?.students ?? []).filter((s) => s.active);
 
   return (
     <div className="flex flex-col gap-4">
@@ -101,9 +123,36 @@ function GroupForm({
           </SelectContent>
         </Select>
       </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label>מאמן</Label>
+          <Select
+            value={coachEmail || "__none__"}
+            onValueChange={(v) => setCoachEmail(!v || v === "__none__" ? "" : v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="בחר מאמן..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">ללא מאמן</SelectItem>
+              {activeCoaches.map((c) => (
+                <SelectItem key={c.email} value={c.email}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>שעת התחלה קבועה</Label>
+          <Input
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+          />
+        </div>
+      </div>
       <div>
         <Label>מתאמנים</Label>
-        {isLoading ? (
+        {studentsQ.isLoading ? (
           <div className="text-sm text-muted-foreground py-2">טוען...</div>
         ) : (
           <div className="border rounded-md max-h-56 overflow-y-auto p-2 flex flex-col gap-1 mt-1">

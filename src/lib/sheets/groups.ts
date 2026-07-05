@@ -16,7 +16,13 @@ export function invalidateGroups() {
   revalidateTag("groups", { expire: 0 });
 }
 
-export async function appendGroup(name: string, studentIds: string[], collegeName?: string) {
+export async function appendGroup(
+  name: string,
+  studentIds: string[],
+  collegeName?: string,
+  coachEmail?: string,
+  startTime?: string,
+) {
   const { data } = await db.from("groups").select("id");
   const nums = (data ?? [])
     .map((r) => {
@@ -26,7 +32,14 @@ export async function appendGroup(name: string, studentIds: string[], collegeNam
     .filter((n) => n > 0);
   const next = nums.length ? Math.max(...nums) + 1 : 1;
   const id = `GRP-${String(next).padStart(3, "0")}`;
-  await db.from("groups").insert({ id, name, student_ids: studentIds, college_name: collegeName ?? "" });
+  await db.from("groups").insert({
+    id,
+    name,
+    student_ids: studentIds,
+    college_name: collegeName ?? "",
+    coach_email: coachEmail ?? "",
+    start_time: startTime ?? "",
+  });
   invalidateGroups();
   return id;
 }
@@ -36,8 +49,16 @@ export async function updateGroup(
   name: string,
   studentIds: string[],
   collegeName?: string,
+  coachEmail?: string,
+  startTime?: string,
 ): Promise<void> {
-  await db.from("groups").update({ name, student_ids: studentIds, college_name: collegeName ?? "" }).eq("id", id);
+  await db.from("groups").update({
+    name,
+    student_ids: studentIds,
+    college_name: collegeName ?? "",
+    coach_email: coachEmail ?? "",
+    start_time: startTime ?? "",
+  }).eq("id", id);
   invalidateGroups();
 }
 

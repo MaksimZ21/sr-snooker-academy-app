@@ -4,11 +4,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, Trash2 } from "lucide-react";
+import { RefreshCw, Trash2, User, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { CreateGroupDialog, EditGroupDialog } from "@/components/forms/group-dialog";
 import type { Group, Student } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
+
+type Coach = { email: string; name: string; active: boolean };
+
+function addMinutes(time: string, minutes: number): string {
+  const [h, m] = time.split(":").map(Number);
+  const total = h * 60 + m + minutes;
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
 
 export function GroupsList() {
   const qc = useQueryClient();
@@ -29,6 +37,16 @@ export function GroupsList() {
       const r = await fetch("/api/students");
       if (!r.ok) throw new Error("fetch failed");
       return (await r.json()) as { students: Student[] };
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const coachesQ = useQuery({
+    queryKey: ["coaches"],
+    queryFn: async () => {
+      const r = await fetch("/api/coaches");
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as { coaches: Coach[] };
     },
     staleTime: 5 * 60_000,
   });
@@ -62,6 +80,10 @@ export function GroupsList() {
     (studentsQ.data?.students ?? []).map((s) => [s.id, studentFullName(s)]),
   );
 
+  const coachMap = new Map(
+    (coachesQ.data?.coaches ?? []).map((c) => [c.email, c.name]),
+  );
+
   const { standaloneGroups, collegeMap } = useMemo(() => {
     const groups = groupsQ.data?.groups ?? [];
     const standaloneGroups: Group[] = [];
@@ -90,6 +112,7 @@ export function GroupsList() {
   const totalGroups = (groupsQ.data?.groups ?? []).length;
 
   function GroupCard({ g }: { g: Group }) {
+    const coachName = g.coach_email ? (coachMap.get(g.coach_email) ?? g.coach_email) : null;
     return (
       <Card>
         <CardContent className="p-4 flex items-start justify-between gap-3">
@@ -100,7 +123,21 @@ export function GroupsList() {
                 ({g.student_ids.length} מתאמנים)
               </span>
             </div>
-            <div className="text-sm text-muted-foreground mt-1 flex flex-wrap gap-1">
+            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+              {coachName && (
+                <span className="flex items-center gap-1">
+                  <User size={11} />
+                  {coachName}
+                </span>
+              )}
+              {g.start_time && (
+                <span className="flex items-center gap-1">
+                  <Clock size={11} />
+                  {g.start_time} — {addMinutes(g.start_time, 90)}
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-muted-foreground mt-1.5 flex flex-wrap gap-1">
               {g.student_ids.map((id) => (
                 <span
                   key={id}

@@ -4,6 +4,7 @@ export const COACH_NAV: NavItem[] = [
   { href: "/coach", label: "בית", icon: "Home" },
   { href: "/coach/schedule", label: "לו״ז", icon: "Calendar" },
   { href: "/coach/sessions", label: "האימונים שלי", icon: "History" },
+  { href: "/coach/students", label: "מתאמנים", icon: "Users" },
   { href: "/coach/salary", label: "פיננסים", icon: "Banknote" },
   { href: "/coach/assessments", label: "דוחות אבחון", icon: "ClipboardList" },
   { href: "/coach/guidelines", label: "שליפים למאמן", icon: "FolderOpen" },

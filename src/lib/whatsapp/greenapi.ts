@@ -29,13 +29,15 @@ export async function sendWhatsAppFile(
   phoneOrChatId: string,
   urlFile: string,
   caption: string,
+  fileName?: string,
 ): Promise<void> {
   const chatId = toChatId(phoneOrChatId);
-  const ext = urlFile.split(".").pop()?.toLowerCase() ?? "jpg";
+  const ext = urlFile.split("?")[0].split(".").pop()?.toLowerCase() ?? "jpg";
+  const resolvedName = fileName ?? `file.${ext}`;
   const res = await fetch(`${BASE()}/sendFileByUrl/${TOKEN}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chatId, urlFile, fileName: `file.${ext}`, caption }),
+    body: JSON.stringify({ chatId, urlFile, fileName: resolvedName, caption }),
   });
   if (!res.ok) {
     const text = await res.text();

@@ -30,11 +30,15 @@ async function sendWhatsApp(a: Assessment) {
   if (!tokenRes.ok) { toast.error("שגיאה ביצירת קישור"); return; }
   const { token } = await tokenRes.json() as { token: string };
   const pdfUrl = `${window.location.origin}/api/assessments/${a.id}/pdf?token=${token}`;
-  const msg = `שלום ${a.participant_name},\nהדוח האבחון שלך:\n${pdfUrl}`;
   const r = await fetch("/api/whatsapp/send", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ phone: a.participant_phone, message: msg }),
+    body: JSON.stringify({
+      phone: a.participant_phone,
+      urlFile: pdfUrl,
+      fileName: `דוח אבחון - ${a.participant_name}.pdf`,
+      caption: `שלום ${a.participant_name}, הדוח האבחון שלך מוכן`,
+    }),
   });
   if (r.ok) toast.success("נשלח"); else toast.error("שגיאה");
 }

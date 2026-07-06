@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AddStudentDialog } from "@/components/forms/add-student-dialog";
 import { EditStudentDialog } from "@/components/forms/edit-student-dialog";
 import { StudentHistoryDialog } from "@/components/student-history-dialog";
-import { History, Pencil, Search, Trash2, X, Check, GraduationCap } from "lucide-react";
+import { History, Pencil, Search, Trash2, X, Check, GraduationCap, ChevronLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -220,23 +221,24 @@ function StudentRow({
       "hover:bg-muted/40 dark:hover:bg-white/[0.03]",
       isConfirming && "bg-destructive/5 dark:bg-destructive/10",
     )}>
-      {/* Avatar */}
-      <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/15 text-primary flex items-center justify-center text-[11px] font-bold shrink-0 select-none">
-        {initials}
-      </div>
-
-      {/* Name + info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium leading-none">{name}</span>
-          {!s.active && (
-            <Badge variant="secondary" className="text-[10px] h-4 px-1.5 py-0">לא פעיל</Badge>
+      {/* Avatar + name — link to detail page */}
+      <Link href={`/admin/students/${s.id}`} className="flex items-center gap-3 flex-1 min-w-0 group/link">
+        <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/15 text-primary flex items-center justify-center text-[11px] font-bold shrink-0 select-none group-hover/link:bg-primary/20 transition-colors">
+          {initials}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium leading-none group-hover/link:text-primary transition-colors">{name}</span>
+            {!s.active && (
+              <Badge variant="secondary" className="text-[10px] h-4 px-1.5 py-0">לא פעיל</Badge>
+            )}
+          </div>
+          {info && (
+            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{info}</p>
           )}
         </div>
-        {info && (
-          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{info}</p>
-        )}
-      </div>
+        <ChevronLeft size={13} className="text-muted-foreground/20 group-hover/link:text-primary/40 transition-colors shrink-0" />
+      </Link>
 
       {/* Actions */}
       {isConfirming ? (

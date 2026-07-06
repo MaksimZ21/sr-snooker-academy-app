@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { FileText, Plus, Search, Send } from "lucide-react";
+import { FileText, Plus, Search, Send, ChevronLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { toast } from "sonner";
 import { TECHNIQUE_CRITERIA, type Assessment } from "@/lib/sheets/assessment-types";
@@ -115,8 +115,9 @@ export default function AdminAssessmentsPage() {
               const pass = passCount(a);
               const rated = ratedCount(a);
               return (
-                <div
+                <Link
                   key={a.id}
+                  href={`/admin/assessments/${a.id}`}
                   className="group flex items-center gap-3 px-4 py-3 hover:bg-muted/40 dark:hover:bg-white/[0.03] transition-colors"
                 >
                   <div className="w-9 h-9 rounded-full bg-primary/10 dark:bg-primary/15 text-primary flex items-center justify-center text-[11px] font-bold shrink-0 select-none">
@@ -142,26 +143,28 @@ export default function AdminAssessmentsPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                  <div className="flex items-center gap-1 shrink-0">
                     <a
                       href={`/api/assessments/${a.id}/pdf`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                      className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors opacity-0 group-hover:opacity-100"
                       title="הורד PDF"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <FileText size={15} />
                     </a>
                     <button
                       type="button"
-                      className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 transition-colors"
+                      className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 transition-colors opacity-0 group-hover:opacity-100"
                       title="שלח ב-WhatsApp"
-                      onClick={() => sendWhatsApp(a)}
+                      onClick={(e) => { e.preventDefault(); sendWhatsApp(a); }}
                     >
                       <Send size={14} />
                     </button>
+                    <ChevronLeft size={14} className="text-muted-foreground/30 shrink-0" />
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

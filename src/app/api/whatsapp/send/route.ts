@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     if (body.urlFile) {
       await sendWhatsAppFile(body.phone, body.urlFile, body.caption ?? "", body.fileName);
     } else {
-      await sendWhatsAppMessage(body.phone, body.message);
+      await sendWhatsAppMessage(body.phone, body.message!);
     }
     return NextResponse.json({ ok: true });
   } catch (e) {

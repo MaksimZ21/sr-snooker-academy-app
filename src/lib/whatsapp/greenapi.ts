@@ -56,7 +56,7 @@ export async function sendWhatsAppFileByUpload(
   const form = new FormData();
   form.append("chatId", chatId);
   form.append("caption", caption);
-  form.append("file", new Blob([fileBuffer], { type: mimeType }), fileName);
+  form.append("file", new Blob([new Uint8Array(fileBuffer)], { type: mimeType }), fileName);
   const res = await fetch(`${BASE()}/sendFileByUpload/${TOKEN}`, {
     method: "POST",
     body: form,

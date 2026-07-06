@@ -28,6 +28,26 @@ export async function fetchNotesForMultipleStudents(
   return result;
 }
 
+// Only notes that belong to a specific session (used in session detail view)
+export async function fetchNotesForSessionStudents(
+  sessionId: string,
+  studentIds: string[],
+): Promise<Record<string, Note[]>> {
+  if (studentIds.length === 0) return {};
+  const { data } = await db
+    .from("notes")
+    .select("*")
+    .eq("session_id", sessionId)
+    .in("student_id", studentIds)
+    .order("created_at", { ascending: false });
+  const result: Record<string, Note[]> = {};
+  for (const id of studentIds) result[id] = [];
+  for (const note of (data ?? []) as Note[]) {
+    result[note.student_id].push(note);
+  }
+  return result;
+}
+
 export async function appendNote(row: Note): Promise<void> {
   await db.from("notes").insert(row);
   revalidateTag("notes:all", { expire: 0 });

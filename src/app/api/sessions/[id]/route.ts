@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { fetchSessionById, updateSession, deleteSession } from "@/lib/sheets/sessions";
 import { fetchAttendanceForSession } from "@/lib/sheets/attendance";
 import { fetchStudents } from "@/lib/sheets/students";
-import { fetchNotesForMultipleStudents } from "@/lib/sheets/notes";
+import { fetchNotesForSessionStudents } from "@/lib/sheets/notes";
 
 export async function GET(
   _req: Request,
@@ -25,7 +25,8 @@ export async function GET(
     const sessionStudents = students.filter((s) =>
       session.student_ids.includes(s.id),
     );
-    const notesByStudent = await fetchNotesForMultipleStudents(
+    const notesByStudent = await fetchNotesForSessionStudents(
+      id,
       sessionStudents.map((s) => s.id),
     );
     return NextResponse.json({

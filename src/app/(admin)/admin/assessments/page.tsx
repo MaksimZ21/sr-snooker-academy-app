@@ -37,7 +37,7 @@ async function sendWhatsApp(a: Assessment) {
       phone: a.participant_phone,
       urlFile: pdfUrl,
       fileName: `דוח אבחון - ${a.participant_name}.pdf`,
-      caption: `שלום ${a.participant_name}, הדוח האבחון שלך מוכן`,
+      caption: `שלום ${a.participant_name}, דוח האבחון שלך נמצא כאן`,
     }),
   });
   if (r.ok) toast.success("נשלח"); else toast.error("שגיאה");

@@ -53,13 +53,27 @@ export async function sendWhatsAppFileByUpload(
   caption: string,
 ): Promise<void> {
   const chatId = toChatId(phoneOrChatId);
-  const form = new FormData();
-  form.append("chatId", chatId);
-  form.append("caption", caption);
-  form.append("file", new Blob([new Uint8Array(fileBuffer)], { type: mimeType }), fileName);
+  const boundary = `----FormBoundary${Date.now().toString(16)}`;
+  // RFC 5987 percent-encoding so non-ASCII (Hebrew) filenames survive the HTTP boundary
+  const encodedFileName = encodeURIComponent(fileName);
+
+  const header = Buffer.from(
+    `--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="chatId"\r\n\r\n${chatId}\r\n` +
+    `--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="caption"\r\n\r\n${caption}\r\n` +
+    `--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="file"; filename*=UTF-8''${encodedFileName}\r\n` +
+    `Content-Type: ${mimeType}\r\n\r\n`,
+    "utf-8",
+  );
+  const footer = Buffer.from(`\r\n--${boundary}--\r\n`, "utf-8");
+  const body = new Uint8Array(Buffer.concat([header, fileBuffer, footer]));
+
   const res = await fetch(`${BASE()}/sendFileByUpload/${TOKEN}`, {
     method: "POST",
-    body: form,
+    headers: { "Content-Type": `multipart/form-data; boundary=${boundary}` },
+    body,
   });
   if (!res.ok) {
     const text = await res.text();

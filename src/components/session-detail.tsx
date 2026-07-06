@@ -131,7 +131,7 @@ export function SessionDetail({
 
         {/* Admin action buttons — absolute top corner */}
         {isAdmin && (
-          <div className="absolute top-3 end-3 flex items-center gap-1 z-10">
+          <div className="absolute top-3 end-3 flex items-center gap-1 z-20">
             <EditSessionDialog session={session} />
             <Button
               variant="ghost"

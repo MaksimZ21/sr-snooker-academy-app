@@ -45,6 +45,28 @@ export async function sendWhatsAppFile(
   }
 }
 
+export async function sendWhatsAppFileByUpload(
+  phoneOrChatId: string,
+  fileBuffer: Buffer,
+  fileName: string,
+  mimeType: string,
+  caption: string,
+): Promise<void> {
+  const chatId = toChatId(phoneOrChatId);
+  const form = new FormData();
+  form.append("chatId", chatId);
+  form.append("caption", caption);
+  form.append("file", new Blob([fileBuffer], { type: mimeType }), fileName);
+  const res = await fetch(`${BASE()}/sendFileByUpload/${TOKEN}`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Green API sendFileByUpload ${res.status}: ${text}`);
+  }
+}
+
 export async function sendWhatsAppPoll(
   phoneOrChatId: string,
   message: string,

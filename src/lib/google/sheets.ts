@@ -17,14 +17,18 @@ export function getSheetsClient() {
   return cached;
 }
 
+let cachedDrive: ReturnType<typeof google.drive> | null = null;
+
 export function getDriveClient() {
+  if (cachedDrive) return cachedDrive;
   const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON!);
   const auth = new google.auth.JWT({
     email: creds.client_email,
     key: creds.private_key,
     scopes: ["https://www.googleapis.com/auth/drive.readonly"],
   });
-  return google.drive({ version: "v3", auth });
+  cachedDrive = google.drive({ version: "v3", auth });
+  return cachedDrive;
 }
 
 export function getSheetId(): string {

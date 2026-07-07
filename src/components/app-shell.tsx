@@ -4,8 +4,18 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import * as Icons from "lucide-react";
-import { LogOut, Sun, Moon, LayoutGrid, X } from "lucide-react";
+import {
+  LogOut, Sun, Moon, LayoutGrid, X,
+  Activity, Banknote, Calendar, ClipboardList, FolderOpen,
+  GraduationCap, History, Home, MessageCircle, MessageSquare,
+  Tag, User, Users, UsersRound,
+} from "lucide-react";
+
+const ICON_MAP: Record<string, React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>> = {
+  Activity, Banknote, Calendar, ClipboardList, FolderOpen,
+  GraduationCap, History, Home, MessageCircle, MessageSquare,
+  Tag, User, Users, UsersRound,
+};
 import { useTheme } from "next-themes";
 import type { NavItem } from "./nav-items";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -139,7 +149,7 @@ export function AppShell({
             {/* All nav items in a grid */}
             <div className="grid grid-cols-4 gap-1 px-3 pb-4">
               {items.map((it) => {
-                const Icon = (Icons as unknown as Record<string, React.ComponentType<{ size?: number; strokeWidth?: number }>>)[it.icon];
+                const Icon = ICON_MAP[it.icon];
                 const active = isActiveRoute(pathname, it.href);
                 return (
                   <Link
@@ -197,7 +207,7 @@ function NavLink({
   compact?: boolean;
   style?: React.CSSProperties;
 }) {
-  const Icon = (Icons as unknown as Record<string, React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>>)[item.icon];
+  const Icon = ICON_MAP[item.icon];
 
   if (compact) {
     return (

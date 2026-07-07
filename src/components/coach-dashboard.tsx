@@ -31,7 +31,7 @@ export function CoachDashboard() {
       if (!r.ok) throw new Error("fetch failed");
       return r.json();
     },
-    refetchInterval: 30_000,
+    refetchInterval: 120_000,
   });
 
   const now = new Date();

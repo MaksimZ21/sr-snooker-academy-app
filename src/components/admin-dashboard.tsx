@@ -25,7 +25,10 @@ import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 import type { AdminStats, AbsentStudent } from "@/app/api/admin/stats/route";
 import type { Session } from "@/lib/sheets/schemas";
-import { CollegesCard } from "@/components/colleges-card";
+const CollegesCard = dynamic(
+  () => import("@/components/colleges-card").then((m) => m.CollegesCard),
+  { ssr: false },
+);
 
 const AdminChartsRow = dynamic(
   () => import("@/components/admin-charts").then((m) => m.AdminChartsRow),
@@ -65,7 +68,7 @@ export function AdminDashboard() {
       if (!r.ok) throw new Error("fetch failed");
       return r.json();
     },
-    refetchInterval: 30_000,
+    refetchInterval: 120_000,
   });
 
   const hasMessages = (data?.newMessages ?? 0) > 0;

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { requireUser } from "@/lib/auth/requireUser";
 import { db } from "@/lib/db/client";
 
@@ -10,30 +11,22 @@ const HEBREW_MONTHS = [
 export type TrendMonth = { month: string; label: string; shortLabel: string; total: number };
 export type TrendResponse = { months: TrendMonth[] };
 
-export async function GET() {
-  try {
-    const user = await requireUser();
-    if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
-
+const fetchTrend = unstable_cache(
+  async (): Promise<TrendMonth[]> => {
     const now = new Date();
-    // Start of current month, then go back 11 more months = 12 total
     const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
     const endDate   = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-
-    const startStr = startDate.toISOString().slice(0, 10);
-    const endStr   = endDate.toISOString().slice(0, 10);
 
     const { data, error } = await db
       .from("sessions")
       .select("date, price_nis")
       .eq("status", "completed")
       .neq("coach_email", "")
-      .gte("date", startStr)
-      .lt("date", endStr);
+      .gte("date", startDate.toISOString().slice(0, 10))
+      .lt("date", endDate.toISOString().slice(0, 10));
 
     if (error) throw error;
 
-    // Aggregate by YYYY-MM
     const map: Record<string, number> = {};
     for (const row of data ?? []) {
       const month = (row.date as string).slice(0, 7);
@@ -51,7 +44,17 @@ export async function GET() {
         total:      map[key] ?? 0,
       });
     }
+    return months;
+  },
+  ["admin:salary:trend"],
+  { revalidate: 3600, tags: ["sessions:completed"] },
+);
 
+export async function GET() {
+  try {
+    const user = await requireUser();
+    if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
+    const months = await fetchTrend();
     return NextResponse.json({ months } satisfies TrendResponse);
   } catch (e) {
     if (e instanceof Response) return e;

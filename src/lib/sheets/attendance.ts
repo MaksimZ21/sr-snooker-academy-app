@@ -1,4 +1,4 @@
-import { revalidateTag } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { db } from "@/lib/db/client";
 import type { Attendance } from "./schemas";
 
@@ -10,13 +10,17 @@ export async function fetchAttendanceForSession(sessionId: string): Promise<Atte
   return (data ?? []) as Attendance[];
 }
 
-export async function fetchAttendanceForStudent(studentId: string): Promise<Attendance[]> {
-  const { data } = await db
-    .from("attendance")
-    .select("*")
-    .eq("student_id", studentId);
-  return (data ?? []) as Attendance[];
-}
+export const fetchAttendanceForStudent = unstable_cache(
+  async (studentId: string): Promise<Attendance[]> => {
+    const { data } = await db
+      .from("attendance")
+      .select("*")
+      .eq("student_id", studentId);
+    return (data ?? []) as Attendance[];
+  },
+  ["attendance:student"],
+  { revalidate: 120, tags: ["attendance:all"] },
+);
 
 export async function upsertAttendance(row: Attendance): Promise<void> {
   await db

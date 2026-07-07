@@ -48,16 +48,16 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
     <div className="p-4 md:p-6 flex flex-col gap-6">
       {/* Header */}
       <div className="animate-fade-in-up">
-        <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider mb-1">
-          {displayName ? `שלום, ${displayName}` : "סקירה אישית"}
-        </p>
         <h1 className="text-2xl font-bold tracking-tight">
+          {displayName ? `שלום, ${displayName}` : "שלום"}
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           {isLoading || !data ? (
-            <Skeleton className="h-8 w-52 inline-block" />
+            <Skeleton className="h-4 w-40 inline-block" />
           ) : (
             formatHebrewDate(data.today)
           )}
-        </h1>
+        </p>
       </div>
 
       {/* Stat chips */}

@@ -78,12 +78,12 @@ export function AdminDashboard({ displayName = "" }: { displayName?: string }) {
       {/* Header */}
       <div className="flex items-end justify-between animate-fade-in-up">
         <div>
-          <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider mb-1">
-            {displayName ? `שלום, ${displayName}` : "סקירה כללית"}
-          </p>
           <h1 className="text-2xl font-bold tracking-tight">
-            {isLoading || !data ? <Skeleton className="h-8 w-52 inline-block" /> : formatHebrewDate(data.today)}
+            {displayName ? `שלום, ${displayName}` : "שלום"}
           </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {isLoading || !data ? <Skeleton className="h-4 w-40 inline-block" /> : formatHebrewDate(data.today)}
+          </p>
         </div>
         <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 border border-border/50 rounded-full px-3 py-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 status-dot" />

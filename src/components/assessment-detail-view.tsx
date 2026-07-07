@@ -1,10 +1,13 @@
 "use client";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { ArrowRight, FileText, Send, CheckCircle2, XCircle, Minus } from "lucide-react";
+import { ArrowRight, FileText, Send, CheckCircle2, XCircle, Minus, Users, Loader2, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { TECHNIQUE_CRITERIA, type Assessment } from "@/lib/sheets/assessment-types";
+
+type WhatsAppGroup = { id: string; name: string };
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("he-IL", {
@@ -45,6 +48,73 @@ export function AssessmentDetailView({
   backLabel?: string;
   showCoach?: boolean;
 }) {
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+  const [masterGroups, setMasterGroups] = useState<WhatsAppGroup[] | null>(null);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  // Close picker on outside click
+  useEffect(() => {
+    if (!groupPickerOpen) return;
+    function handler(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setGroupPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [groupPickerOpen]);
+
+  async function openGroupPicker(a: Assessment) {
+    if (masterGroups === null) {
+      setGroupsLoading(true);
+      try {
+        const r = await fetch("/api/whatsapp/groups");
+        if (!r.ok) throw new Error();
+        const { groups } = (await r.json()) as { groups: WhatsAppGroup[] };
+        const filtered = groups.filter((g) =>
+          g.name.includes("מאסטר קלאס") || g.name.toLowerCase().includes("master class"),
+        );
+        setMasterGroups(filtered);
+        if (filtered.length === 0) {
+          toast.error("לא נמצאו קבוצות מאסטר קלאס");
+          return;
+        }
+      } catch {
+        toast.error("שגיאה בטעינת קבוצות");
+        return;
+      } finally {
+        setGroupsLoading(false);
+      }
+    }
+    setGroupPickerOpen(true);
+  }
+
+  async function sendToGroup(a: Assessment, group: WhatsAppGroup) {
+    setGroupPickerOpen(false);
+    const toastId = toast.loading(`שולח ל${group.name}...`);
+    try {
+      const tokenRes = await fetch(`/api/assessments/${a.id}/share-token`);
+      if (!tokenRes.ok) throw new Error();
+      const { token } = (await tokenRes.json()) as { token: string };
+      const pdfUrl = `${window.location.origin}/api/assessments/${a.id}/pdf?token=${token}`;
+      const r = await fetch("/api/whatsapp/send", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          phone: group.id,
+          urlFile: pdfUrl,
+          fileName: `דוח אבחון - ${a.participant_name}.pdf`,
+          caption: `דוח אבחון - ${a.participant_name}`,
+        }),
+      });
+      if (r.ok) toast.success(`נשלח ל${group.name}`, { id: toastId });
+      else throw new Error();
+    } catch {
+      toast.error("שגיאה בשליחה", { id: toastId });
+    }
+  }
+
   const { data, isLoading } = useQuery({
     queryKey: ["assessment", assessmentId],
     queryFn: async () => {
@@ -198,26 +268,64 @@ export function AssessmentDetailView({
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-2 pb-4">
-          <a
-            href={`/api/assessments/${a.id}/pdf`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
-          >
-            <FileText size={15} />
-            הורד PDF
-          </a>
-          {a.participant_phone && (
+        <div className="flex flex-col gap-2 pb-4">
+          <div className="flex items-center gap-2">
+            <a
+              href={`/api/assessments/${a.id}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+            >
+              <FileText size={15} />
+              הורד PDF
+            </a>
+            {a.participant_phone && (
+              <button
+                type="button"
+                onClick={() => sendWhatsApp(a)}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-500 text-white px-4 py-2.5 text-sm font-medium hover:bg-emerald-600 transition-colors"
+              >
+                <Send size={15} />
+                WhatsApp אישי
+              </button>
+            )}
+          </div>
+
+          {/* Send to Master Class group */}
+          <div ref={pickerRef} className="relative">
             <button
               type="button"
-              onClick={() => sendWhatsApp(a)}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-500 text-white px-4 py-2.5 text-sm font-medium hover:bg-emerald-600 transition-colors"
+              onClick={() => groupPickerOpen ? setGroupPickerOpen(false) : openGroupPicker(a)}
+              className="w-full flex items-center justify-center gap-2 rounded-xl border border-emerald-500/50 text-emerald-600 dark:text-emerald-400 px-4 py-2.5 text-sm font-medium hover:bg-emerald-500/8 transition-colors"
             >
-              <Send size={15} />
-              שלח WhatsApp
+              {groupsLoading ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Users size={15} />
+              )}
+              שלח לקבוצת מאסטר קלאס
+              {masterGroups && masterGroups.length > 0 && (
+                <ChevronDown size={13} className={groupPickerOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+              )}
             </button>
-          )}
+
+            {groupPickerOpen && masterGroups && masterGroups.length > 0 && (
+              <div className="absolute bottom-full mb-1.5 inset-x-0 bg-popover border border-border/60 rounded-2xl shadow-lg overflow-hidden z-50">
+                <p className="text-[11px] text-muted-foreground/60 px-4 pt-3 pb-1.5 font-medium">בחר קבוצה לשליחה</p>
+                {masterGroups.map((g) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => sendToGroup(a, g)}
+                    className="w-full text-right flex items-center gap-3 px-4 py-3 hover:bg-muted/60 transition-colors text-sm border-t border-border/40 first:border-t-0"
+                  >
+                    <Users size={14} className="text-emerald-500 shrink-0" />
+                    <span className="flex-1 truncate">{g.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

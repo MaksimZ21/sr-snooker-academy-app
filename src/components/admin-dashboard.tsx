@@ -45,7 +45,7 @@ const TYPE_COLORS: Record<string, string> = {
   "match-play": "#1a7a4a",
 };
 
-export function AdminDashboard() {
+export function AdminDashboard({ displayName = "" }: { displayName?: string }) {
   const [reminderState, setReminderState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [sentCount, setSentCount] = useState(0);
 
@@ -78,7 +78,9 @@ export function AdminDashboard() {
       {/* Header */}
       <div className="flex items-end justify-between animate-fade-in-up">
         <div>
-          <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider mb-1">סקירה כללית</p>
+          <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider mb-1">
+            {displayName ? `שלום, ${displayName}` : "סקירה כללית"}
+          </p>
           <h1 className="text-2xl font-bold tracking-tight">
             {isLoading || !data ? <Skeleton className="h-8 w-52 inline-block" /> : formatHebrewDate(data.today)}
           </h1>

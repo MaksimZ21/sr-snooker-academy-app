@@ -12,9 +12,12 @@ const assistant = Assistant({
 });
 
 export const metadata: Metadata = {
-  title: "אקדמיית סנוקר",
-  description: "אפליקציית ניהול אקדמיה",
+  title: "האקדמיה לסנוקר של שחר רוברג",
+  description: "האקדמיה לסנוקר של שחר רוברג",
   manifest: "/manifest.webmanifest",
+  icons: {
+    apple: "/icon-192.png",
+  },
 };
 
 export const viewport: Viewport = {

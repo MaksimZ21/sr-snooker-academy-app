@@ -1,7 +1,7 @@
 {
-  "name": "אקדמיית סנוקר",
-  "short_name": "אקדמיה",
-  "description": "ניהול אקדמיה לסנוקר",
+  "name": "האקדמיה לסנוקר של שחר רוברג",
+  "short_name": "סנוקר רוברג",
+  "description": "האקדמיה לסנוקר של שחר רוברג",
   "start_url": "/",
   "display": "standalone",
   "dir": "rtl",

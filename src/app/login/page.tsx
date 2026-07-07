@@ -354,13 +354,10 @@ export default function LoginPage() {
                 height={75}
                 className="object-contain"
               />
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-                אקדמיית סנוקר
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight text-center">
+                האקדמיה לסנוקר<br />של שחר רוברג
               </h1>
             </div>
-            <p className="text-sm text-muted-foreground">
-              ניהול אימונים, נוכחות ומאמנים
-            </p>
           </div>
           <HashSessionHandler />
           <Suspense>

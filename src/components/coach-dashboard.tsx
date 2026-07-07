@@ -23,7 +23,7 @@ const CoachBarChart = dynamic(
   { ssr: false },
 );
 
-export function CoachDashboard() {
+export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
   const { data, isLoading } = useQuery<CoachStats>({
     queryKey: ["coach:stats"],
     queryFn: async () => {
@@ -48,7 +48,9 @@ export function CoachDashboard() {
     <div className="p-4 md:p-6 flex flex-col gap-6">
       {/* Header */}
       <div className="animate-fade-in-up">
-        <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider mb-1">סקירה אישית</p>
+        <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider mb-1">
+          {displayName ? `שלום, ${displayName}` : "סקירה אישית"}
+        </p>
         <h1 className="text-2xl font-bold tracking-tight">
           {isLoading || !data ? (
             <Skeleton className="h-8 w-52 inline-block" />

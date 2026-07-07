@@ -61,8 +61,8 @@ export function AppShell({
               />
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-bold text-white tracking-wide">אקדמיית סנוקר</div>
-              <div className="text-[11px] text-white/60 font-medium">ניהול אקדמיה</div>
+              <div className="text-sm font-bold text-white tracking-wide">האקדמיה לסנוקר</div>
+              <div className="text-[11px] text-white/60 font-medium">של שחר רוברג</div>
             </div>
           </div>
         </div>

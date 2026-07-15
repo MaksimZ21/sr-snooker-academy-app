@@ -2,6 +2,13 @@ import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
 import type { Session } from "./schemas";
 
+function addMinutes(time: string, minutes: number): string {
+  const [h, m] = time.split(":").map(Number);
+  if (isNaN(h) || isNaN(m)) return "";
+  const total = h * 60 + m + minutes;
+  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
 async function readAll(): Promise<Session[]> {
   const { data } = await db.from("sessions").select("*");
   return (data ?? []) as Session[];
@@ -216,13 +223,14 @@ export async function upsertSessionFromCrm(input: {
     existing = data as { id: string } | null;
   }
 
-  // Resolve group → student_ids
+  // Resolve group → student_ids + coach_email
   // First tries exact match, then checks if any group name is contained within the CRM name
   // (e.g. CRM sends "מכללה חיפה" but group is named "חיפה")
   let studentIds: string[] = [];
+  let resolvedCoachEmail = "";
   if (input.group_name) {
-    const { data: allGroups } = await db.from("groups").select("name, student_ids");
-    const groups = (allGroups ?? []) as { name: string; student_ids: unknown }[];
+    const { data: allGroups } = await db.from("groups").select("name, student_ids, coach_email");
+    const groups = (allGroups ?? []) as { name: string; student_ids: unknown; coach_email: string }[];
     const crmName = input.group_name.trim().toLowerCase();
     const matched =
       groups.find((g) => g.name.trim().toLowerCase() === crmName) ??
@@ -232,14 +240,17 @@ export async function upsertSessionFromCrm(input: {
       studentIds = Array.isArray(raw)
         ? (raw as string[])
         : String(raw ?? "").split(",").map((s: string) => s.trim()).filter(Boolean);
+      resolvedCoachEmail = matched.coach_email ?? "";
     }
   }
+
+  const endTime = input.end_time || addMinutes(input.start_time, 90);
 
   const fields = {
     name: input.name ?? "",
     date: input.date,
     start_time: input.start_time,
-    end_time: input.end_time ?? "",
+    end_time: endTime,
     training_type: input.training_type ?? "group",
     address: input.address ?? "",
     crm_event_id: input.crm_event_id,
@@ -248,7 +259,11 @@ export async function upsertSessionFromCrm(input: {
   };
 
   if (existing) {
-    const updateData = studentIds.length > 0 ? { ...fields, student_ids: studentIds } : fields;
+    const updateData = {
+      ...fields,
+      ...(studentIds.length > 0 && { student_ids: studentIds }),
+      ...(resolvedCoachEmail && { coach_email: resolvedCoachEmail }),
+    };
     await db.from("sessions").update(updateData).eq("id", existing.id);
     invalidateSessions();
     return { id: existing.id as string, action: "updated" };
@@ -268,7 +283,7 @@ export async function upsertSessionFromCrm(input: {
   await db.from("sessions").insert({
     id,
     ...fields,
-    coach_email: "",
+    coach_email: resolvedCoachEmail,
     student_ids: studentIds,
     drive_folder_url: "",
     status: "scheduled",

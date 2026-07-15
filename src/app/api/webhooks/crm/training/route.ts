@@ -39,6 +39,7 @@ const BasePayload = z.object({
   appointment_id: z.string().min(1),
   meeting_time: z.string().min(1),
   meeting_type: z.string().default(""),
+  meeting_title: z.string().optional(),
 });
 
 const AppointmentApprovedPayload = BasePayload.extend({
@@ -53,7 +54,7 @@ async function handleEventCreated(raw: Record<string, unknown>) {
     void logWebhook({ route: "training", event_type: "event_created", params: raw, status: "invalid", result: parsed.error.flatten() });
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
-  const { event_id, appointment_id, meeting_time, meeting_type } = parsed.data;
+  const { event_id, appointment_id, meeting_time, meeting_type, meeting_title } = parsed.data;
   const time = parseMeetingTime(meeting_time);
   if (!time) {
     void logWebhook({ route: "training", event_type: "event_created", params: raw, status: "invalid", result: { reason: "invalid meeting_time" } });
@@ -62,11 +63,11 @@ async function handleEventCreated(raw: Record<string, unknown>) {
   const result = await upsertSessionFromCrm({
     crm_event_id: event_id,
     crm_appointment_id: appointment_id,
-    name: meeting_type || undefined,
+    name: meeting_title || meeting_type || undefined,
     date: time.date,
     start_time: time.startTime,
     end_time: "",
-    group_name: meeting_type || undefined,
+    group_name: meeting_title || meeting_type || undefined,
     crm_event_type: "event_created",
   });
   void logWebhook({ route: "training", event_type: "event_created", params: raw, status: "ok", result });

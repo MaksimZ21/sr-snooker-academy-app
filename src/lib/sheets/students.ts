@@ -10,6 +10,7 @@ export type CrmStudent = {
   email: string;
   college_name?: string;
   subscription_type?: string;
+  birth_date?: string | null;
 };
 
 export const fetchStudents = unstable_cache(
@@ -115,6 +116,7 @@ export async function upsertStudentFromCrm(input: CrmStudent) {
       phone: input.phone ?? "",
       college_name: input.college_name ?? "",
       subscription_type: input.subscription_type ?? "",
+      ...(input.birth_date !== undefined && { birth_date: input.birth_date }),
     }).eq("id", existing.id);
     revalidateTag("students", { expire: 0 });
     if (input.college_name) {

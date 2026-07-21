@@ -11,6 +11,7 @@ import type { Session, Student, Attendance, Note } from "@/lib/sheets/schemas";
 import { AttendancePanel } from "./attendance-panel";
 import { NotesPanel } from "./notes-panel";
 import { EditSessionDialog } from "./forms/edit-session-dialog";
+import { DuplicateSessionDialog } from "./forms/duplicate-session-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatHebrewDate } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
@@ -132,6 +133,7 @@ export function SessionDetail({
         {/* Admin action buttons — absolute top corner */}
         {isAdmin && (
           <div className="absolute top-3 end-3 flex items-center gap-1 z-20">
+            <DuplicateSessionDialog session={session} />
             <EditSessionDialog session={session} />
             <Button
               variant="ghost"

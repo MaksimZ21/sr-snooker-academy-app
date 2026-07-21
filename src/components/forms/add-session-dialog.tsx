@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { Check, Plus } from "lucide-react";
 import { TRAINING_TYPE_LABEL } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
-import type { Student, Group } from "@/lib/sheets/schemas";
+import type { Student, Group, Session } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
 
 type Coach = { email: string; name: string; active: boolean };
@@ -79,6 +79,33 @@ export function AddSessionDialog() {
     enabled: open,
     staleTime: 60_000,
   });
+
+  const recentSessionsQ = useQuery({
+    queryKey: ["sessions:recent-for-copy"],
+    queryFn: async () => {
+      const to = new Date().toISOString().slice(0, 10);
+      const from = new Date(Date.now() - 56 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const r = await fetch(`/api/sessions/week?start=${from}&end=${to}`);
+      if (!r.ok) throw new Error("fetch failed");
+      const data = (await r.json()) as { sessions: Session[] };
+      return data.sessions
+        .sort((a, b) => b.date.localeCompare(a.date) || b.start_time.localeCompare(a.start_time))
+        .slice(0, 30);
+    },
+    enabled: open,
+    staleTime: 60_000,
+  });
+
+  function applySession(sessionId: string | null) {
+    const s = recentSessionsQ.data?.find((x) => x.id === sessionId);
+    if (!s) return;
+    setStartTime(s.start_time);
+    setEndTime(s.end_time);
+    setCoachEmail(s.coach_email);
+    setTrainingType(s.training_type);
+    setStudentIds(s.student_ids);
+    setDriveUrl(s.drive_folder_url ?? "");
+  }
 
   function addMinutes(time: string, minutes: number): string {
     const [h, m] = time.split(":").map(Number);
@@ -175,6 +202,29 @@ export function AddSessionDialog() {
           <DialogTitle>הוסף מפגש</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 max-h-[70vh] overflow-y-auto pr-1">
+          {/* Copy from existing session */}
+          <div>
+            <Label className="text-muted-foreground text-xs">העתק מאימון קיים (אופציונלי)</Label>
+            <Select onValueChange={applySession} disabled={recentSessionsQ.isLoading}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={recentSessionsQ.isLoading ? "טוען..." : "בחר אימון להעתקה..."} />
+              </SelectTrigger>
+              <SelectContent>
+                {(recentSessionsQ.data ?? []).map((s) => {
+                  const dateStr = `${s.date.slice(8, 10)}/${s.date.slice(5, 7)}`;
+                  const label = s.name || TRAINING_TYPE_LABEL[s.training_type] || s.training_type;
+                  return (
+                    <SelectItem key={s.id} value={s.id}>
+                      {dateStr} · {s.start_time} · {label}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="border-t border-border/40" />
+
           <div>
             <Label>תאריך</Label>
             <Input

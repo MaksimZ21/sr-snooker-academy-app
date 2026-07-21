@@ -25,6 +25,9 @@ import { TRAINING_TYPE_LABEL } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 import type { Student, Group, Session } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const HE_DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
 type Coach = { email: string; name: string; active: boolean };
 
@@ -47,6 +50,9 @@ export function AddSessionDialog() {
   const [studentIds, setStudentIds] = useState<string[]>([]);
   const [driveUrl, setDriveUrl] = useState("");
   const [search, setSearch] = useState("");
+  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  const [repeatCount, setRepeatCount] = useState(4);
+  const [repeatInterval, setRepeatInterval] = useState(7);
   const qc = useQueryClient();
 
   const coachesQ = useQuery({
@@ -124,6 +130,15 @@ export function AddSessionDialog() {
     }
   }
 
+  const repeatDates: string[] = useMemo(() => {
+    if (!date) return [];
+    return Array.from({ length: repeatEnabled ? repeatCount : 1 }, (_, i) => {
+      const d = new Date(date + "T00:00:00");
+      d.setDate(d.getDate() + i * repeatInterval);
+      return d.toISOString().slice(0, 10);
+    });
+  }, [date, repeatEnabled, repeatCount, repeatInterval]);
+
   const reset = () => {
     setDate("");
     setStartTime("");
@@ -133,28 +148,39 @@ export function AddSessionDialog() {
     setStudentIds([]);
     setDriveUrl("");
     setSearch("");
+    setRepeatEnabled(false);
+    setRepeatCount(4);
+    setRepeatInterval(7);
   };
 
   const mut = useMutation({
     mutationFn: async () => {
-      const r = await fetch("/api/sessions", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          date,
-          start_time: startTime,
-          end_time: endTime,
-          coach_email: coachEmail,
-          training_type: trainingType,
-          student_ids: studentIds,
-          drive_folder_url: driveUrl || undefined,
-        }),
-      });
-      if (!r.ok) throw new Error("failed");
-      return (await r.json()) as { id: string };
+      const results: { id: string }[] = [];
+      for (const d of repeatDates) {
+        const r = await fetch("/api/sessions", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            date: d,
+            start_time: startTime,
+            end_time: endTime,
+            coach_email: coachEmail,
+            training_type: trainingType,
+            student_ids: studentIds,
+            drive_folder_url: driveUrl || undefined,
+          }),
+        });
+        if (!r.ok) throw new Error("failed");
+        results.push(await r.json() as { id: string });
+      }
+      return results;
     },
-    onSuccess: ({ id }) => {
-      toast.success(`נוסף מפגש ${id}`);
+    onSuccess: (results) => {
+      toast.success(
+        results.length === 1
+          ? `נוסף מפגש ${results[0].id}`
+          : `נוספו ${results.length} מפגשים`,
+      );
       qc.invalidateQueries({ queryKey: ["sessions"] });
       qc.invalidateQueries({ queryKey: ["sessions:week"] });
       qc.invalidateQueries({ queryKey: ["sessions:today"] });
@@ -367,6 +393,72 @@ export function AddSessionDialog() {
               placeholder="https://drive.google.com/..."
             />
           </div>
+
+          {/* Repeat section */}
+          <div className="flex flex-col gap-2.5 pt-1 border-t border-border/40">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <Checkbox
+                checked={repeatEnabled}
+                onCheckedChange={(v) => setRepeatEnabled(!!v)}
+              />
+              <span className="text-sm font-medium">צור מספר מפגשים</span>
+            </label>
+
+            {repeatEnabled && (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">כמות מפגשים</Label>
+                    <Input
+                      type="number"
+                      min={2}
+                      max={52}
+                      value={repeatCount}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value);
+                        if (!isNaN(v)) setRepeatCount(Math.max(2, Math.min(52, v)));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">תדירות</Label>
+                    <Select
+                      value={String(repeatInterval)}
+                      onValueChange={(v) => setRepeatInterval(Number(v))}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7">שבועי</SelectItem>
+                        <SelectItem value="14">דו-שבועי</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {date && (
+                  <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 max-h-36 overflow-y-auto">
+                    <p className="text-xs text-muted-foreground mb-1.5">תאריכים שייווצרו:</p>
+                    <div className="flex flex-col gap-0.5">
+                      {repeatDates.map((d, i) => {
+                        const day = new Date(d + "T00:00:00").getDay();
+                        return (
+                          <span key={d} className="text-xs flex items-center gap-2">
+                            <span className="text-muted-foreground w-5 tabular-nums">{i + 1}.</span>
+                            <span className="font-medium tabular-nums">
+                              {d.slice(8, 10)}/{d.slice(5, 7)}/{d.slice(0, 4)}
+                            </span>
+                            <span className="text-muted-foreground">{HE_DAYS[day]}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
         <DialogFooter>
           <Button
@@ -377,7 +469,9 @@ export function AddSessionDialog() {
             ביטול
           </Button>
           <Button onClick={() => mut.mutate()} disabled={!canSubmit}>
-            {mut.isPending ? "שומר..." : "שמור"}
+            {mut.isPending
+              ? repeatEnabled ? `יוצר ${repeatDates.length} מפגשים...` : "שומר..."
+              : repeatEnabled ? `צור ${repeatDates.length} מפגשים` : "שמור"}
           </Button>
         </DialogFooter>
       </DialogContent>

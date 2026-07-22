@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { upsertStudentFromCrm } from "@/lib/sheets/students";
 import { logWebhook } from "@/lib/sheets/webhook-log";
+import { getCrmPaused } from "@/lib/sheets/settings";
 
 const CrmQuery = z.object({
   first_name: z.string().min(1),
@@ -22,6 +23,9 @@ function parseBirthday(raw?: string): string | null {
 }
 
 export async function GET(req: Request) {
+  if (await getCrmPaused()) {
+    return NextResponse.json({ ok: true, paused: true });
+  }
   const { searchParams } = new URL(req.url);
   const raw = Object.fromEntries(searchParams.entries());
 

@@ -5,6 +5,7 @@ import { upsertAttendance } from "@/lib/sheets/attendance";
 import { db } from "@/lib/db/client";
 import type { Student } from "@/lib/sheets/schemas";
 import { logWebhook } from "@/lib/sheets/webhook-log";
+import { getCrmPaused } from "@/lib/sheets/settings";
 
 function normalizePhone(raw: string): { local: string; intl: string } {
   const d = raw.replace(/\D/g, "");
@@ -139,6 +140,9 @@ async function handleAppointmentRejected(raw: Record<string, unknown>) {
 }
 
 async function handle(raw: Record<string, unknown>) {
+  if (await getCrmPaused()) {
+    return NextResponse.json({ ok: true, paused: true });
+  }
   const eventType = String(raw.event_type ?? "");
   if (eventType === "event_created") return handleEventCreated(raw);
   if (eventType === "appointment_approved") return handleAppointmentApproved(raw);

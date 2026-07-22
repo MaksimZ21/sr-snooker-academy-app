@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { RefreshCw, ChevronDown, ChevronUp, PauseCircle, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 interface WebhookLog {
@@ -35,6 +36,27 @@ export function WebhookLogsViewer() {
   const [routeFilter, setRouteFilter]   = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [expandedId, setExpandedId]     = useState<number | null>(null);
+  const qc = useQueryClient();
+
+  const pauseQ = useQuery({
+    queryKey: ["crm-paused"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/crm-pause");
+      return (await r.json()) as { paused: boolean };
+    },
+  });
+
+  const toggleMut = useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/admin/crm-pause", { method: "POST" });
+      return (await r.json()) as { paused: boolean };
+    },
+    onSuccess: (result) => {
+      qc.setQueryData(["crm-paused"], result);
+      toast.success(result.paused ? "CRM מושהה — הנתונים לא יישמרו" : "CRM פעיל מחדש");
+    },
+    onError: () => toast.error("שגיאה בשינוי הסטטוס"),
+  });
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["webhook-logs", routeFilter, statusFilter],
@@ -54,8 +76,42 @@ export function WebhookLogsViewer() {
     setExpandedId((prev) => (prev === id ? null : id));
   }
 
+  const paused = pauseQ.data?.paused ?? false;
+
   return (
     <div className="p-4 md:p-6 flex flex-col gap-4">
+
+      {/* CRM pause toggle */}
+      <div className={cn(
+        "flex items-center justify-between rounded-xl border px-4 py-3 transition-colors",
+        paused
+          ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30"
+          : "border-border/60 bg-card",
+      )}>
+        <div className="flex items-center gap-2.5">
+          {paused
+            ? <PauseCircle size={18} className="text-amber-600 dark:text-amber-400 shrink-0" />
+            : <PlayCircle size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0" />}
+          <div>
+            <p className="text-sm font-medium">
+              {paused ? "CRM מושהה" : "CRM פעיל"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {paused
+                ? "הנתונים מה-CRM מגיעים אך לא נשמרים"
+                : "כל הנתונים מה-CRM נשמרים רגיל"}
+            </p>
+          </div>
+        </div>
+        <Button
+          variant={paused ? "default" : "outline"}
+          size="sm"
+          onClick={() => toggleMut.mutate()}
+          disabled={toggleMut.isPending || pauseQ.isLoading}
+        >
+          {paused ? "המשך קבלה" : "השהה CRM"}
+        </Button>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center justify-between">

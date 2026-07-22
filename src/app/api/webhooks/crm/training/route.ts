@@ -139,9 +139,6 @@ async function handleAppointmentRejected(raw: Record<string, unknown>) {
 }
 
 async function handle(raw: Record<string, unknown>) {
-  if (process.env.CRM_WEBHOOK_PAUSED === "1") {
-    return NextResponse.json({ ok: true, paused: true }, { status: 200 });
-  }
   const eventType = String(raw.event_type ?? "");
   if (eventType === "event_created") return handleEventCreated(raw);
   if (eventType === "appointment_approved") return handleAppointmentApproved(raw);

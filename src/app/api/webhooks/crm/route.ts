@@ -22,6 +22,9 @@ function parseBirthday(raw?: string): string | null {
 }
 
 export async function GET(req: Request) {
+  if (process.env.CRM_WEBHOOK_PAUSED === "1") {
+    return NextResponse.json({ ok: true, paused: true }, { status: 200 });
+  }
   const { searchParams } = new URL(req.url);
   const raw = Object.fromEntries(searchParams.entries());
 

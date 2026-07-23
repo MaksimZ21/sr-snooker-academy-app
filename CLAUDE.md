@@ -76,6 +76,15 @@ Three roles only: `admin | coach | denied`
 - **Phone lookup:** searches `coaches` and `students` tables by phone (local `0XXXXXXXXX` and intl `972XXXXXXXXX` formats)
 - **UI:** "כניסה עם WhatsApp" button on login page (below existing email forms), WhatsApp green styling
 
+## Email + Password Login (added 2026-07-23)
+- **Login page** (`src/app/login/page.tsx`): both tabs now toggle between WhatsApp OTP and email+password (`signInWithPassword`). Staff tab defaults to WhatsApp; student tab defaults to email+password. The old email-OTP flow (`signInWithOtp`) was removed entirely.
+- **Getting a password (first time):** no automatic emails, no admin-generated/relayed passwords. In `/admin/coaches` and `/admin/students`, every row has a manual "שלח קישור הזמנה" (mail icon) button — admin clicks it whenever they want, for any row (new or existing, including students that arrived via the CRM webhook).
+- **`src/lib/auth/invite.ts`** — `sendLoginInvite(email, origin)`: calls Supabase `inviteUserByEmail`, falls back to `resetPasswordForEmail` if the user already exists. `origin` is derived from the request URL (`new URL(req.url).origin`), not an env var — avoids the redirect bugs that broke the original version of this flow (see git history around `75effaf`/`62d051a`, June 2026).
+- **`POST /api/admin/invite`** — admin-only route wrapping `sendLoginInvite`. Redirects through `/auth/callback?next=/set-password` (existing route, unchanged) to `/set-password` (existing page, unchanged).
+- **Changing password anytime:** "שינוי סיסמה" button on the profile page (`ProfileCard`, used by admin/coach/student profile pages) → `/set-password`. Students got a new `/student/profile` page + nav item for this (didn't exist before).
+- **Explicitly not touched:** `src/lib/sheets/students.ts` (`appendStudent`, `upsertStudentFromCrm`) and the CRM webhook route — no automatic password/invite logic was added to account creation, by design.
+- Spec: `docs/superpowers/specs/2026-07-23-email-password-login-design.md`, plan: `docs/superpowers/plans/2026-07-23-email-password-login.md`
+
 ## Auth Architecture (updated 2026-06-21)
 - **Middleware** (`src/middleware.ts`): uses `getSession()` (local cookie read, no network) — excludes `/api/*` from matcher
 - **Layouts** (`(admin)/layout.tsx`, `(coach)/layout.tsx`): use `getSession()` — no Supabase network call on navigation

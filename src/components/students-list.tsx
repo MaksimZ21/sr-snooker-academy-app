@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AddStudentDialog } from "@/components/forms/add-student-dialog";
 import { EditStudentDialog } from "@/components/forms/edit-student-dialog";
 import { StudentHistoryDialog } from "@/components/student-history-dialog";
-import { History, Pencil, Search, Trash2, X, Check, GraduationCap, ChevronLeft } from "lucide-react";
+import { History, Pencil, Search, Trash2, X, Check, GraduationCap, ChevronLeft, Mail } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,19 @@ export function StudentsList() {
       return (await r.json()) as { students: Student[] };
     },
     staleTime: 5 * 60_000,
+  });
+
+  const inviteMut = useMutation({
+    mutationFn: async (email: string) => {
+      const r = await fetch("/api/admin/invite", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+    },
+    onSuccess: () => toast.success("קישור נשלח למייל"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בשליחת הקישור"),
   });
 
   const colleges = useMemo(() => {
@@ -164,6 +177,7 @@ export function StudentsList() {
                 onDeleteRequest={() => setConfirmDelete(s.id)}
                 onDeleteConfirm={() => handleDelete(s.id)}
                 onDeleteCancel={() => setConfirmDelete(null)}
+                onInvite={() => inviteMut.mutate(s.email)}
               />
             ))}
           </div>
@@ -199,6 +213,7 @@ function StudentRow({
   onDeleteRequest,
   onDeleteConfirm,
   onDeleteCancel,
+  onInvite,
 }: {
   student: Student;
   confirmDelete: string | null;
@@ -208,6 +223,7 @@ function StudentRow({
   onDeleteRequest: () => void;
   onDeleteConfirm: () => void;
   onDeleteCancel: () => void;
+  onInvite: () => void;
 }) {
   const name = studentFullName(s);
   const initials = name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
@@ -264,6 +280,16 @@ function StudentRow({
         </div>
       ) : (
         <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
+            title={s.email ? "שלח קישור הזמנה" : "אין מייל למתאמן זה"}
+            disabled={!s.email}
+            onClick={onInvite}
+          >
+            <Mail className="h-3.5 w-3.5" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"

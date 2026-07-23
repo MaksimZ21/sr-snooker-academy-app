@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { History, Trash2, Pencil, Users } from "lucide-react";
+import { History, Trash2, Pencil, Users, Mail } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,6 +83,19 @@ export function CoachesList() {
     onError: () => toast.error("שגיאה במחיקת המאמן"),
   });
 
+  const inviteMut = useMutation({
+    mutationFn: async (email: string) => {
+      const r = await fetch("/api/admin/invite", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+    },
+    onSuccess: () => toast.success("קישור נשלח למייל"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בשליחת הקישור"),
+  });
+
   const coaches = data?.coaches ?? [];
 
   return (
@@ -119,6 +132,7 @@ export function CoachesList() {
                 coach={c}
                 onEdit={() => openEdit(c)}
                 onDelete={() => setToDelete(c)}
+                onInvite={() => inviteMut.mutate(c.email)}
               />
             ))}
           </div>
@@ -178,10 +192,11 @@ export function CoachesList() {
   );
 }
 
-function CoachRow({ coach: c, onEdit, onDelete }: {
+function CoachRow({ coach: c, onEdit, onDelete, onInvite }: {
   coach: Coach;
   onEdit: () => void;
   onDelete: () => void;
+  onInvite: () => void;
 }) {
   const info = [c.email, c.phone].filter(Boolean).join(" · ");
 
@@ -217,6 +232,15 @@ function CoachRow({ coach: c, onEdit, onDelete }: {
         >
           <History size={14} />
         </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+          title="שלח קישור הזמנה"
+          onClick={onInvite}
+        >
+          <Mail size={14} />
+        </Button>
         <Button
           variant="ghost"
           size="icon"

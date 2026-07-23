@@ -10,6 +10,9 @@ export function ProfileCard({ email, role }: { email: string; role: string }) {
     await sb.auth.signOut();
     window.location.href = "/login";
   }
+  function changePassword() {
+    window.location.href = "/set-password";
+  }
   return (
     <div className="p-4">
       <Card className="overflow-hidden">
@@ -23,12 +26,17 @@ export function ProfileCard({ email, role }: { email: string; role: string }) {
           <div className="text-center">
             <div className="font-mono text-sm">{email}</div>
             <div className="text-xs text-muted-foreground mt-1">
-              {role === "admin" ? "מנהל" : "מאמן"}
+              {role === "admin" ? "מנהל" : role === "student" ? "מתאמן" : "מאמן"}
             </div>
           </div>
-          <Button variant="outline" onClick={signOut}>
-            התנתקות
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={changePassword}>
+              שינוי סיסמה
+            </Button>
+            <Button variant="outline" onClick={signOut}>
+              התנתקות
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

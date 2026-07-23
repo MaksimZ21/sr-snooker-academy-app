@@ -8,8 +8,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useSearchParams } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 
-// StaffLoginForm kept for potential future use (password login)
-function StaffLoginForm() {
+function EmailPasswordLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -52,97 +51,6 @@ function StaffLoginForm() {
       {error && <p className="text-sm text-destructive text-center">{error}</p>}
       <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base mt-1">
         {loading ? "מתחבר..." : "התחברות"}
-      </Button>
-    </form>
-  );
-}
-
-
-type OtpStep = "email" | "code";
-
-function StudentLoginForm() {
-  const [step, setStep] = useState<OtpStep>("email");
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const supabase = createSupabaseBrowserClient();
-
-  async function sendOtp(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    if (error) {
-      setError(error.message);
-    } else {
-      setStep("code");
-    }
-    setLoading(false);
-  }
-
-  async function verifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: code,
-      type: "email",
-    });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      window.location.href = "/student";
-    }
-  }
-
-  if (step === "code") {
-    return (
-      <form onSubmit={verifyOtp} className="flex flex-col gap-3">
-        <p className="text-sm text-muted-foreground text-center">
-          שלחנו קוד ל-{email}
-        </p>
-        <Input
-          type="text"
-          inputMode="numeric"
-          placeholder="קוד בן 6 ספרות"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          required
-          maxLength={6}
-          dir="ltr"
-          className="text-center text-lg tracking-widest"
-        />
-        {error && <p className="text-sm text-destructive text-center">{error}</p>}
-        <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base mt-1">
-          {loading ? "מאמת..." : "אימות"}
-        </Button>
-        <button
-          type="button"
-          onClick={() => setStep("email")}
-          className="text-sm text-muted-foreground underline text-center"
-        >
-          שנה מייל
-        </button>
-      </form>
-    );
-  }
-
-  return (
-    <form onSubmit={sendOtp} className="flex flex-col gap-3">
-      <Input
-        type="email"
-        placeholder="אימייל"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-        dir="ltr"
-      />
-      {error && <p className="text-sm text-destructive text-center">{error}</p>}
-      <Button type="submit" disabled={loading} size="lg" className="w-full h-12 text-base mt-1">
-        {loading ? "שולח קוד..." : "שלח קוד"}
       </Button>
     </form>
   );
@@ -254,14 +162,15 @@ type Tab = "staff" | "student";
 
 function LoginTabs() {
   const [tab, setTab] = useState<Tab>("staff");
-  const [showWa, setShowWa] = useState(false);
+  // Staff defaults to WhatsApp; student defaults to email+password. Each tab button resets to its own default.
+  const [showWa, setShowWa] = useState(true);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg text-sm">
         <button
           type="button"
-          onClick={() => { setTab("staff"); setShowWa(false); }}
+          onClick={() => { setTab("staff"); setShowWa(true); }}
           className={`rounded-md py-1.5 font-medium transition-colors ${
             tab === "staff" ? "bg-background shadow-sm" : "text-muted-foreground"
           }`}
@@ -279,9 +188,7 @@ function LoginTabs() {
         </button>
       </div>
 
-      {tab === "staff" ? (
-        <WhatsAppLoginForm />
-      ) : showWa ? (
+      {showWa ? (
         <div className="flex flex-col gap-3">
           <WhatsAppLoginForm />
           <button
@@ -289,12 +196,12 @@ function LoginTabs() {
             onClick={() => setShowWa(false)}
             className="text-sm text-muted-foreground underline text-center"
           >
-            חזור לכניסה עם אימייל
+            כניסה עם מייל וסיסמה
           </button>
         </div>
       ) : (
         <>
-          <StudentLoginForm />
+          <EmailPasswordLoginForm />
           <div className="relative my-1">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border/60" />

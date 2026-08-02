@@ -28,6 +28,7 @@ export function AddStudentDialog() {
   const [subscriptionType, setSubscriptionType] = useState("");
   const [notes, setNotes] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [lastPaymentDate, setLastPaymentDate] = useState("");
   const qc = useQueryClient();
 
   const collegesQ = useQuery({
@@ -49,6 +50,7 @@ export function AddStudentDialog() {
     setSubscriptionType("");
     setNotes("");
     setBirthDate("");
+    setLastPaymentDate("");
   };
 
   const mut = useMutation({
@@ -65,6 +67,7 @@ export function AddStudentDialog() {
           subscription_type: subscriptionType,
           general_notes: notes,
           birth_date: birthDate || null,
+          last_payment_date: lastPaymentDate || null,
         }),
       });
       if (!r.ok) throw new Error("failed");
@@ -129,6 +132,10 @@ export function AddStudentDialog() {
           <div>
             <Label>תאריך לידה</Label>
             <Input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+          </div>
+          <div>
+            <Label>תאריך תשלום אחרון</Label>
+            <Input type="date" value={lastPaymentDate} onChange={(e) => setLastPaymentDate(e.target.value)} />
           </div>
           <div>
             <Label>הערות כלליות</Label>

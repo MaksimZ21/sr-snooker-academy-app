@@ -34,6 +34,7 @@ export function EditStudentDialog({
   const [subscriptionType, setSubscriptionType] = useState(student.subscription_type);
   const [notes, setNotes] = useState(student.general_notes);
   const [birthDate, setBirthDate] = useState(student.birth_date ?? "");
+  const [lastPaymentDate, setLastPaymentDate] = useState(student.last_payment_date ?? "");
   const [active, setActive] = useState(student.active);
   const qc = useQueryClient();
 
@@ -57,6 +58,7 @@ export function EditStudentDialog({
       setSubscriptionType(student.subscription_type);
       setNotes(student.general_notes);
       setBirthDate(student.birth_date ?? "");
+      setLastPaymentDate(student.last_payment_date ?? "");
       setActive(student.active);
     }
   }, [open, student]);
@@ -75,6 +77,7 @@ export function EditStudentDialog({
           subscription_type: subscriptionType.trim(),
           general_notes: notes.trim(),
           birth_date: birthDate || null,
+          last_payment_date: lastPaymentDate || null,
           active,
         }),
       });
@@ -134,6 +137,10 @@ export function EditStudentDialog({
           <div>
             <Label>תאריך לידה</Label>
             <Input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+          </div>
+          <div>
+            <Label>תאריך תשלום אחרון</Label>
+            <Input type="date" value={lastPaymentDate} onChange={(e) => setLastPaymentDate(e.target.value)} />
           </div>
           <div>
             <Label>הערות כלליות</Label>

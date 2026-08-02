@@ -56,6 +56,7 @@ export const SessionRow = z.object({
   crm_event_id: z.string().default(""),
   crm_event_type: z.string().default(""),
   crm_appointment_id: z.string().default(""),
+  group_id: z.string().nullable().default(null),
   status: z.enum(["scheduled", "completed", "cancelled"]),
   price_nis: z.coerce.number().int().nullable().default(null),
   source: z.string().default(""),

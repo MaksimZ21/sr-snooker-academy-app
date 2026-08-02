@@ -25,6 +25,7 @@ export async function POST(req: Request) {
         training_type: TrainingType,
         student_ids: z.array(z.string().min(1)).min(1),
         drive_folder_url: z.string().optional(),
+        group_id: z.string().nullable().optional(),
       })
       .parse(await req.json());
     const id = await appendSession(body);

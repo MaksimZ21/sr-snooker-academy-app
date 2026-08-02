@@ -12,6 +12,7 @@ const PatchBody = z.object({
   subscription_type: z.string().optional(),
   general_notes: z.string().optional(),
   birth_date: z.string().nullable().optional(),
+  last_payment_date: z.string().nullable().optional(),
   active: z.boolean().optional(),
 });
 

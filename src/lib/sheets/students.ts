@@ -31,6 +31,7 @@ export async function appendStudent(input: {
   subscription_type?: string;
   general_notes?: string;
   birth_date?: string | null;
+  last_payment_date?: string | null;
 }) {
   const { data } = await db.from("students").select("id");
   const nums = (data ?? [])
@@ -48,6 +49,7 @@ export async function appendStudent(input: {
     subscription_type: input.subscription_type ?? "",
     general_notes: input.general_notes ?? "",
     birth_date: input.birth_date ?? null,
+    last_payment_date: input.last_payment_date ?? null,
     active: true,
   });
   revalidateTag("students", { expire: 0 });
@@ -88,6 +90,7 @@ export async function updateStudent(
     subscription_type?: string;
     general_notes?: string;
     birth_date?: string | null;
+    last_payment_date?: string | null;
     active?: boolean;
   },
 ): Promise<void> {

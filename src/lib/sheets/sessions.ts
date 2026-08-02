@@ -148,6 +148,7 @@ export async function appendSession(input: {
   training_type: string;
   student_ids: string[];
   drive_folder_url?: string;
+  group_id?: string | null;
 }) {
   const prefix = `SES-${input.date}-`;
   const { data } = await db.from("sessions").select("id").like("id", `${prefix}%`);
@@ -168,6 +169,7 @@ export async function appendSession(input: {
     training_type: input.training_type,
     student_ids: input.student_ids,
     drive_folder_url: input.drive_folder_url ?? "",
+    group_id: input.group_id ?? null,
     status: "scheduled",
   });
   invalidateSessions();

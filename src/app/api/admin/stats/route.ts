@@ -14,6 +14,7 @@ export type DayBar = { date: string; day: string; count: number };
 export type TypeSlice = { type: string; label: string; count: number };
 
 export type AbsentStudent = { id: string; name: string };
+export type PaymentDueStudent = { id: string; name: string };
 
 export type AdminStats = {
   today: string;
@@ -24,7 +25,7 @@ export type AdminStats = {
   todaySessions: Session[];
   upcomingSessions: Session[];
   coachMap: Record<string, string>;
-  alerts: { noCoach: Session[]; absentStudents: AbsentStudent[] };
+  alerts: { noCoach: Session[]; absentStudents: AbsentStudent[]; paymentDue: PaymentDueStudent[] };
   sessionsByDay: DayBar[];
   sessionsByType: TypeSlice[];
   newMessages: number;
@@ -36,6 +37,7 @@ const fetchAdminStatsData = unstable_cache(
     const nextWeekEnd = format(addDays(parseISO(today), 7), "yyyy-MM-dd");
 
     const past21 = format(addDays(parseISO(today), -21), "yyyy-MM-dd");
+    const paymentCutoff = format(addDays(parseISO(today), -30), "yyyy-MM-dd");
 
     const [
       students,
@@ -91,6 +93,10 @@ const fetchAdminStatsData = unstable_cache(
     const noCoachSessions = (noCoachRows.data ?? []) as Session[];
     const weekSessions = (weekRows.data ?? []) as Session[];
 
+    const paymentDue: PaymentDueStudent[] = students
+      .filter((s) => s.active && (!s.last_payment_date || s.last_payment_date < paymentCutoff))
+      .map((s) => ({ id: s.id, name: [s.first_name, s.last_name].filter(Boolean).join(" ") }));
+
     const sessionsByDay: DayBar[] = Array.from({ length: 7 }, (_, i) => {
       const date = format(addDays(parseISO(startIso), i), "yyyy-MM-dd");
       return {
@@ -123,7 +129,7 @@ const fetchAdminStatsData = unstable_cache(
       todaySessions,
       upcomingSessions,
       coachMap,
-      alerts: { noCoach: noCoachSessions, absentStudents },
+      alerts: { noCoach: noCoachSessions, absentStudents, paymentDue },
       sessionsByDay,
       sessionsByType,
       newMessages,

@@ -203,7 +203,7 @@ export async function upsertSessionFromCrm(input: {
   address?: string;
   crm_event_type?: string;
   group_name?: string;
-}): Promise<{ id: string; action: "created" | "updated" }> {
+}): Promise<{ id: string; action: "created" | "updated" | "attached" }> {
   // Resolve existing session.
   // appointment_id is unique per occurrence — use it when available, never fall back to event_id.
   // event_id identifies the recurring series and is reused across sessions, so only use it as
@@ -225,14 +225,15 @@ export async function upsertSessionFromCrm(input: {
     existing = data as { id: string } | null;
   }
 
-  // Resolve group → student_ids + coach_email
+  // Resolve group → student_ids + coach_email + group_id
   // First tries exact match, then checks if any group name is contained within the CRM name
   // (e.g. CRM sends "מכללה חיפה" but group is named "חיפה")
   let studentIds: string[] = [];
   let resolvedCoachEmail = "";
+  let resolvedGroupId: string | null = null;
   if (input.group_name) {
-    const { data: allGroups } = await db.from("groups").select("name, student_ids, coach_email");
-    const groups = (allGroups ?? []) as { name: string; student_ids: unknown; coach_email: string }[];
+    const { data: allGroups } = await db.from("groups").select("id, name, student_ids, coach_email");
+    const groups = (allGroups ?? []) as { id: string; name: string; student_ids: unknown; coach_email: string }[];
     const crmName = input.group_name.trim().toLowerCase();
     const matched =
       groups.find((g) => g.name.trim().toLowerCase() === crmName) ??
@@ -243,6 +244,7 @@ export async function upsertSessionFromCrm(input: {
         ? (raw as string[])
         : String(raw ?? "").split(",").map((s: string) => s.trim()).filter(Boolean);
       resolvedCoachEmail = matched.coach_email ?? "";
+      resolvedGroupId = matched.id;
     }
   }
 
@@ -258,6 +260,7 @@ export async function upsertSessionFromCrm(input: {
     crm_event_id: input.crm_event_id,
     crm_event_type: input.crm_event_type ?? "",
     crm_appointment_id: input.crm_appointment_id ?? "",
+    group_id: resolvedGroupId,
   };
 
   if (existing) {
@@ -269,6 +272,36 @@ export async function upsertSessionFromCrm(input: {
     await db.from("sessions").update(updateData).eq("id", existing.id);
     invalidateSessions();
     return { id: existing.id as string, action: "updated" };
+  }
+
+  // No session linked to this CRM id yet. Before creating a new one, check whether a
+  // session for the same group/date/time was already created manually in the app —
+  // if so, attach this CRM appointment to it instead of creating a duplicate. Only the
+  // CRM linkage fields are touched here; date/time/roster/coach stay exactly as the
+  // admin entered them.
+  if (resolvedGroupId) {
+    const { data: manualMatches } = await db
+      .from("sessions")
+      .select("id")
+      .eq("group_id", resolvedGroupId)
+      .eq("date", input.date)
+      .eq("start_time", input.start_time)
+      .order("id")
+      .limit(1);
+    const manualMatch = (manualMatches ?? [])[0] as { id: string } | undefined;
+    if (manualMatch) {
+      await db
+        .from("sessions")
+        .update({
+          crm_event_id: input.crm_event_id,
+          crm_appointment_id: input.crm_appointment_id ?? "",
+          crm_event_type: input.crm_event_type ?? "",
+          group_id: resolvedGroupId,
+        })
+        .eq("id", manualMatch.id);
+      invalidateSessions();
+      return { id: manualMatch.id, action: "attached" };
+    }
   }
 
   const prefix = `SES-${input.date}-`;

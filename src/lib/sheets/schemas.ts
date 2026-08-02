@@ -24,6 +24,7 @@ export const StudentRow = z.object({
   subscription_type: z.string().default(""),
   general_notes: z.string().default(""),
   birth_date: z.string().nullable().default(null),
+  last_payment_date: z.string().nullable().default(null),
   active: Bool,
 });
 export type Student = z.infer<typeof StudentRow>;

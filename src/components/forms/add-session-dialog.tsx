@@ -49,6 +49,7 @@ export function AddSessionDialog() {
   const [trainingType, setTrainingType] = useState("");
   const [studentIds, setStudentIds] = useState<string[]>([]);
   const [driveUrl, setDriveUrl] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [repeatEnabled, setRepeatEnabled] = useState(false);
   const [repeatCount, setRepeatCount] = useState(4);
@@ -111,6 +112,7 @@ export function AddSessionDialog() {
     setTrainingType(s.training_type);
     setStudentIds(s.student_ids);
     setDriveUrl(s.drive_folder_url ?? "");
+    setSelectedGroupId(s.group_id ?? null);
   }
 
   function addMinutes(time: string, minutes: number): string {
@@ -122,6 +124,7 @@ export function AddSessionDialog() {
   function applyGroup(groupId: string | null) {
     const group = groupsQ.data?.groups.find((g) => g.id === groupId);
     if (!group) return;
+    setSelectedGroupId(groupId);
     setStudentIds((prev) => [...new Set([...prev, ...group.student_ids])]);
     if (group.coach_email) setCoachEmail(group.coach_email);
     if (group.start_time) {
@@ -147,6 +150,7 @@ export function AddSessionDialog() {
     setTrainingType("");
     setStudentIds([]);
     setDriveUrl("");
+    setSelectedGroupId(null);
     setSearch("");
     setRepeatEnabled(false);
     setRepeatCount(4);
@@ -168,6 +172,7 @@ export function AddSessionDialog() {
             training_type: trainingType,
             student_ids: studentIds,
             drive_folder_url: driveUrl || undefined,
+            group_id: selectedGroupId,
           }),
         });
         if (!r.ok) throw new Error("failed");

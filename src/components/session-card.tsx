@@ -1,8 +1,10 @@
+"use client";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, ChevronLeft, Banknote } from "lucide-react";
-import type { Session } from "@/lib/sheets/schemas";
+import type { Group, Session } from "@/lib/sheets/schemas";
 import { formatHebrewDate } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
@@ -37,6 +39,20 @@ export function SessionCard({
   const stripe = STRIPE[session.training_type] ?? "bg-muted-foreground/40";
   const glow = STRIPE_GLOW[session.training_type] ?? "";
   const cancelled = session.status === "cancelled";
+
+  const groupsQ = useQuery({
+    queryKey: ["groups"],
+    queryFn: async () => {
+      const r = await fetch("/api/groups");
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as { groups: Group[] };
+    },
+    staleTime: 5 * 60_000,
+  });
+  const groupName = session.group_id
+    ? groupsQ.data?.groups.find((g) => g.id === session.group_id)?.name
+    : undefined;
+  const subLabel = session.name || groupName || formatHebrewDate(session.date);
 
   return (
     <Link href={`/${basePath}/sessions/${session.id}`}>
@@ -76,7 +92,7 @@ export function SessionCard({
             {/* Bottom row: name/date + price + students */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
-                <span className="truncate">{session.name ? session.name : formatHebrewDate(session.date)}</span>
+                <span className="truncate">{subLabel}</span>
                 {session.source ? (
                   <Badge
                     variant="outline"

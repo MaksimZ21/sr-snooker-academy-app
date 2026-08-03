@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     db.from("coaches").select("email, name, phone, offsets").eq("active", true),
     db.from("sessions")
       .select("coach_email, price_nis")
-      .eq("status", "completed")
+      .neq("status", "cancelled")
       .gte("date", start)
       .lt("date", end),
   ]);

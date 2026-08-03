@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     let sessionQuery = db
       .from("sessions")
       .select("id, coach_email, source, price_nis, training_type, date")
-      .eq("status", "completed")
+      .neq("status", "cancelled")
       .neq("coach_email", "");
 
     let periodLabel = "כל הזמן";

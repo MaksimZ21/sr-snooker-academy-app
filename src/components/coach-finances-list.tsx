@@ -376,7 +376,8 @@ export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
   }
 
   // Filter pipeline
-  const byPeriod  = useMemo(() => filterByPeriod(data?.sessions ?? [], mode, year, month), [data, mode, year, month]);
+  const activeSessions = useMemo(() => (data?.sessions ?? []).filter((s) => s.status !== "cancelled"), [data]);
+  const byPeriod  = useMemo(() => filterByPeriod(activeSessions, mode, year, month), [activeSessions, mode, year, month]);
   const bySrc     = useMemo(() => srcFilter === "all" ? byPeriod : byPeriod.filter((s) => s.source === srcFilter), [byPeriod, srcFilter]);
   const filtered  = useMemo(() => payFilter === "all" ? bySrc : bySrc.filter((s) => payStatus(s) === payFilter), [bySrc, payFilter]);
 

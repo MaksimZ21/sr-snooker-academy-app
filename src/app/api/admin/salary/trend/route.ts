@@ -20,7 +20,7 @@ const fetchTrend = unstable_cache(
     const { data, error } = await db
       .from("sessions")
       .select("date, price_nis")
-      .eq("status", "completed")
+      .neq("status", "cancelled")
       .neq("coach_email", "")
       .gte("date", startDate.toISOString().slice(0, 10))
       .lt("date", endDate.toISOString().slice(0, 10));

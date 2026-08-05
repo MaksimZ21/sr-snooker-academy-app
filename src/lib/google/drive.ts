@@ -68,7 +68,7 @@ export async function listImagesInFolder(folderUrl: string): Promise<string[]> {
 }
 
 const ROOT_FOLDER_ID =
-  process.env.GOOGLE_DRIVE_FOLDER_ID ?? "1B5QQ5fwgenRbB0hEIXTzH4Kt_soZd7nH";
+  process.env.GOOGLE_DRIVE_FOLDER_ID ?? "11wd_sIJFaZpG93Sqx9cukQe-XveDf-oS";
 
 export const fetchDriveTree = unstable_cache(
   async (): Promise<DriveFolder> => {

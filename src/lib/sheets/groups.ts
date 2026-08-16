@@ -1,5 +1,6 @@
 import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
+import { invalidateSessions } from "./sessions";
 import type { Group } from "./schemas";
 
 async function readAll(): Promise<Group[]> {
@@ -92,4 +93,51 @@ export async function ensureStudentInCollegeGroup(
   } else {
     await appendGroup(name, [studentId], name);
   }
+}
+
+export async function syncGroupMembershipToSessions(
+  groupId: string,
+  added: string[],
+  removed: string[],
+): Promise<void> {
+  if (added.length === 0 && removed.length === 0) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await db
+    .from("sessions")
+    .select("id, student_ids")
+    .eq("group_id", groupId)
+    .gte("date", today)
+    .neq("status", "cancelled");
+
+  const sessions = (data ?? []) as { id: string; student_ids: unknown }[];
+
+  for (const session of sessions) {
+    const current: string[] = Array.isArray(session.student_ids)
+      ? (session.student_ids as string[])
+      : [];
+    const next = new Set(current);
+    let changed = false;
+
+    for (const id of added) {
+      if (!next.has(id)) {
+        next.add(id);
+        changed = true;
+      }
+    }
+    for (const id of removed) {
+      if (next.delete(id)) {
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      await db
+        .from("sessions")
+        .update({ student_ids: Array.from(next) })
+        .eq("id", session.id);
+    }
+  }
+
+  invalidateSessions();
 }

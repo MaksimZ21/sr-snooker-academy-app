@@ -104,6 +104,7 @@ export async function ensureStudentInCollegeGroup(
     if (!ids.includes(studentId)) {
       await db.from("groups").update({ student_ids: [...ids, studentId] }).eq("id", group.id);
       invalidateGroups();
+      await syncGroupMembershipToSessions(group.id, [studentId], []);
     }
   } else {
     await appendGroup(name, [studentId], name);

@@ -53,6 +53,15 @@ export async function updateGroup(
   coachEmail?: string,
   startTime?: string,
 ): Promise<void> {
+  const { data: existing } = await db
+    .from("groups")
+    .select("student_ids")
+    .eq("id", id)
+    .maybeSingle();
+  const previousIds: string[] = Array.isArray(existing?.student_ids)
+    ? (existing!.student_ids as string[])
+    : [];
+
   await db.from("groups").update({
     name,
     student_ids: studentIds,
@@ -61,6 +70,12 @@ export async function updateGroup(
     start_time: startTime ?? "",
   }).eq("id", id);
   invalidateGroups();
+
+  const previousSet = new Set(previousIds);
+  const nextSet = new Set(studentIds);
+  const added = studentIds.filter((sid) => !previousSet.has(sid));
+  const removed = previousIds.filter((sid) => !nextSet.has(sid));
+  await syncGroupMembershipToSessions(id, added, removed);
 }
 
 export async function deleteGroup(id: string): Promise<void> {

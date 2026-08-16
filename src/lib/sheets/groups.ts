@@ -1,6 +1,7 @@
 import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
 import { invalidateSessions } from "./sessions";
+import { todayIsoTel } from "@/lib/date";
 import type { Group } from "./schemas";
 
 async function readAll(): Promise<Group[]> {
@@ -118,7 +119,7 @@ export async function syncGroupMembershipToSessions(
 ): Promise<void> {
   if (added.length === 0 && removed.length === 0) return;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIsoTel();
   const { data } = await db
     .from("sessions")
     .select("id, student_ids")

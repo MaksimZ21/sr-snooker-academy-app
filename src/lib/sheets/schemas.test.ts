@@ -26,6 +26,8 @@ describe("parseRows + Student", () => {
         college_name: "TAU",
         subscription_type: "monthly",
         general_notes: "",
+        birth_date: null,
+        last_payment_date: null,
         active: true,
       },
     ]);

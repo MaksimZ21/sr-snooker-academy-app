@@ -109,10 +109,11 @@ export function WhatsAppScheduler() {
     },
   });
 
-  const { data: groupData, isLoading: loadingGroups } = useQuery({
+  const { data: groupData, isLoading: loadingGroups, isError: groupsError } = useQuery({
     queryKey: ["whatsapp:groups"],
     queryFn: async () => {
       const r = await fetch("/api/whatsapp/groups");
+      if (!r.ok) throw new Error(`fetch failed: ${r.status}`);
       return (await r.json()) as { groups: WhatsAppGroup[] };
     },
     enabled: recipientMode === "group",
@@ -327,6 +328,16 @@ export function WhatsAppScheduler() {
                       )}
                   </SelectContent>
                 </Select>
+              )}
+              {recipientMode === "group" && groupsError && (
+                <p className="text-xs text-destructive mt-1">
+                  שגיאה בטעינת קבוצות הוואטסאפ — בדוק את חיבור ה-Green API
+                </p>
+              )}
+              {recipientMode === "group" && !loadingGroups && !groupsError && (groupData?.groups.length ?? 0) === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  לא נמצאו קבוצות — המספר המחובר צריך להיות חבר בקבוצה בוואטסאפ
+                </p>
               )}
             </section>
 

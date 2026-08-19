@@ -5,6 +5,7 @@ import { fetchStudents } from "@/lib/sheets/students";
 import { fetchNotesForStudent } from "@/lib/sheets/notes";
 import { fetchAttendanceForStudent } from "@/lib/sheets/attendance";
 import { fetchAssessments } from "@/lib/sheets/assessments";
+import { fetchSessionsByIds } from "@/lib/sheets/sessions";
 
 export async function GET(
   _req: Request,
@@ -43,12 +44,27 @@ export async function GET(
     const present = attendance.filter((a) => a.status === "present" || a.status === "late").length;
     const absent = attendance.filter((a) => a.status === "absent").length;
 
+    const attendanceSessions = await fetchSessionsByIds(attendance.map((a) => a.session_id));
+    const sessionMap = new Map(attendanceSessions.map((s) => [s.id, s]));
+    const attendanceDetail = attendance
+      .map((a) => {
+        const session = sessionMap.get(a.session_id);
+        if (!session) return null;
+        return { session, attendance_status: a.status };
+      })
+      .filter((row) => row !== null)
+      .sort((a, b) =>
+        b.session.date.localeCompare(a.session.date) ||
+        b.session.start_time.localeCompare(a.session.start_time),
+      );
+
     return NextResponse.json({
       student,
       groups: studentGroups,
       notes,
       assessments: studentAssessments,
       attendance_summary: { present, absent, total: attendance.length },
+      attendance_detail: attendanceDetail,
     });
   } catch (e) {
     if (e instanceof Response) return e;

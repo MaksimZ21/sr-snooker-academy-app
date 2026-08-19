@@ -17,9 +17,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { studentFullName } from "@/lib/sheets/schemas";
-import type { Student, Note } from "@/lib/sheets/schemas";
+import type { Student, Note, Session, Attendance } from "@/lib/sheets/schemas";
 import type { Assessment } from "@/lib/sheets/assessment-types";
 import { TECHNIQUE_CRITERIA } from "@/lib/sheets/assessment-types";
+
+type AttendanceDetailRow = { session: Session; attendance_status: Attendance["status"] };
 
 type Detail = {
   student: Student;
@@ -27,7 +29,30 @@ type Detail = {
   notes: Note[];
   assessments: Assessment[];
   attendance_summary: { present: number; absent: number; total: number };
+  attendance_detail: AttendanceDetailRow[];
 };
+
+const ATTENDANCE_STATUS_LABEL: Record<string, string> = {
+  present: "נוכח",
+  absent: "לא נוכח",
+  late: "איחור",
+  confirmed: "אושר",
+};
+
+const ATTENDANCE_STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  present: "default",
+  absent: "destructive",
+  late: "secondary",
+  confirmed: "outline",
+};
+
+function formatSessionDate(iso: string) {
+  return new Date(iso).toLocaleDateString("he-IL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
 
 function getInitials(name: string) {
   return name
@@ -72,7 +97,7 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
     );
   }
 
-  const { student, groups, notes, assessments, attendance_summary } = data;
+  const { student, groups, notes, assessments, attendance_summary, attendance_detail } = data;
   const name = studentFullName(student);
   const attendancePct =
     attendance_summary.total > 0
@@ -200,6 +225,44 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
               <span className="text-[11px] font-medium opacity-70">{stat.label}</span>
             </div>
           ))}
+        </div>
+
+        {/* Attendance history */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle size={15} className="text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-muted-foreground">היסטוריית אימונים</h2>
+            {attendance_detail.length > 0 && (
+              <span className="text-xs text-muted-foreground/50 bg-muted rounded-full px-2 py-0.5 tabular-nums">
+                {attendance_detail.length}
+              </span>
+            )}
+          </div>
+
+          {attendance_detail.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground/50 text-sm border border-dashed border-border/60 rounded-2xl">
+              אין עדיין אימונים עם נוכחות מסומנת
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {attendance_detail.map((row) => (
+                <div
+                  key={row.session.id}
+                  className="flex items-center justify-between gap-3 bg-card border border-border/60 rounded-xl px-4 py-2.5"
+                >
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-sm font-medium">{formatSessionDate(row.session.date)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {row.session.start_time}–{row.session.end_time}
+                    </span>
+                  </div>
+                  <Badge variant={ATTENDANCE_STATUS_VARIANT[row.attendance_status]} className="shrink-0">
+                    {ATTENDANCE_STATUS_LABEL[row.attendance_status]}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Groups */}

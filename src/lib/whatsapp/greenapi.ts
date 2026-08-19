@@ -109,8 +109,11 @@ export type WhatsAppGroup = { id: string; name: string };
 export async function getWhatsAppGroups(): Promise<WhatsAppGroup[]> {
   const res = await fetch(`${BASE()}/getChats/${TOKEN}`, { method: "GET" });
   if (!res.ok) throw new Error(`Green API getChats ${res.status}`);
-  const data = await res.json() as { id?: string; name?: string; type?: string }[];
+  const data = await res.json() as { id?: string; name?: string }[];
+  // Green API's getChats response doesn't include a `type` field — group chats
+  // are identified by their id suffix (`@g.us`), same convention already used
+  // for chat_id elsewhere in this app (see whatsapp_scheduled / cron docs).
   return data
-    .filter((c) => c.type === "group" && c.id && c.name)
-    .map((c) => ({ id: c.id!, name: c.name! }));
+    .filter((c) => c.id?.endsWith("@g.us"))
+    .map((c) => ({ id: c.id!, name: c.name || c.id! }));
 }

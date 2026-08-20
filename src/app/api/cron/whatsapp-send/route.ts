@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
-import { sendWhatsAppMessage, sendWhatsAppFile, sendWhatsAppPoll } from "@/lib/whatsapp/greenapi";
+import { sendWhatsAppMessage, sendWhatsAppFile, sendWhatsAppPoll, updateGroupSettings } from "@/lib/whatsapp/greenapi";
 
 type Row = { id: string; chat_id: string; chat_name: string; message: string };
 type CoachRow = { email: string; phone: string };
@@ -8,7 +8,8 @@ type CoachRow = { email: string; phone: string };
 type ParsedMessage =
   | { type: "text"; text: string }
   | { type: "image"; url: string; caption: string }
-  | { type: "poll"; question: string; options: string[] };
+  | { type: "poll"; question: string; options: string[] }
+  | { type: "group_settings"; allowParticipantsSendMessages: boolean };
 
 function parseMessage(raw: string): ParsedMessage {
   try {
@@ -18,6 +19,9 @@ function parseMessage(raw: string): ParsedMessage {
     }
     if (p.__type === "poll" && typeof p.question === "string" && Array.isArray(p.options)) {
       return { type: "poll", question: p.question, options: p.options as string[] };
+    }
+    if (p.__type === "group_settings" && typeof p.allowParticipantsSendMessages === "boolean") {
+      return { type: "group_settings", allowParticipantsSendMessages: p.allowParticipantsSendMessages };
     }
   } catch {}
   return { type: "text", text: raw };
@@ -48,6 +52,7 @@ async function dispatch(target: string, msg: ParsedMessage): Promise<void> {
   if (msg.type === "text") return sendWhatsAppMessage(target, msg.text);
   if (msg.type === "image") return sendWhatsAppFile(target, msg.url, msg.caption);
   if (msg.type === "poll") return sendWhatsAppPoll(target, msg.question, msg.options);
+  if (msg.type === "group_settings") return updateGroupSettings(target, msg.allowParticipantsSendMessages);
 }
 
 export async function POST(req: Request) {

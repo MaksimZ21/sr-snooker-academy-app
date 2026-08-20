@@ -59,13 +59,20 @@ function formatLocalDatetime(iso: string) {
 type ParsedMsg =
   | { type: "text"; preview: string }
   | { type: "image"; preview: string }
-  | { type: "poll"; preview: string };
+  | { type: "poll"; preview: string }
+  | { type: "group_settings"; preview: string };
 
 function parseDisplay(raw: string): ParsedMsg {
   try {
     const p = JSON.parse(raw) as Record<string, unknown>;
     if (p.__type === "image") return { type: "image", preview: typeof p.caption === "string" && p.caption ? p.caption : "(תמונה)" };
     if (p.__type === "poll") return { type: "poll", preview: typeof p.question === "string" ? p.question : "(סקר)" };
+    if (p.__type === "group_settings") {
+      return {
+        type: "group_settings",
+        preview: p.allowParticipantsSendMessages ? "פתיחת קבוצה" : "סגירת קבוצה",
+      };
+    }
   } catch {}
   return { type: "text", preview: raw };
 }
@@ -611,7 +618,10 @@ function MessageCard({ m, onDelete }: { m: ScheduledMessage; onDelete?: () => vo
     m.status === "sent" ? CheckCircle2 : m.status === "failed" ? XCircle : Clock;
   const parsed = parseDisplay(m.message);
   const TypeIcon =
-    parsed.type === "image" ? Image : parsed.type === "poll" ? BarChart2 : MessageSquare;
+    parsed.type === "image" ? Image :
+    parsed.type === "poll" ? BarChart2 :
+    parsed.type === "group_settings" ? Lock :
+    MessageSquare;
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card p-4 flex items-start gap-3 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
@@ -628,7 +638,7 @@ function MessageCard({ m, onDelete }: { m: ScheduledMessage; onDelete?: () => vo
           <Badge variant={variant} className="text-[10px] h-4 px-1.5">{label}</Badge>
           <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
             <TypeIcon size={10} />
-            {parsed.type === "image" ? "תמונה" : parsed.type === "poll" ? "סקר" : "טקסט"}
+            {parsed.type === "image" ? "תמונה" : parsed.type === "poll" ? "סקר" : parsed.type === "group_settings" ? "הגדרות קבוצה" : "טקסט"}
           </span>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2">{parsed.preview}</p>

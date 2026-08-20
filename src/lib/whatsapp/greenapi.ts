@@ -117,3 +117,18 @@ export async function getWhatsAppGroups(): Promise<WhatsAppGroup[]> {
     .filter((c) => c.id?.endsWith("@g.us"))
     .map((c) => ({ id: c.id!, name: c.name || c.id! }));
 }
+
+export async function updateGroupSettings(
+  groupId: string,
+  allowParticipantsSendMessages: boolean,
+): Promise<void> {
+  const res = await fetch(`${BASE()}/updateGroupSettings/${TOKEN}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ groupId, allowParticipantsSendMessages }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Green API updateGroupSettings ${res.status}: ${text}`);
+  }
+}

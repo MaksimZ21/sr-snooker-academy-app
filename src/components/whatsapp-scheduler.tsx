@@ -21,6 +21,7 @@ import {
   Clock,
   Image,
   Loader2,
+  Lock,
   MessageSquare,
   BarChart2,
   Plus,
@@ -36,7 +37,7 @@ import type { ScheduledMessage } from "@/app/api/whatsapp/scheduled/route";
 type WhatsAppGroup = { id: string; name: string };
 type Coach = { email: string; name: string; phone: string };
 type RecipientMode = "group" | "coaches";
-type MessageType = "text" | "image" | "poll";
+type MessageType = "text" | "image" | "poll" | "group_settings";
 
 const STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "ממתין", variant: "outline" },
@@ -86,6 +87,7 @@ export function WhatsAppScheduler() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState(["", ""]);
+  const [groupOpen, setGroupOpen] = useState<boolean | null>(null);
   const [scheduledAt, setScheduledAt] = useState("");
 
   function resetCompose() {
@@ -98,6 +100,7 @@ export function WhatsAppScheduler() {
     setImageFileName("");
     setPollQuestion("");
     setPollOptions(["", ""]);
+    setGroupOpen(null);
     setScheduledAt("");
   }
 
@@ -137,11 +140,16 @@ export function WhatsAppScheduler() {
         message = text;
       } else if (msgType === "image") {
         message = JSON.stringify({ __type: "image", url: imageUrl, caption: imageCaption });
-      } else {
+      } else if (msgType === "poll") {
         message = JSON.stringify({
           __type: "poll",
           question: pollQuestion,
           options: pollOptions.filter((o) => o.trim()),
+        });
+      } else {
+        message = JSON.stringify({
+          __type: "group_settings",
+          allowParticipantsSendMessages: groupOpen,
         });
       }
       const r = await fetch("/api/whatsapp/scheduled", {
@@ -201,6 +209,13 @@ export function WhatsAppScheduler() {
     setChatName("");
   }
 
+  function handleMsgTypeChange(next: MessageType) {
+    setMsgType(next);
+    if (next === "group_settings" && recipientMode !== "group") {
+      handleRecipientModeChange("group");
+    }
+  }
+
   function handleRecipientChange(val: string) {
     setChatId(val);
     if (recipientMode === "group") {
@@ -224,7 +239,8 @@ export function WhatsAppScheduler() {
     !imageUploading &&
     ((msgType === "text" && text.trim()) ||
       (msgType === "image" && imageUrl.trim()) ||
-      (msgType === "poll" && pollQuestion.trim() && validOptions.length >= 2));
+      (msgType === "poll" && pollQuestion.trim() && validOptions.length >= 2) ||
+      (msgType === "group_settings" && groupOpen !== null));
 
   const messages = msgData?.messages ?? [];
   const pending = messages.filter((m) => m.status === "pending");
@@ -299,6 +315,7 @@ export function WhatsAppScheduler() {
                   variant={recipientMode === "coaches" ? "default" : "outline"}
                   className="flex-1"
                   type="button"
+                  disabled={msgType === "group_settings"}
                   onClick={() => handleRecipientModeChange("coaches")}
                 >
                   מאמנים
@@ -351,11 +368,12 @@ export function WhatsAppScheduler() {
                   { value: "text" as const, label: "טקסט", Icon: MessageSquare },
                   { value: "image" as const, label: "תמונה", Icon: Image },
                   { value: "poll" as const, label: "סקר", Icon: BarChart2 },
+                  { value: "group_settings" as const, label: "הגדרות קבוצה", Icon: Lock },
                 ]).map(({ value, label, Icon }) => (
                   <button
                     key={value}
                     type="button"
-                    onClick={() => setMsgType(value)}
+                    onClick={() => handleMsgTypeChange(value)}
                     className={cn(
                       "flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border text-sm font-medium transition-all duration-150",
                       msgType === value
@@ -527,6 +545,33 @@ export function WhatsAppScheduler() {
                         הוסף אפשרות
                       </Button>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Group settings */}
+              {msgType === "group_settings" && (
+                <div className="flex flex-col gap-2">
+                  <Label className="text-xs text-muted-foreground block">מצב הקבוצה</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant={groupOpen === true ? "default" : "outline"}
+                      className="flex-1"
+                      type="button"
+                      onClick={() => setGroupOpen(true)}
+                    >
+                      פתח קבוצה (כולם יכולים לשלוח)
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={groupOpen === false ? "default" : "outline"}
+                      className="flex-1"
+                      type="button"
+                      onClick={() => setGroupOpen(false)}
+                    >
+                      סגור קבוצה (רק אדמינים)
+                    </Button>
                   </div>
                 </div>
               )}

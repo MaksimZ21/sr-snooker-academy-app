@@ -118,6 +118,9 @@ export async function getWhatsAppGroups(): Promise<WhatsAppGroup[]> {
     .map((c) => ({ id: c.id!, name: c.name || c.id! }));
 }
 
+// groupId is already fully-qualified (e.g. from getWhatsAppGroups, ending in
+// @g.us) — do not run it through toChatId/formatPhone, which is for phone
+// numbers only and would mangle a group id.
 export async function updateGroupSettings(
   groupId: string,
   allowParticipantsSendMessages: boolean,

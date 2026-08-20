@@ -52,7 +52,12 @@ async function dispatch(target: string, msg: ParsedMessage): Promise<void> {
   if (msg.type === "text") return sendWhatsAppMessage(target, msg.text);
   if (msg.type === "image") return sendWhatsAppFile(target, msg.url, msg.caption);
   if (msg.type === "poll") return sendWhatsAppPoll(target, msg.question, msg.options);
-  if (msg.type === "group_settings") return updateGroupSettings(target, msg.allowParticipantsSendMessages);
+  if (msg.type === "group_settings") {
+    if (!target.endsWith("@g.us")) {
+      throw new Error(`group_settings target is not a WhatsApp group id: ${target}`);
+    }
+    return updateGroupSettings(target, msg.allowParticipantsSendMessages);
+  }
 }
 
 export async function POST(req: Request) {

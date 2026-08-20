@@ -70,7 +70,7 @@ function parseDisplay(raw: string): ParsedMsg {
     if (p.__type === "group_settings") {
       return {
         type: "group_settings",
-        preview: p.allowParticipantsSendMessages ? "פתיחת קבוצה" : "סגירת קבוצה",
+        preview: p.allowParticipantsSendMessages === true ? "פתיחת קבוצה" : "סגירת קבוצה",
       };
     }
   } catch {}

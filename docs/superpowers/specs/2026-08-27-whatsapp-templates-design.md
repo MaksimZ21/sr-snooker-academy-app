@@ -95,6 +95,15 @@ On selecting one:
    point, including after filling placeholders. There's no "locked"
    template state; loading a template is just a one-time text-fill
    convenience, not an ongoing binding.
+   **Substitution mechanics:** the displayed text is always recomputed as
+   the original template's `body` with every currently-filled placeholder
+   substituted in — so typing in a placeholder input re-derives the whole
+   field from scratch each time, it doesn't patch in place. This means if
+   the admin manually edits the field's text directly and *then* changes a
+   placeholder input again, the field is recomputed from the template and
+   the manual edit is lost. This is an accepted simplification: hand-editing
+   is meant for the *final* pass once all placeholders are filled, not
+   interleaved with further placeholder changes.
 5. Switching to a different template, or back to "ללא תבנית", clears the
    placeholder inputs and (for "ללא תבנית") leaves the field's current text
    untouched — it's a starting point, not a data source that keeps

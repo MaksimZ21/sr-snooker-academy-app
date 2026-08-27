@@ -65,15 +65,23 @@ export async function POST(req: Request) {
       .insert({ name: body.name })
       .select()
       .single();
+    const automationId = (automation as { id: string }).id;
     const rows = body.steps.map((s, i) => ({
-      automation_id: (automation as { id: string }).id,
+      automation_id: automationId,
       step_order: i + 1,
       time_of_day: s.time_of_day,
       message_type: s.message_type,
       payload: s.payload,
     }));
-    await db.from("whatsapp_automation_steps").insert(rows);
-    return NextResponse.json({ ok: true, id: (automation as { id: string }).id });
+    const { error: stepsError } = await db.from("whatsapp_automation_steps").insert(rows);
+    if (stepsError) {
+      // Automation row was created but its steps failed to save — don't
+      // report success for a stepless automation. No transactions in this
+      // app, so best-effort clean up the orphaned automation row too.
+      await db.from("whatsapp_automations").delete().eq("id", automationId);
+      return NextResponse.json({ error: "internal error" }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, id: automationId });
   } catch (e) {
     if (e instanceof Response) return e;
     return NextResponse.json({ error: "internal error" }, { status: 500 });

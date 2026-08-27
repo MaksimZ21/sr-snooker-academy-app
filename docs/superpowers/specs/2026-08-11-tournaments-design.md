@@ -156,6 +156,11 @@ two same-named people have no phone on file — not blocking for V1.
   or corrected (re-entering a result recalculates from the two participants'
   ratings **at the time of that save** — no retroactive recalculation of
   every match ever played; see "Out of Scope" for why).
+- **Admin manual override:** on the `/admin/players` page, the admin can
+  directly edit a player's `rating` to any number (e.g. to seed a known
+  strong player correctly, or fix a rating that drifted wrong). This is a
+  plain edit, not a special "adjustment" event — the new number simply
+  becomes the baseline the ELO formula continues from on their next match.
 
 ## Handicap ("פור") Display
 
@@ -306,12 +311,11 @@ Deliberately fully manual — no automatic seeding from house results.
   does not replay tournament history to "undo" a previously-applied rating
   change. Accepted as a known simplification; re-drawing after results exist
   is already a rare, confirmation-gated action.
-- No admin override of a computed rating (e.g. manually setting someone's
-  number) in V1 — ratings only ever move via the ELO formula from match
-  results.
 - No configurable ELO K-factor — fixed at 32.
-- No richer public player profile (e.g. computed final placement per
+- No richer **public** player profile (e.g. computed final placement per
   tournament, win/loss record) beyond the plain list of tournaments — only
-  name, rating, and tournament links.
+  name, rating, and tournament links. A separate, richer private/internal
+  profile view is still an open thread (flagged for a follow-up design pass,
+  not resolved in this revision).
 - No manual name-splitting UI for a newly-created tournament-only student —
   the typed text goes entirely into `first_name`.

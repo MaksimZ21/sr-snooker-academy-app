@@ -17,7 +17,10 @@ export async function PATCH(
         body: z.string().min(1),
       })
       .parse(await req.json());
-    await db.from("whatsapp_templates").update(body).eq("id", id);
+    const { error } = await db.from("whatsapp_templates").update(body).eq("id", id);
+    if (error) {
+      return NextResponse.json({ error: "internal error" }, { status: 500 });
+    }
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;
@@ -33,7 +36,10 @@ export async function DELETE(
     const user = await requireUser();
     if (user.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { id } = await params;
-    await db.from("whatsapp_templates").delete().eq("id", id);
+    const { error } = await db.from("whatsapp_templates").delete().eq("id", id);
+    if (error) {
+      return NextResponse.json({ error: "internal error" }, { status: 500 });
+    }
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;

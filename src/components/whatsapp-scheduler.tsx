@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import type { ScheduledMessage } from "@/app/api/whatsapp/scheduled/route";
 import { WhatsAppTemplatesDialog } from "@/components/whatsapp-template-dialog";
 import { WhatsAppTemplatePicker } from "@/components/whatsapp-template-picker";
+import { WhatsAppAutomationsPanel } from "@/components/whatsapp-automations-panel";
 
 type WhatsAppGroup = { id: string; name: string };
 type Coach = { email: string; name: string; phone: string };
@@ -277,6 +278,7 @@ export function WhatsAppScheduler() {
             )}
           </TabsTrigger>
           <TabsTrigger value="compose">הודעה חדשה</TabsTrigger>
+          <TabsTrigger value="automations">אוטומציות</TabsTrigger>
         </TabsList>
 
         {/* ── Scheduled list ── */}
@@ -625,6 +627,11 @@ export function WhatsAppScheduler() {
               </Button>
             </div>
           </div>
+        </TabsContent>
+
+        {/* ── Automations ── */}
+        <TabsContent value="automations">
+          <WhatsAppAutomationsPanel />
         </TabsContent>
       </Tabs>
     </div>

@@ -98,6 +98,13 @@ export function WhatsAppScheduler() {
   const [pollOptions, setPollOptions] = useState(["", ""]);
   const [groupOpen, setGroupOpen] = useState<boolean | null>(null);
   const [scheduledAt, setScheduledAt] = useState("");
+  // Bumped on every successful reset and used as `key` on each
+  // WhatsAppTemplatePicker below, so a leftover template selection can't
+  // linger visually after submit. Currently redundant in practice — the
+  // compose tab panel unmounts on its own (Base UI Tabs default
+  // keepMounted={false}) since resetCompose() always pairs with switching
+  // back to the "scheduled" tab — but kept as a deliberate safety net in
+  // case that reset flow ever stops always leaving the compose tab.
   const [composeKey, setComposeKey] = useState(0);
 
   function resetCompose() {

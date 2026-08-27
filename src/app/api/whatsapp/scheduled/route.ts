@@ -40,7 +40,10 @@ export async function POST(req: Request) {
         scheduled_at: z.string().min(1),
       })
       .parse(await req.json());
-    const { data } = await db.from("whatsapp_scheduled").insert(body).select().single();
+    const { data, error } = await db.from("whatsapp_scheduled").insert(body).select().single();
+    if (error) {
+      return NextResponse.json({ error: "internal error" }, { status: 500 });
+    }
     return NextResponse.json({ message: data });
   } catch (e) {
     if (e instanceof Response) return e;

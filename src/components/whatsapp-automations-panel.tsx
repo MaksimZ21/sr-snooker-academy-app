@@ -17,6 +17,7 @@ export function WhatsAppAutomationsPanel() {
       if (!r.ok) throw new Error("fetch failed");
       return (await r.json()) as { automations: Automation[] };
     },
+    staleTime: 60_000,
   });
 
   const deleteMut = useMutation({

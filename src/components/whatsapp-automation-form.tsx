@@ -52,7 +52,7 @@ function stepToPayload(s: StepDraft) {
     message_type: s.message_type,
     payload:
       s.message_type === "text"
-        ? s.text
+        ? s.text.trim()
         : JSON.stringify({ __type: "group_settings", allowParticipantsSendMessages: s.groupOpen }),
   };
 }
@@ -108,7 +108,13 @@ function AutomationForm({
     <div className="flex flex-col gap-4">
       <div>
         <Label className="text-xs text-muted-foreground mb-1 block">שם האוטומציה</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="פתיחה וסגירה יומית" dir="auto" />
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="פתיחה וסגירה יומית"
+          dir="auto"
+          disabled={mut.isPending}
+        />
       </div>
       <div className="flex flex-col gap-3 max-h-96 overflow-y-auto">
         {steps.map((step, i) => (
@@ -116,7 +122,13 @@ function AutomationForm({
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">שלב {i + 1}</span>
               {steps.length > 1 && (
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeStep(step.key)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  disabled={mut.isPending}
+                  onClick={() => removeStep(step.key)}
+                >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               )}
@@ -127,6 +139,7 @@ function AutomationForm({
                 type="time"
                 value={step.time_of_day}
                 onChange={(e) => updateStep(step.key, { time_of_day: e.target.value })}
+                disabled={mut.isPending}
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
               />
             </div>
@@ -135,6 +148,7 @@ function AutomationForm({
                 size="sm"
                 variant={step.message_type === "text" ? "default" : "outline"}
                 className="flex-1"
+                disabled={mut.isPending}
                 onClick={() => updateStep(step.key, { message_type: "text" })}
               >
                 טקסט
@@ -143,6 +157,7 @@ function AutomationForm({
                 size="sm"
                 variant={step.message_type === "group_settings" ? "default" : "outline"}
                 className="flex-1"
+                disabled={mut.isPending}
                 onClick={() => updateStep(step.key, { message_type: "group_settings" })}
               >
                 הגדרות קבוצה
@@ -156,6 +171,7 @@ function AutomationForm({
                 placeholder="כתוב את ההודעה..."
                 className="resize-y text-sm"
                 dir="auto"
+                disabled={mut.isPending}
               />
             ) : (
               <div className="flex gap-2">
@@ -163,6 +179,7 @@ function AutomationForm({
                   size="sm"
                   variant={step.groupOpen === true ? "default" : "outline"}
                   className="flex-1"
+                  disabled={mut.isPending}
                   onClick={() => updateStep(step.key, { groupOpen: true })}
                 >
                   פתח קבוצה
@@ -171,6 +188,7 @@ function AutomationForm({
                   size="sm"
                   variant={step.groupOpen === false ? "default" : "outline"}
                   className="flex-1"
+                  disabled={mut.isPending}
                   onClick={() => updateStep(step.key, { groupOpen: false })}
                 >
                   סגור קבוצה
@@ -180,7 +198,13 @@ function AutomationForm({
           </div>
         ))}
       </div>
-      <Button variant="outline" size="sm" className="self-start" onClick={() => setSteps((prev) => [...prev, newStep()])}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="self-start"
+        disabled={mut.isPending}
+        onClick={() => setSteps((prev) => [...prev, newStep()])}
+      >
         <Plus className="ml-2 h-4 w-4" />
         הוסף שלב
       </Button>

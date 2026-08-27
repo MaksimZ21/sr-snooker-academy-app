@@ -33,6 +33,8 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { ScheduledMessage } from "@/app/api/whatsapp/scheduled/route";
+import { WhatsAppTemplatesDialog } from "@/components/whatsapp-template-dialog";
+import { WhatsAppTemplatePicker } from "@/components/whatsapp-template-picker";
 
 type WhatsAppGroup = { id: string; name: string };
 type Coach = { email: string; name: string; phone: string };
@@ -96,6 +98,7 @@ export function WhatsAppScheduler() {
   const [pollOptions, setPollOptions] = useState(["", ""]);
   const [groupOpen, setGroupOpen] = useState<boolean | null>(null);
   const [scheduledAt, setScheduledAt] = useState("");
+  const [composeKey, setComposeKey] = useState(0);
 
   function resetCompose() {
     setChatId("");
@@ -109,6 +112,7 @@ export function WhatsAppScheduler() {
     setPollOptions(["", ""]);
     setGroupOpen(null);
     setScheduledAt("");
+    setComposeKey((k) => k + 1);
   }
 
   const { data: msgData, isLoading: loadingMsgs } = useQuery({
@@ -367,7 +371,10 @@ export function WhatsAppScheduler() {
 
             {/* Message */}
             <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-4 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">הודעה</p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">הודעה</p>
+                <WhatsAppTemplatesDialog />
+              </div>
 
               {/* Type selector */}
               <div className="flex gap-2">
@@ -396,14 +403,17 @@ export function WhatsAppScheduler() {
 
               {/* Text */}
               {msgType === "text" && (
-                <Textarea
-                  rows={10}
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  placeholder="כתוב את ההודעה..."
-                  className="resize-y text-sm leading-relaxed min-h-[120px]"
-                  dir="auto"
-                />
+                <div className="flex flex-col gap-2">
+                  <WhatsAppTemplatePicker key={composeKey} onApply={setText} />
+                  <Textarea
+                    rows={10}
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="כתוב את ההודעה..."
+                    className="resize-y text-sm leading-relaxed min-h-[120px]"
+                    dir="auto"
+                  />
+                </div>
               )}
 
               {/* Image */}
@@ -486,12 +496,13 @@ export function WhatsAppScheduler() {
                   {/* Caption */}
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1 block">כיתוב (אופציונלי)</Label>
+                    <WhatsAppTemplatePicker key={composeKey} onApply={setImageCaption} />
                     <Textarea
                       rows={4}
                       value={imageCaption}
                       onChange={(e) => setImageCaption(e.target.value)}
                       placeholder="טקסט שיופיע מתחת לתמונה..."
-                      className="resize-none text-sm"
+                      className="resize-none text-sm mt-2"
                       dir="auto"
                     />
                   </div>
@@ -503,12 +514,13 @@ export function WhatsAppScheduler() {
                 <div className="flex flex-col gap-3">
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1 block">שאלת הסקר</Label>
+                    <WhatsAppTemplatePicker key={composeKey} onApply={setPollQuestion} />
                     <Input
                       value={pollQuestion}
                       onChange={(e) => setPollQuestion(e.target.value)}
                       placeholder="מה השאלה?"
                       dir="auto"
-                      className="text-sm"
+                      className="text-sm mt-2"
                     />
                   </div>
                   <div className="flex flex-col gap-2">

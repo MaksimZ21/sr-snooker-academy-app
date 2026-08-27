@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,14 @@ export function RunAutomationDialog({ automation }: { automation: Automation }) 
   const [times, setTimes] = useState<Record<string, string>>(
     () => Object.fromEntries(automation.steps.map((s) => [s.id, s.time_of_day ?? ""])),
   );
+  // Tracks which steps were already POSTed successfully in this dialog
+  // session, so retrying after a mid-loop failure (e.g. a network blip on
+  // step 2 of 3) doesn't re-schedule step 1 as a duplicate. Resets
+  // naturally whenever the dialog closes and reopens, since the whole
+  // component unmounts (Dialog default keepMounted=false) — a deliberate,
+  // separate "run again" is expected to create a fresh set of rows.
+  const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(new Set());
+  const qc = useQueryClient();
 
   const { data: groupData, isLoading: loadingGroups } = useQuery({
     queryKey: ["whatsapp:groups"],
@@ -49,6 +57,7 @@ export function RunAutomationDialog({ automation }: { automation: Automation }) 
   const runMut = useMutation({
     mutationFn: async () => {
       for (const step of automation.steps) {
+        if (completedStepIds.has(step.id)) continue; // already scheduled in a previous attempt this session
         const scheduledAt = new Date(`${date}T${times[step.id]}`).toISOString();
         const r = await fetch("/api/whatsapp/scheduled", {
           method: "POST",
@@ -61,13 +70,15 @@ export function RunAutomationDialog({ automation }: { automation: Automation }) 
           }),
         });
         if (!r.ok) throw new Error("failed");
+        setCompletedStepIds((prev) => new Set(prev).add(step.id));
       }
     },
     onSuccess: () => {
       toast.success("האוטומציה תוזמנה");
+      qc.invalidateQueries({ queryKey: ["whatsapp:scheduled"] });
       setOpen(false);
     },
-    onError: () => toast.error("שגיאה בתזמון"),
+    onError: () => toast.error("שגיאה בתזמון — שלבים שכבר תוזמנו לא יישלחו שוב, אפשר ללחוץ שוב כדי להמשיך"),
   });
 
   return (

@@ -25,6 +25,24 @@ function extractPlaceholders(body: string): string[] {
   return result;
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Substitutes every {{name}} marker in `body` with its value from `values`.
+// Matches the marker with a regex (tolerant of whitespace inside the braces,
+// e.g. "{{ תאריך }}") rather than reconstructing a literal "{{name}}" string
+// — a placeholder detected via extractPlaceholders (which trims the name)
+// must still match its original, untrimmed occurrence in the text.
+function substitute(body: string, values: Record<string, string>): string {
+  let result = body;
+  for (const name of extractPlaceholders(body)) {
+    const marker = new RegExp(`\\{\\{\\s*${escapeRegExp(name)}\\s*\\}\\}`, "g");
+    result = result.replace(marker, values[name] ?? "");
+  }
+  return result;
+}
+
 export function WhatsAppTemplatePicker({ onApply }: { onApply: (text: string) => void }) {
   const { data } = useQuery({
     queryKey: ["whatsapp:templates"],
@@ -34,6 +52,7 @@ export function WhatsAppTemplatePicker({ onApply }: { onApply: (text: string) =>
       const json = (await r.json()) as { templates: WhatsAppTemplate[] };
       return json.templates;
     },
+    staleTime: 60_000,
   });
   const templates = data ?? [];
   const [selectedId, setSelectedId] = useState("");
@@ -45,19 +64,15 @@ export function WhatsAppTemplatePicker({ onApply }: { onApply: (text: string) =>
   function handleSelect(id: string) {
     setSelectedId(id);
     setPlaceholderValues({});
-    const t = templates.find((t) => t.id === id);
-    if (t) onApply(t.body);
+    const tpl = templates.find((t) => t.id === id);
+    if (tpl) onApply(tpl.body);
   }
 
   function handlePlaceholderChange(name: string, value: string) {
     if (!selected) return;
     const next = { ...placeholderValues, [name]: value };
     setPlaceholderValues(next);
-    let result = selected.body;
-    for (const p of extractPlaceholders(selected.body)) {
-      result = result.replaceAll(`{{${p}}}`, next[p] ?? "");
-    }
-    onApply(result);
+    onApply(substitute(selected.body, next));
   }
 
   if (templates.length === 0) return null;

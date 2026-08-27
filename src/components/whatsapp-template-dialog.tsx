@@ -97,6 +97,7 @@ export function WhatsAppTemplatesDialog() {
     queryKey: ["whatsapp:templates"],
     queryFn: fetchTemplates,
     enabled: open,
+    staleTime: 60_000,
   });
 
   const deleteMut = useMutation({
@@ -172,6 +173,7 @@ export function WhatsAppTemplatesDialog() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        disabled={deleteMut.isPending}
                         onClick={() => deleteMut.mutate(t.id)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />

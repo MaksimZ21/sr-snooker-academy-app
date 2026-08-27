@@ -23,8 +23,23 @@ export async function PATCH(
         steps: z.array(StepInput).min(1),
       })
       .parse(await req.json());
-    await db.from("whatsapp_automations").update({ name: body.name }).eq("id", id);
-    await db.from("whatsapp_automation_steps").delete().eq("automation_id", id);
+    const { error: nameError } = await db
+      .from("whatsapp_automations")
+      .update({ name: body.name })
+      .eq("id", id);
+    if (nameError) {
+      return NextResponse.json({ error: "internal error" }, { status: 500 });
+    }
+    const { error: deleteError } = await db
+      .from("whatsapp_automation_steps")
+      .delete()
+      .eq("automation_id", id);
+    if (deleteError) {
+      // Don't insert the new steps on top of an unconfirmed delete — that
+      // could leave old and new steps mixed together under the same
+      // automation_id while still reporting success.
+      return NextResponse.json({ error: "internal error" }, { status: 500 });
+    }
     const rows = body.steps.map((s, i) => ({
       automation_id: id,
       step_order: i + 1,

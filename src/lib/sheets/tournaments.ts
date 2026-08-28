@@ -132,10 +132,13 @@ export async function addTournamentParticipant(
   } else {
     // Existing student — this may be their first-ever tournament, in which
     // case they don't have a public_slug yet. Generate one now, lazily,
-    // exactly once (never overwritten on subsequent tournaments).
+    // exactly once (never overwritten on subsequent tournaments). The
+    // `.is("public_slug", null)` guard on the update makes this safe
+    // against a race between two near-simultaneous adds of the same
+    // student: only the update that still finds it null actually applies.
     const { data: existing } = await db.from("students").select("public_slug").eq("id", studentId).maybeSingle();
     if (existing && !existing.public_slug) {
-      await db.from("students").update({ public_slug: generatePublicSlug() }).eq("id", studentId);
+      await db.from("students").update({ public_slug: generatePublicSlug() }).eq("id", studentId).is("public_slug", null);
     }
   }
 
@@ -144,7 +147,10 @@ export async function addTournamentParticipant(
     .insert({ tournament_id: tournamentId, student_id: studentId })
     .select()
     .single();
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === "23505") throw new Error("השחקן כבר רשום לטורניר הזה");
+    throw new Error(error.message);
+  }
   return data as TournamentParticipant;
 }
 

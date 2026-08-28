@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchAssessments, createAssessment } from "@/lib/sheets/assessments";
 
-const TechniqueSchema = z.record(z.string(), z.boolean());
+const TechniqueSchema = z.record(z.string(), z.enum(["good", "medium", "bad"]));
 
 const CreateSchema = z.object({
   participant_name: z.string().min(1),

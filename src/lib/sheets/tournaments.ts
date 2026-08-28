@@ -1,4 +1,5 @@
 import { db } from "@/lib/db/client";
+import { generatePublicSlug } from "./tournaments-slug";
 
 export type Tournament = {
   id: string;
@@ -69,7 +70,6 @@ export async function createTournament(input: {
   rules_url?: string;
   handicap_points_per_rating_gap?: number;
 }): Promise<Tournament> {
-  const { generatePublicSlug } = await import("./tournaments-slug");
   const { data, error } = await db
     .from("tournaments")
     .insert({
@@ -96,5 +96,64 @@ export async function updateTournament(
   },
 ): Promise<void> {
   const { error } = await db.from("tournaments").update(input).eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export type StudentSearchResult = { id: string; first_name: string; last_name: string; phone: string };
+
+export async function searchStudents(query: string): Promise<StudentSearchResult[]> {
+  const q = query.trim().replace(/,/g, " ");
+  if (!q) return [];
+  const { data } = await db
+    .from("students")
+    .select("id, first_name, last_name, phone")
+    .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,phone.ilike.%${q}%`)
+    .limit(15);
+  return (data ?? []) as StudentSearchResult[];
+}
+
+export async function addTournamentParticipant(
+  tournamentId: string,
+  input: { studentId?: string; newStudentName?: string },
+): Promise<TournamentParticipant> {
+  const { appendStudent } = await import("./students");
+  let studentId = input.studentId;
+
+  if (!studentId) {
+    if (!input.newStudentName?.trim()) throw new Error("studentId or newStudentName required");
+    studentId = await appendStudent({
+      first_name: input.newStudentName.trim(),
+      last_name: "",
+      active: false,
+      is_tournament_only: true,
+      rating: 1000,
+      public_slug: generatePublicSlug(),
+    });
+  } else {
+    // Existing student — this may be their first-ever tournament, in which
+    // case they don't have a public_slug yet. Generate one now, lazily,
+    // exactly once (never overwritten on subsequent tournaments).
+    const { data: existing } = await db.from("students").select("public_slug").eq("id", studentId).maybeSingle();
+    if (existing && !existing.public_slug) {
+      await db.from("students").update({ public_slug: generatePublicSlug() }).eq("id", studentId);
+    }
+  }
+
+  const { data, error } = await db
+    .from("tournament_participants")
+    .insert({ tournament_id: tournamentId, student_id: studentId })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as TournamentParticipant;
+}
+
+export async function setParticipantPaid(participantId: string, paid: boolean): Promise<void> {
+  const { error } = await db.from("tournament_participants").update({ paid }).eq("id", participantId);
+  if (error) throw new Error(error.message);
+}
+
+export async function removeTournamentParticipant(participantId: string): Promise<void> {
+  const { error } = await db.from("tournament_participants").delete().eq("id", participantId);
   if (error) throw new Error(error.message);
 }

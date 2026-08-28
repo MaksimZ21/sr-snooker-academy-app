@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import type { Session, Student, Attendance, Note } from "@/lib/sheets/schemas";
 import { AttendancePanel } from "./attendance-panel";
 import { NotesPanel } from "./notes-panel";
+import { GoalPanel, type GoalsByStudent } from "./goal-panel";
 import { EditSessionDialog } from "./forms/edit-session-dialog";
 import { DuplicateSessionDialog } from "./forms/duplicate-session-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,6 +26,7 @@ type Detail = {
   students: Student[];
   attendance: Attendance[];
   notesByStudent: Record<string, Note[]>;
+  goalsByStudent: GoalsByStudent;
 };
 
 export function SessionDetail({
@@ -97,7 +99,7 @@ export function SessionDetail({
     );
   }
 
-  const { session, students, attendance, notesByStudent } = data;
+  const { session, students, attendance, notesByStudent, goalsByStudent } = data;
   const { label, className } = trainingTypeBadge(session.training_type);
   const cancelled = session.status === "cancelled";
   const coachName = session.coach_email
@@ -221,9 +223,10 @@ export function SessionDetail({
       {/* Tabs */}
       <div className="p-4 flex flex-col gap-4">
         <Tabs defaultValue="attendance">
-          <TabsList className="grid grid-cols-2">
+          <TabsList className="grid grid-cols-3">
             <TabsTrigger value="attendance">נוכחות</TabsTrigger>
             <TabsTrigger value="notes">הערות</TabsTrigger>
+            <TabsTrigger value="goal">מטרה</TabsTrigger>
           </TabsList>
           <TabsContent value="attendance">
             <AttendancePanel
@@ -239,6 +242,14 @@ export function SessionDetail({
               students={students}
               notesByStudent={notesByStudent}
               readOnly={!canEditNotes}
+            />
+          </TabsContent>
+          <TabsContent value="goal">
+            <GoalPanel
+              sessionId={sessionId}
+              students={students}
+              goalsByStudent={goalsByStudent}
+              readOnly={!canEditAttendance}
             />
           </TabsContent>
         </Tabs>

@@ -38,6 +38,10 @@ export function RunAutomationDialog({ automation }: { automation: Automation }) 
   // component unmounts (Dialog default keepMounted=false) — a deliberate,
   // separate "run again" is expected to create a fresh set of rows.
   const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(new Set());
+  // Generated once per dialog session (stable across retries after a
+  // partial failure, since the dialog only unmounts — regenerating this —
+  // when it's fully closed and reopened for a genuinely separate run).
+  const [runId] = useState(() => crypto.randomUUID());
   const qc = useQueryClient();
 
   const { data: groupData, isLoading: loadingGroups } = useQuery({
@@ -67,6 +71,8 @@ export function RunAutomationDialog({ automation }: { automation: Automation }) 
             chat_name: chatName,
             message: step.payload,
             scheduled_at: scheduledAt,
+            automation_run_id: runId,
+            automation_name: automation.name,
           }),
         });
         if (!r.ok) throw new Error("failed");

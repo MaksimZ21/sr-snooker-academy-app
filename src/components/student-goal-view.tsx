@@ -45,7 +45,10 @@ export function StudentGoalView({ studentId }: { studentId: string }) {
       toast.success("המטרה נשמרה");
       qc.invalidateQueries({ queryKey: ["student-goals", studentId] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בשמירה"),
+    onError: (e) => {
+      toast.error(e instanceof Error ? e.message : "שגיאה בשמירה");
+      qc.invalidateQueries({ queryKey: ["student-goals", studentId] });
+    },
   });
 
   if (isLoading || !data) {

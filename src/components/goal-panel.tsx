@@ -35,7 +35,7 @@ export function GoalPanel({
         }
         return (
           <GoalEntryRow
-            key={s.id}
+            key={`${s.id}:${info.entry?.success_count ?? ""}:${info.entry?.attempt_count ?? ""}:${info.entry?.best_break ?? ""}`}
             sessionId={sessionId}
             studentId={s.id}
             studentName={studentFullName(s)}

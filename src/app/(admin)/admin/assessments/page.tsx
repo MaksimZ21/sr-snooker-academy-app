@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { FileText, Plus, Search, Send, ChevronLeft } from "lucide-react";
+import { FileText, Plus, Search, ChevronLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { toast } from "sonner";
 import { TECHNIQUE_CRITERIA, normalizeTechniqueRating, type Assessment } from "@/lib/sheets/assessment-types";
+import { AssessmentSendMenu } from "@/components/assessment-send-menu";
 
 function formatDate(d: string) {
   const dt = new Date(d);
@@ -22,25 +22,6 @@ function passCount(a: Assessment) {
 }
 function ratedCount(a: Assessment) {
   return TECHNIQUE_CRITERIA.filter((c) => normalizeTechniqueRating(a.technique[c.key]) !== undefined).length;
-}
-
-async function sendWhatsApp(a: Assessment) {
-  if (!a.participant_phone) { toast.error("אין מספר טלפון"); return; }
-  const tokenRes = await fetch(`/api/assessments/${a.id}/share-token`);
-  if (!tokenRes.ok) { toast.error("שגיאה ביצירת קישור"); return; }
-  const { token } = await tokenRes.json() as { token: string };
-  const pdfUrl = `${window.location.origin}/api/assessments/${a.id}/pdf?token=${token}`;
-  const r = await fetch("/api/whatsapp/send", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      phone: a.participant_phone,
-      urlFile: pdfUrl,
-      fileName: `דוח אבחון - ${a.participant_name}.pdf`,
-      caption: `שלום ${a.participant_name}, דוח האבחון שלך נמצא כאן`,
-    }),
-  });
-  if (r.ok) toast.success("נשלח"); else toast.error("שגיאה");
 }
 
 export default function AdminAssessmentsPage() {
@@ -154,14 +135,7 @@ export default function AdminAssessmentsPage() {
                     >
                       <FileText size={15} />
                     </a>
-                    <button
-                      type="button"
-                      className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10 transition-colors opacity-0 group-hover:opacity-100"
-                      title="שלח ב-WhatsApp"
-                      onClick={(e) => { e.preventDefault(); sendWhatsApp(a); }}
-                    >
-                      <Send size={14} />
-                    </button>
+                    <AssessmentSendMenu assessment={a} />
                     <ChevronLeft size={14} className="text-muted-foreground/30 shrink-0" />
                   </div>
                 </Link>

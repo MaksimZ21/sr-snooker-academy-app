@@ -2,10 +2,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { ArrowRight, FileText, Send, CheckCircle2, XCircle, Minus, Users, Loader2, ChevronDown } from "lucide-react";
+import { ArrowRight, FileText, Send, CheckCircle2, Circle, XCircle, Minus, Users, Loader2, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { TECHNIQUE_CRITERIA, type Assessment } from "@/lib/sheets/assessment-types";
+import { TECHNIQUE_CRITERIA, normalizeTechniqueRating, type Assessment } from "@/lib/sheets/assessment-types";
 
 type WhatsAppGroup = { id: string; name: string };
 
@@ -138,8 +138,11 @@ export function AssessmentDetailView({
   }
 
   const { assessment: a } = data;
-  const passCount = TECHNIQUE_CRITERIA.filter((c) => a.technique[c.key] === true).length;
-  const ratedCount = TECHNIQUE_CRITERIA.filter((c) => a.technique[c.key] !== undefined).length;
+  const techniqueRatings = TECHNIQUE_CRITERIA.map((c) => normalizeTechniqueRating(a.technique[c.key]));
+  const goodCount   = techniqueRatings.filter((r) => r === "good").length;
+  const mediumCount = techniqueRatings.filter((r) => r === "medium").length;
+  const badCount    = techniqueRatings.filter((r) => r === "bad").length;
+  const ratedCount  = goodCount + mediumCount + badCount;
 
   return (
     <div className="flex flex-col">
@@ -212,7 +215,7 @@ export function AssessmentDetailView({
             )}
             {ratedCount > 0 && (
               <span className="bg-white/20 text-white font-semibold text-xs px-2.5 py-1 rounded-full tabular-nums">
-                {passCount}/{ratedCount} עברו
+                ✓{goodCount} ○{mediumCount} ✗{badCount}
               </span>
             )}
           </div>
@@ -225,14 +228,16 @@ export function AssessmentDetailView({
           <h2 className="text-sm font-semibold text-muted-foreground mb-2">טכניקה</h2>
           <div className="bg-card border border-border/60 rounded-2xl overflow-hidden divide-y divide-border/40">
             {TECHNIQUE_CRITERIA.map((c) => {
-              const val = a.technique[c.key];
+              const val = normalizeTechniqueRating(a.technique[c.key]);
               return (
                 <div key={c.key} className="flex items-center gap-3 px-4 py-3">
                   <span className="flex-1 text-sm">{c.label}</span>
                   {val === undefined ? (
                     <Minus size={15} className="text-muted-foreground/30 shrink-0" />
-                  ) : val ? (
+                  ) : val === "good" ? (
                     <CheckCircle2 size={18} className="text-green-500 shrink-0" />
+                  ) : val === "medium" ? (
+                    <Circle size={18} className="text-amber-500 shrink-0" />
                   ) : (
                     <XCircle size={18} className="text-red-400 shrink-0" />
                   )}

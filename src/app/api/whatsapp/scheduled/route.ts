@@ -11,6 +11,8 @@ export type ScheduledMessage = {
   scheduled_at: string;
   status: "pending" | "sent" | "failed";
   created_at: string;
+  automation_run_id: string | null;
+  automation_name: string | null;
 };
 
 export async function GET() {
@@ -38,6 +40,8 @@ export async function POST(req: Request) {
         chat_name: z.string().default(""),
         message: z.string().min(1),
         scheduled_at: z.string().min(1),
+        automation_run_id: z.string().uuid().optional(),
+        automation_name: z.string().optional(),
       })
       .parse(await req.json());
     const { data, error } = await db.from("whatsapp_scheduled").insert(body).select().single();

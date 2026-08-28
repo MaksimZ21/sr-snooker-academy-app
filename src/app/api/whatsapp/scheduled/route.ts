@@ -15,15 +15,34 @@ export type ScheduledMessage = {
   automation_name: string | null;
 };
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const user = await requireUser();
     if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
-    const { data } = await db
+    const url = new URL(req.url);
+    const historyOffset = Number(url.searchParams.get("historyOffset") ?? "0") || 0;
+    const historyLimit = Number(url.searchParams.get("historyLimit") ?? "20") || 20;
+
+    const { data: pendingData } = await db
       .from("whatsapp_scheduled")
       .select("*")
+      .eq("status", "pending")
       .order("scheduled_at", { ascending: true });
-    return NextResponse.json({ messages: (data ?? []) as ScheduledMessage[] });
+
+    const { data: historyData, count } = await db
+      .from("whatsapp_scheduled")
+      .select("*", { count: "exact" })
+      .neq("status", "pending")
+      .order("scheduled_at", { ascending: false })
+      .range(historyOffset, historyOffset + historyLimit - 1);
+
+    const historyHasMore = (count ?? 0) > historyOffset + historyLimit;
+
+    return NextResponse.json({
+      pending: (pendingData ?? []) as ScheduledMessage[],
+      history: (historyData ?? []) as ScheduledMessage[],
+      historyHasMore,
+    });
   } catch (e) {
     if (e instanceof Response) return e;
     return NextResponse.json({ error: "internal error" }, { status: 500 });

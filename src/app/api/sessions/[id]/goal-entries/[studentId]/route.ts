@@ -24,6 +24,9 @@ export async function PUT(
     if (user.role === "coach" && session.coach_email !== user.email) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+    if (!session.student_ids.includes(studentId)) {
+      return new NextResponse("student not in session", { status: 400 });
+    }
 
     const goal = await fetchGoalForMonth(studentId, monthOf(session.date));
     if (!goal) return NextResponse.json({ error: "no goal this month" }, { status: 400 });
@@ -40,6 +43,9 @@ export async function PUT(
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
+    }
     return NextResponse.json({ error: "internal error" }, { status: 500 });
   }
 }

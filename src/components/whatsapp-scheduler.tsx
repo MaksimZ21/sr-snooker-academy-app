@@ -50,6 +50,8 @@ const STATUS_BADGE: Record<string, { label: string; variant: "default" | "second
   failed: { label: "נכשל", variant: "destructive" },
 };
 
+const HISTORY_PAGE_SIZE = 20;
+
 function formatLocalDatetime(iso: string) {
   return new Date(iso).toLocaleString("he-IL", {
     timeZone: "Asia/Jerusalem",
@@ -154,11 +156,11 @@ export function WhatsAppScheduler() {
   const scheduledQuery = useInfiniteQuery({
     queryKey: ["whatsapp:scheduled"],
     queryFn: async ({ pageParam }) => {
-      const r = await fetch(`/api/whatsapp/scheduled?historyOffset=${pageParam}&historyLimit=20`);
+      const r = await fetch(`/api/whatsapp/scheduled?historyOffset=${pageParam}&historyLimit=${HISTORY_PAGE_SIZE}`);
       return (await r.json()) as { pending: ScheduledMessage[]; history: ScheduledMessage[]; historyHasMore: boolean };
     },
     initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => (lastPage.historyHasMore ? allPages.length * 20 : undefined),
+    getNextPageParam: (lastPage, allPages) => (lastPage.historyHasMore ? allPages.length * HISTORY_PAGE_SIZE : undefined),
   });
   const loadingMsgs = scheduledQuery.isLoading;
 

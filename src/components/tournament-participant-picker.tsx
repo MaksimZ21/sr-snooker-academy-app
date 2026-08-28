@@ -10,10 +10,11 @@ export function TournamentParticipantPicker({ tournamentId }: { tournamentId: st
   const [query, setQuery] = useState("");
   const qc = useQueryClient();
 
-  const { data } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["students:search", query],
     queryFn: async () => {
       const r = await fetch(`/api/students/search?q=${encodeURIComponent(query)}`);
+      if (!r.ok) throw new Error("search failed");
       return (await r.json()) as { students: StudentSearchResult[] };
     },
     enabled: query.trim().length >= 2,
@@ -48,26 +49,34 @@ export function TournamentParticipantPicker({ tournamentId }: { tournamentId: st
       />
       {query.trim().length >= 2 && (
         <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
-          {results.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => addMut.mutate({ studentId: s.id })}
-              disabled={addMut.isPending}
-              className="w-full text-right flex items-center gap-2 px-3 py-2 hover:bg-muted/60 transition-colors text-sm border-b border-border/40 last:border-b-0"
-            >
-              <span className="flex-1">{[s.first_name, s.last_name].filter(Boolean).join(" ")}</span>
-              {s.phone && <span className="text-xs text-muted-foreground">{s.phone}</span>}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => addMut.mutate({ newStudentName: query.trim() })}
-            disabled={addMut.isPending}
-            className="w-full text-right px-3 py-2 hover:bg-muted/60 transition-colors text-sm text-primary border-t border-border/40"
-          >
-            {`+ הוסף כמשתתף חדש: "${query.trim()}"`}
-          </button>
+          {isLoading ? (
+            <div className="px-3 py-3 text-sm text-muted-foreground text-center">מחפש...</div>
+          ) : isError ? (
+            <div className="px-3 py-3 text-sm text-destructive text-center">שגיאה בחיפוש, נסה שוב</div>
+          ) : (
+            <>
+              {results.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => addMut.mutate({ studentId: s.id })}
+                  disabled={addMut.isPending}
+                  className="w-full text-right flex items-center gap-2 px-3 py-2 hover:bg-muted/60 transition-colors text-sm border-b border-border/40 last:border-b-0"
+                >
+                  <span className="flex-1">{[s.first_name, s.last_name].filter(Boolean).join(" ")}</span>
+                  {s.phone && <span className="text-xs text-muted-foreground">{s.phone}</span>}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => addMut.mutate({ newStudentName: query.trim() })}
+                disabled={addMut.isPending}
+                className="w-full text-right px-3 py-2 hover:bg-muted/60 transition-colors text-sm text-primary border-t border-border/40"
+              >
+                {`+ הוסף כמשתתף חדש: "${query.trim()}"`}
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

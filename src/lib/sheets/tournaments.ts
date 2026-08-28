@@ -29,7 +29,7 @@ export type TournamentDetail = {
 };
 
 export function isTournamentManager(tournament: Tournament, user: { email: string; role: string }): boolean {
-  return user.role === "admin" || tournament.manager_email.toLowerCase() === user.email.toLowerCase();
+  return user.role === "admin" || tournament.manager_email.trim().toLowerCase() === user.email.trim().toLowerCase();
 }
 
 export async function fetchTournaments(): Promise<Tournament[]> {

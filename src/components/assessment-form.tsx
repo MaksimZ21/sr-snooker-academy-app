@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, X, Camera, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, Circle, X, Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { TECHNIQUE_CRITERIA, type TechniqueKey } from "@/lib/sheets/assessment-types";
+import { TECHNIQUE_CRITERIA, type TechniqueKey, type TechniqueRating } from "@/lib/sheets/assessment-types";
 import type { Phrase } from "@/lib/sheets/assessment-phrases";
 
 type HandEye = "right" | "left";
@@ -34,7 +34,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
   const [eventDate,        setEventDate]        = useState(today());
   const [strongHand,       setStrongHand]       = useState<HandEye | undefined>();
   const [strongEye,        setStrongEye]        = useState<HandEye | undefined>();
-  const [technique,        setTechnique]        = useState<Partial<Record<TechniqueKey, boolean>>>({});
+  const [technique,        setTechnique]        = useState<Partial<Record<TechniqueKey, TechniqueRating>>>({});
   const [notes,            setNotes]            = useState("");
 
   /* Phrases */
@@ -57,7 +57,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
     ? allPhrases.filter((p) => p.category === selectedCategory)
     : [];
 
-  function setTech(key: TechniqueKey, value: boolean) {
+  function setTech(key: TechniqueKey, value: TechniqueRating) {
     setTechnique((prev) => ({ ...prev, [key]: prev[key] === value ? undefined : value }));
   }
 
@@ -81,8 +81,10 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
     setNotes((prev) => (prev ? `${prev}\n${text}` : text));
   }
 
-  const ratedCount = Object.keys(technique).length;
-  const passCount  = Object.values(technique).filter(Boolean).length;
+  const goodCount   = Object.values(technique).filter((v) => v === "good").length;
+  const mediumCount = Object.values(technique).filter((v) => v === "medium").length;
+  const badCount    = Object.values(technique).filter((v) => v === "bad").length;
+  const ratedCount  = goodCount + mediumCount + badCount;
 
   async function handleSubmit() {
     if (!participantName.trim()) { toast.error("יש להזין שם משתתף"); return; }
@@ -276,7 +278,9 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">טכניקה</p>
             {ratedCount > 0 && (
-              <span className="text-xs text-muted-foreground">{passCount}/{ratedCount} ✓</span>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                ✓ {goodCount}　○ {mediumCount}　✗ {badCount}
+              </span>
             )}
           </div>
           <div className="flex flex-col divide-y divide-border/40">
@@ -288,20 +292,30 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                   <div className="flex gap-1.5 shrink-0">
                     <button
                       type="button"
-                      onClick={() => setTech(c.key, true)}
+                      onClick={() => setTech(c.key, "good")}
                       className={cn(
                         "h-8 w-8 rounded-lg border transition-all duration-150 flex items-center justify-center",
-                        val === true ? "bg-emerald-500 border-emerald-500 text-white shadow-sm" : "border-border/60 text-muted-foreground hover:border-emerald-400 hover:text-emerald-600",
+                        val === "good" ? "bg-emerald-500 border-emerald-500 text-white shadow-sm" : "border-border/60 text-muted-foreground hover:border-emerald-400 hover:text-emerald-600",
                       )}
                     >
                       <Check size={14} />
                     </button>
                     <button
                       type="button"
-                      onClick={() => setTech(c.key, false)}
+                      onClick={() => setTech(c.key, "medium")}
                       className={cn(
                         "h-8 w-8 rounded-lg border transition-all duration-150 flex items-center justify-center",
-                        val === false ? "bg-red-500 border-red-500 text-white shadow-sm" : "border-border/60 text-muted-foreground hover:border-red-400 hover:text-red-600",
+                        val === "medium" ? "bg-amber-500 border-amber-500 text-white shadow-sm" : "border-border/60 text-muted-foreground hover:border-amber-400 hover:text-amber-600",
+                      )}
+                    >
+                      <Circle size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTech(c.key, "bad")}
+                      className={cn(
+                        "h-8 w-8 rounded-lg border transition-all duration-150 flex items-center justify-center",
+                        val === "bad" ? "bg-red-500 border-red-500 text-white shadow-sm" : "border-border/60 text-muted-foreground hover:border-red-400 hover:text-red-600",
                       )}
                     >
                       <X size={14} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,13 +151,16 @@ export function WhatsAppScheduler() {
     setComposeKey((k) => k + 1);
   }
 
-  const { data: msgData, isLoading: loadingMsgs } = useQuery({
+  const scheduledQuery = useInfiniteQuery({
     queryKey: ["whatsapp:scheduled"],
-    queryFn: async () => {
-      const r = await fetch("/api/whatsapp/scheduled");
-      return (await r.json()) as { messages: ScheduledMessage[] };
+    queryFn: async ({ pageParam }) => {
+      const r = await fetch(`/api/whatsapp/scheduled?historyOffset=${pageParam}&historyLimit=20`);
+      return (await r.json()) as { pending: ScheduledMessage[]; history: ScheduledMessage[]; historyHasMore: boolean };
     },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => (lastPage.historyHasMore ? allPages.length * 20 : undefined),
   });
+  const loadingMsgs = scheduledQuery.isLoading;
 
   const { data: groupData, isLoading: loadingGroups, isError: groupsError } = useQuery({
     queryKey: ["whatsapp:groups"],
@@ -232,6 +235,18 @@ export function WhatsAppScheduler() {
     onError: () => toast.error("שגיאה במחיקה"),
   });
 
+  const deleteBatchMut = useMutation({
+    mutationFn: async (runId: string) => {
+      const r = await fetch(`/api/whatsapp/scheduled/batch/${runId}`, { method: "DELETE" });
+      if (!r.ok) throw new Error("failed");
+    },
+    onSuccess: () => {
+      toast.success("האוטומציה בוטלה");
+      qc.invalidateQueries({ queryKey: ["whatsapp:scheduled"] });
+    },
+    onError: () => toast.error("שגיאה בביטול"),
+  });
+
   async function handleFileUpload(file: File) {
     setImageUploading(true);
     setImageFileName(file.name);
@@ -289,9 +304,8 @@ export function WhatsAppScheduler() {
       (msgType === "poll" && pollQuestion.trim() && validOptions.length >= 2) ||
       (msgType === "group_settings" && groupOpen !== null));
 
-  const messages = msgData?.messages ?? [];
-  const pending = messages.filter((m) => m.status === "pending");
-  const history = messages.filter((m) => m.status !== "pending");
+  const pending = scheduledQuery.data?.pages[0]?.pending ?? [];
+  const history = scheduledQuery.data?.pages.flatMap((p) => p.history) ?? [];
 
   return (
     <div className="p-4 md:p-6">
@@ -327,18 +341,41 @@ export function WhatsAppScheduler() {
                   אין הודעות מתוזמנות
                 </div>
               ) : (
-                pending.map((m) => (
-                  <MessageCard key={m.id} m={m} onDelete={() => deleteMut.mutate(m.id)} />
-                ))
+                groupByAutomationRun(pending).map((item) =>
+                  item.kind === "batch" ? (
+                    <AutomationBatchCard
+                      key={item.runId}
+                      batch={item}
+                      onDeleteBatch={(runId) => deleteBatchMut.mutate(runId)}
+                    />
+                  ) : (
+                    <MessageCard key={item.message.id} m={item.message} onDelete={() => deleteMut.mutate(item.message.id)} />
+                  ),
+                )
               )}
             </div>
 
             {history.length > 0 && (
               <div className="flex flex-col gap-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">היסטוריה</p>
-                {history.map((m) => (
-                  <MessageCard key={m.id} m={m} />
-                ))}
+                {groupByAutomationRun(history).map((item) =>
+                  item.kind === "batch" ? (
+                    <AutomationBatchCard key={item.runId} batch={item} />
+                  ) : (
+                    <MessageCard key={item.message.id} m={item.message} />
+                  ),
+                )}
+                {scheduledQuery.hasNextPage && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="self-center mt-1"
+                    onClick={() => scheduledQuery.fetchNextPage()}
+                    disabled={scheduledQuery.isFetchingNextPage}
+                  >
+                    {scheduledQuery.isFetchingNextPage ? "טוען..." : "טען עוד"}
+                  </Button>
+                )}
               </div>
             )}
           </div>

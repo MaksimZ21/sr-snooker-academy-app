@@ -651,8 +651,11 @@ before it — the rest of the `weakItems` block below is untouched.)
 - [ ] **Step 8: Typecheck**
 
 Run: `npx tsc --noEmit`
-Expected: no errors anywhere in the project — this was the last file with
-pending errors from Task 1's type change.
+Expected: this file's errors are now resolved. Errors remain in three
+list-view files (`admin/assessments/page.tsx`, `coach/assessments/page.tsx`,
+`admin/students/[id]/page.tsx`) until Task 7 — these were not part of the
+original spec's UI Changes section but surfaced from Task 1's type change
+and are fixed there.
 
 - [ ] **Step 9: Commit**
 
@@ -663,7 +666,119 @@ git commit -m "feat(assessments): add medium rating section to the PDF export"
 
 ---
 
-### Task 7: Full verification
+### Task 7: List-view badges (admin/coach assessment lists, student detail page)
+
+**Files:**
+- Modify: `src/app/(admin)/admin/assessments/page.tsx`
+- Modify: `src/app/(coach)/coach/assessments/page.tsx`
+- Modify: `src/app/(admin)/admin/students/[id]/page.tsx`
+
+These three files were not caught during spec/design and were discovered
+only once Task 1's type change made `npx tsc --noEmit` fail here too — each
+has its own local `passCount`/`ratedCount` logic (duplicated three times)
+powering a small "`X`/`Y` ✓" badge next to each assessment row in a list.
+They must be updated to use `normalizeTechniqueRating` so they keep
+compiling and keep working for old (boolean) reports. The badge itself
+keeps its current compact two-number format (good count / total rated
+count) — these are dense list rows, not the full breakdown used in the
+detail view, so we deliberately don't expand them to a three-part badge.
+
+- [ ] **Step 1: Fix `src/app/(admin)/admin/assessments/page.tsx`**
+
+Change:
+
+```ts
+import { TECHNIQUE_CRITERIA, type Assessment } from "@/lib/sheets/assessment-types";
+```
+
+to:
+
+```ts
+import { TECHNIQUE_CRITERIA, normalizeTechniqueRating, type Assessment } from "@/lib/sheets/assessment-types";
+```
+
+Change:
+
+```ts
+function passCount(a: Assessment) {
+  return TECHNIQUE_CRITERIA.filter((c) => a.technique[c.key] === true).length;
+}
+function ratedCount(a: Assessment) {
+  return TECHNIQUE_CRITERIA.filter((c) => a.technique[c.key] !== undefined).length;
+}
+```
+
+to:
+
+```ts
+function passCount(a: Assessment) {
+  return TECHNIQUE_CRITERIA.filter((c) => normalizeTechniqueRating(a.technique[c.key]) === "good").length;
+}
+function ratedCount(a: Assessment) {
+  return TECHNIQUE_CRITERIA.filter((c) => normalizeTechniqueRating(a.technique[c.key]) !== undefined).length;
+}
+```
+
+- [ ] **Step 2: Fix `src/app/(coach)/coach/assessments/page.tsx`**
+
+Apply the exact same two changes as Step 1 (same current text, same import
+line, same `passCount`/`ratedCount` functions) — this file duplicates the
+identical pattern.
+
+- [ ] **Step 3: Fix `src/app/(admin)/admin/students/[id]/page.tsx`**
+
+Change:
+
+```ts
+import type { Assessment } from "@/lib/sheets/assessment-types";
+import { TECHNIQUE_CRITERIA } from "@/lib/sheets/assessment-types";
+```
+
+to:
+
+```ts
+import type { Assessment } from "@/lib/sheets/assessment-types";
+import { TECHNIQUE_CRITERIA, normalizeTechniqueRating } from "@/lib/sheets/assessment-types";
+```
+
+Change:
+
+```ts
+                const passCount = TECHNIQUE_CRITERIA.filter(
+                  (c) => a.technique[c.key] === true,
+                ).length;
+                const ratedCount = TECHNIQUE_CRITERIA.filter(
+                  (c) => a.technique[c.key] !== undefined,
+                ).length;
+```
+
+to:
+
+```ts
+                const passCount = TECHNIQUE_CRITERIA.filter(
+                  (c) => normalizeTechniqueRating(a.technique[c.key]) === "good",
+                ).length;
+                const ratedCount = TECHNIQUE_CRITERIA.filter(
+                  (c) => normalizeTechniqueRating(a.technique[c.key]) !== undefined,
+                ).length;
+```
+
+- [ ] **Step 4: Typecheck**
+
+Run: `npx tsc --noEmit`
+Expected: no errors anywhere in the project — this was the last set of
+files with pending errors from Task 1's type change.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add "src/app/(admin)/admin/assessments/page.tsx" "src/app/(coach)/coach/assessments/page.tsx" "src/app/(admin)/admin/students/[id]/page.tsx"
+git commit -m "fix(assessments): update list-view pass/rated badges for medium rating"
+```
+
+---
+
+### Task 8: Full verification
 
 **Files:** none (verification only)
 

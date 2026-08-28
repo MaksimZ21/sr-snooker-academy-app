@@ -69,12 +69,16 @@ export function AssessmentSendMenu({ assessment: a }: { assessment: Assessment }
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const { data: groups, isLoading } = useQuery({
+  const { data: groups, isLoading, isError } = useQuery({
     queryKey: ["whatsapp:masterClassGroups"],
     queryFn: fetchMasterClassGroups,
     enabled: open,
     staleTime: 60_000,
   });
+
+  useEffect(() => {
+    if (isError) toast.error("שגיאה בטעינת קבוצות");
+  }, [isError]);
 
   useEffect(() => {
     if (!open) return;
@@ -115,6 +119,10 @@ export function AssessmentSendMenu({ assessment: a }: { assessment: Assessment }
             <div className="flex items-center justify-center py-4 border-t border-border/40 first:border-t-0">
               <Loader2 size={15} className="animate-spin text-muted-foreground" />
             </div>
+          ) : isError ? (
+            <p className="text-xs text-muted-foreground px-4 py-3 border-t border-border/40 first:border-t-0">
+              שגיאה בטעינת קבוצות
+            </p>
           ) : groups && groups.length > 0 ? (
             groups.map((g) => (
               <button

@@ -4,7 +4,10 @@ import { searchStudents } from "@/lib/sheets/tournaments";
 
 export async function GET(req: Request) {
   try {
-    await requireUser();
+    const user = await requireUser();
+    if (user.role !== "admin" && user.role !== "coach") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const q = new URL(req.url).searchParams.get("q") ?? "";
     const students = await searchStudents(q);
     return NextResponse.json({ students });

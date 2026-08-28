@@ -154,12 +154,20 @@ export async function addTournamentParticipant(
   return data as TournamentParticipant;
 }
 
-export async function setParticipantPaid(participantId: string, paid: boolean): Promise<void> {
-  const { error } = await db.from("tournament_participants").update({ paid }).eq("id", participantId);
+export async function setParticipantPaid(tournamentId: string, participantId: string, paid: boolean): Promise<void> {
+  const { error } = await db
+    .from("tournament_participants")
+    .update({ paid })
+    .eq("id", participantId)
+    .eq("tournament_id", tournamentId);
   if (error) throw new Error(error.message);
 }
 
-export async function removeTournamentParticipant(participantId: string): Promise<void> {
-  const { error } = await db.from("tournament_participants").delete().eq("id", participantId);
+export async function removeTournamentParticipant(tournamentId: string, participantId: string): Promise<void> {
+  const { error } = await db
+    .from("tournament_participants")
+    .delete()
+    .eq("id", participantId)
+    .eq("tournament_id", tournamentId);
   if (error) throw new Error(error.message);
 }

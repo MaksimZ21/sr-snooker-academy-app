@@ -18,7 +18,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const { paid } = PatchSchema.parse(await req.json());
-    await setParticipantPaid(participantId, paid);
+    await setParticipantPaid(id, participantId, paid);
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;
@@ -38,7 +38,7 @@ export async function DELETE(
     if (!isTournamentManager(detail.tournament, user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    await removeTournamentParticipant(participantId);
+    await removeTournamentParticipant(id, participantId);
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;

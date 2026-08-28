@@ -32,6 +32,10 @@ export async function appendStudent(input: {
   general_notes?: string;
   birth_date?: string | null;
   last_payment_date?: string | null;
+  active?: boolean;
+  is_tournament_only?: boolean;
+  rating?: number;
+  public_slug?: string | null;
 }) {
   const { data } = await db.from("students").select("id");
   const nums = (data ?? [])
@@ -50,7 +54,10 @@ export async function appendStudent(input: {
     general_notes: input.general_notes ?? "",
     birth_date: input.birth_date ?? null,
     last_payment_date: input.last_payment_date ?? null,
-    active: true,
+    active: input.active ?? true,
+    is_tournament_only: input.is_tournament_only ?? false,
+    rating: input.rating ?? 1000,
+    public_slug: input.public_slug ?? null,
   });
   revalidateTag("students", { expire: 0 });
   return id;

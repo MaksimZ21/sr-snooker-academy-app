@@ -5,6 +5,7 @@ import { fetchSessionById, updateSession, deleteSession } from "@/lib/sheets/ses
 import { fetchAttendanceForSession } from "@/lib/sheets/attendance";
 import { fetchStudents } from "@/lib/sheets/students";
 import { fetchNotesForSessionStudents } from "@/lib/sheets/notes";
+import { fetchGoalsForSessionStudents, monthOf } from "@/lib/sheets/monthly-goals";
 
 export async function GET(
   _req: Request,
@@ -29,11 +30,17 @@ export async function GET(
       id,
       sessionStudents.map((s) => s.id),
     );
+    const goalsByStudent = await fetchGoalsForSessionStudents(
+      id,
+      sessionStudents.map((s) => s.id),
+      monthOf(session.date),
+    );
     return NextResponse.json({
       session,
       students: sessionStudents,
       attendance,
       notesByStudent,
+      goalsByStudent,
     });
   } catch (e) {
     if (e instanceof Response) return e;

@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         chat_name: z.string().default(""),
         message: z.string().min(1),
         scheduled_at: z.string().min(1),
-        automation_run_id: z.string().uuid().optional(),
+        automation_run_id: z.uuid().optional(),
         automation_name: z.string().optional(),
       })
       .parse(await req.json());

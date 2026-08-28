@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { studentFullName } from "@/lib/sheets/schemas";
 import type { Student, Note, Session, Attendance } from "@/lib/sheets/schemas";
 import type { Assessment } from "@/lib/sheets/assessment-types";
-import { TECHNIQUE_CRITERIA } from "@/lib/sheets/assessment-types";
+import { TECHNIQUE_CRITERIA, normalizeTechniqueRating } from "@/lib/sheets/assessment-types";
 
 type AttendanceDetailRow = { session: Session; attendance_status: Attendance["status"] };
 
@@ -309,10 +309,10 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
             <div className="flex flex-col gap-2">
               {assessments.map((a) => {
                 const passCount = TECHNIQUE_CRITERIA.filter(
-                  (c) => a.technique[c.key] === true,
+                  (c) => normalizeTechniqueRating(a.technique[c.key]) === "good",
                 ).length;
                 const ratedCount = TECHNIQUE_CRITERIA.filter(
-                  (c) => a.technique[c.key] !== undefined,
+                  (c) => normalizeTechniqueRating(a.technique[c.key]) !== undefined,
                 ).length;
                 return (
                   <Link

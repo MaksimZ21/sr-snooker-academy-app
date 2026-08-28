@@ -10,7 +10,7 @@ import Link from "next/link";
 import { FileText, Plus, Search, Send, ChevronLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { toast } from "sonner";
-import { TECHNIQUE_CRITERIA, type Assessment } from "@/lib/sheets/assessment-types";
+import { TECHNIQUE_CRITERIA, normalizeTechniqueRating, type Assessment } from "@/lib/sheets/assessment-types";
 
 function formatDate(d: string) {
   const dt = new Date(d);
@@ -18,10 +18,10 @@ function formatDate(d: string) {
 }
 
 function passCount(a: Assessment) {
-  return TECHNIQUE_CRITERIA.filter((c) => a.technique[c.key] === true).length;
+  return TECHNIQUE_CRITERIA.filter((c) => normalizeTechniqueRating(a.technique[c.key]) === "good").length;
 }
 function ratedCount(a: Assessment) {
-  return TECHNIQUE_CRITERIA.filter((c) => a.technique[c.key] !== undefined).length;
+  return TECHNIQUE_CRITERIA.filter((c) => normalizeTechniqueRating(a.technique[c.key]) !== undefined).length;
 }
 
 async function sendWhatsApp(a: Assessment) {

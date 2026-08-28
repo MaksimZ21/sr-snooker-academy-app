@@ -55,9 +55,24 @@ export async function fetchStudentGoals(
   const { data: entries } = await db
     .from("student_goal_entries")
     .select("*")
-    .in("goal_id", goalIds)
-    .order("created_at", { ascending: true });
+    .in("goal_id", goalIds);
   const entryRows = (entries ?? []) as GoalEntry[];
+
+  // Order entries chronologically by their underlying session's date, not
+  // by when the entry row itself was inserted — a coach might record an
+  // earlier session's number after already recording a later session's,
+  // and the chart's x-axis labels ("אימון 1", "אימון 2", ...) depend on
+  // this array's order matching real session chronology.
+  const sessionIds = [...new Set(entryRows.map((e) => e.session_id))];
+  const { data: sessionRows } = sessionIds.length
+    ? await db.from("sessions").select("id, date").in("id", sessionIds)
+    : { data: [] as { id: string; date: string }[] };
+  const dateBySessionId = new Map((sessionRows ?? []).map((s) => [s.id as string, s.date as string]));
+  entryRows.sort((a, b) => {
+    const dateA = dateBySessionId.get(a.session_id) ?? "";
+    const dateB = dateBySessionId.get(b.session_id) ?? "";
+    return dateA.localeCompare(dateB);
+  });
 
   return goalRows.map((goal) => ({
     goal,

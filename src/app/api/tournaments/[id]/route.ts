@@ -40,6 +40,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const body = UpdateSchema.parse(await req.json());
+    if (user.role !== "admin" && (body.manager_email !== undefined || body.handicap_points_per_rating_gap !== undefined)) {
+      return NextResponse.json({ error: "only an admin can change the manager or handicap coefficient" }, { status: 403 });
+    }
     await updateTournament(id, body);
     return NextResponse.json({ ok: true });
   } catch (e) {

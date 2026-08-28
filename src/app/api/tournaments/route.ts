@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchTournaments, createTournament } from "@/lib/sheets/tournaments";
+import { fetchActiveCoachEmails } from "@/lib/sheets/coaches";
 
 export async function GET() {
   try {
@@ -26,6 +27,10 @@ export async function POST(req: Request) {
     const user = await requireUser();
     if (user.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const body = CreateSchema.parse(await req.json());
+    const activeCoachEmails = await fetchActiveCoachEmails();
+    if (!activeCoachEmails.map((e) => e.toLowerCase()).includes(body.manager_email.toLowerCase())) {
+      return NextResponse.json({ error: "manager_email must be an active coach" }, { status: 400 });
+    }
     const tournament = await createTournament(body);
     return NextResponse.json({ tournament });
   } catch (e) {

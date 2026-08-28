@@ -86,7 +86,7 @@ export function TournamentDetailView({
   }
 
   const { tournament, participants } = data;
-  const canEdit = isAdmin || tournament.manager_email.toLowerCase() === currentEmail.toLowerCase();
+  const canEdit = isAdmin || tournament.manager_email.trim().toLowerCase() === currentEmail.trim().toLowerCase();
   const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/t/${tournament.public_slug}` : "";
 
   return (

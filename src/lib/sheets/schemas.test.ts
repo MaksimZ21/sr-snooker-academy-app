@@ -29,6 +29,9 @@ describe("parseRows + Student", () => {
         birth_date: null,
         last_payment_date: null,
         active: true,
+        is_tournament_only: false,
+        rating: 1000,
+        public_slug: null,
       },
     ]);
   });

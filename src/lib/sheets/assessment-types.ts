@@ -12,7 +12,22 @@ export type TechniqueKey =
   | "elbow"
   | "back_hand_90";
 
-export type Technique = Partial<Record<TechniqueKey, boolean>>;
+export type TechniqueRating = "good" | "medium" | "bad";
+
+export type Technique = Partial<Record<TechniqueKey, TechniqueRating>>;
+
+// Existing saved assessments store `true`/`false` per criterion (the old
+// two-state rating). New assessments always save one of the three
+// TechniqueRating strings below. This normalizes either shape into the
+// current three-state type for display — old reports simply never have a
+// "medium" entry, so they render exactly as they always have.
+export function normalizeTechniqueRating(
+  raw: boolean | TechniqueRating | undefined,
+): TechniqueRating | undefined {
+  if (raw === true) return "good";
+  if (raw === false) return "bad";
+  return raw;
+}
 
 export type Assessment = {
   id: string;

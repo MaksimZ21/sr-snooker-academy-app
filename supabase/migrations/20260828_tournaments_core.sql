@@ -21,7 +21,8 @@ CREATE TABLE tournament_participants (
   tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
   student_id TEXT NOT NULL REFERENCES students(id),
   paid BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (tournament_id, student_id)
 );
 
 ALTER TABLE tournaments ENABLE ROW LEVEL SECURITY;

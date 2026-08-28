@@ -6,7 +6,10 @@ import { fetchActiveCoachEmails } from "@/lib/sheets/coaches";
 
 export async function GET() {
   try {
-    await requireUser();
+    const user = await requireUser();
+    if (user.role !== "admin" && user.role !== "coach") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const tournaments = await fetchTournaments();
     return NextResponse.json({ tournaments });
   } catch (e) {

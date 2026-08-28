@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchTournamentDetail, updateTournament, isTournamentManager } from "@/lib/sheets/tournaments";
+import { fetchActiveCoachEmails } from "@/lib/sheets/coaches";
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireUser();
+    const user = await requireUser();
+    if (user.role !== "admin" && user.role !== "coach") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const { id } = await params;
     const detail = await fetchTournamentDetail(id);
     if (!detail) return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -42,6 +46,12 @@ export async function PATCH(
     const body = UpdateSchema.parse(await req.json());
     if (user.role !== "admin" && (body.manager_email !== undefined || body.handicap_points_per_rating_gap !== undefined)) {
       return NextResponse.json({ error: "only an admin can change the manager or handicap coefficient" }, { status: 403 });
+    }
+    if (body.manager_email !== undefined) {
+      const activeCoachEmails = await fetchActiveCoachEmails();
+      if (!activeCoachEmails.map((e) => e.toLowerCase()).includes(body.manager_email.toLowerCase())) {
+        return NextResponse.json({ error: "manager_email must be an active coach" }, { status: 400 });
+      }
     }
     await updateTournament(id, body);
     return NextResponse.json({ ok: true });

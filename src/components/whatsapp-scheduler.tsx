@@ -268,18 +268,21 @@ export function WhatsAppScheduler() {
   return (
     <div className="p-4 md:p-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-5">
-          <TabsTrigger value="scheduled">
-            הודעות מתוזמנות
-            {pending.length > 0 && (
-              <span className="mr-1.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">
-                {pending.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="compose">הודעה חדשה</TabsTrigger>
-          <TabsTrigger value="automations">אוטומציות</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <TabsList>
+            <TabsTrigger value="scheduled">
+              הודעות מתוזמנות
+              {pending.length > 0 && (
+                <span className="mr-1.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">
+                  {pending.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="compose">הודעה חדשה</TabsTrigger>
+            <TabsTrigger value="automations">אוטומציות</TabsTrigger>
+          </TabsList>
+          <WhatsAppTemplatesDialog />
+        </div>
 
         {/* ── Scheduled list ── */}
         <TabsContent value="scheduled">
@@ -380,10 +383,7 @@ export function WhatsAppScheduler() {
 
             {/* Message */}
             <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-4 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">הודעה</p>
-                <WhatsAppTemplatesDialog />
-              </div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">הודעה</p>
 
               {/* Type selector */}
               <div className="flex gap-2">

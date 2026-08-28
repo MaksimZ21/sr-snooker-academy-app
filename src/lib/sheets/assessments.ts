@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/client";
-export type { TechniqueKey, Technique, Assessment } from "./assessment-types";
-export { TECHNIQUE_CRITERIA } from "./assessment-types";
+export type { TechniqueKey, Technique, TechniqueRating, Assessment } from "./assessment-types";
+export { TECHNIQUE_CRITERIA, normalizeTechniqueRating } from "./assessment-types";
 import type { Assessment } from "./assessment-types";
 
 export async function fetchAssessments(coachEmail?: string): Promise<Assessment[]> {

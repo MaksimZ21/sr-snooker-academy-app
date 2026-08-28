@@ -268,7 +268,7 @@ export function WhatsAppScheduler() {
   return (
     <div className="p-4 md:p-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex items-center justify-between gap-3 mb-5">
+        <div className="flex items-center gap-3 mb-5">
           <TabsList>
             <TabsTrigger value="scheduled">
               הודעות מתוזמנות

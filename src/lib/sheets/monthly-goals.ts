@@ -1,44 +1,29 @@
 import { db } from "@/lib/db/client";
-import { todayIsoTel } from "@/lib/date";
+import {
+  currentMonth,
+  monthOf,
+  type GoalCategory,
+  type MonthlyGoal,
+  type GoalEntry,
+} from "./monthly-goals-shared";
 
-export type GoalCategory = "technique" | "angle" | "cue_ball_control" | "breaks";
-
-export const GOAL_CATEGORIES: { key: GoalCategory; label: string; description: string }[] = [
-  { key: "technique", label: "טכניקה", description: "שיפור כניסה למכה ו/או הוצאת המכה" },
-  { key: "angle", label: "זווית", description: "שיפור אחוז ההצלחה בהכנסת כדורים ממרחקים קצרים" },
-  { key: "cue_ball_control", label: "שליטה בלבן", description: "שיפור הדיוק בשליטה בלבן בנוסף להכנסת כדורים" },
-  { key: "breaks", label: "ברייקים", description: "שיפור הרצף האישי שלי" },
-];
-
-export type MonthlyGoal = {
-  id: string;
-  student_id: string;
-  month: string;
-  category: GoalCategory;
-  created_at: string;
-};
-
-export type GoalEntry = {
-  id: string;
-  goal_id: string;
-  session_id: string;
-  success_count: number | null;
-  attempt_count: number | null;
-  best_break: number | null;
-  created_at: string;
-};
-
-// Every month computation in this file goes through here — never raw
-// `new Date()`/`toISOString()`, which is UTC and can disagree with the
-// Israel-local calendar month near midnight (the same class of bug fixed
-// once already in this codebase's group-session sync).
-export function currentMonth(): string {
-  return todayIsoTel().slice(0, 7);
-}
-
-export function monthOf(dateIso: string): string {
-  return dateIso.slice(0, 7);
-}
+// Types/constants/pure helpers are defined in ./monthly-goals-shared (which
+// has no dependency on the server-only `db` client) and re-exported here so
+// every existing server-side import of them from "@/lib/sheets/monthly-goals"
+// keeps working unchanged. Client components must import them directly from
+// ./monthly-goals-shared instead — importing them from THIS file, even as a
+// re-export, still evaluates this module's own `import { db } from
+// "@/lib/db/client"` and crashes in the browser with "supabaseKey is
+// required" (SUPABASE_SERVICE_ROLE_KEY is never exposed client-side). This
+// file must stay server-only.
+export {
+  GOAL_CATEGORIES,
+  currentMonth,
+  monthOf,
+  type GoalCategory,
+  type MonthlyGoal,
+  type GoalEntry,
+} from "./monthly-goals-shared";
 
 export async function fetchStudentGoals(
   studentId: string,

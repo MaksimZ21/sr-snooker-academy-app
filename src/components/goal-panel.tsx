@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import type { Student } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
-import { GOAL_CATEGORIES, type MonthlyGoal, type GoalEntry } from "@/lib/sheets/monthly-goals";
+import { GOAL_CATEGORIES, type MonthlyGoal, type GoalEntry } from "@/lib/sheets/monthly-goals-shared";
 
 export type GoalsByStudent = Record<string, { goal: MonthlyGoal | null; entry: GoalEntry | null }>;
 

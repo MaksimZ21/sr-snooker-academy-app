@@ -2,7 +2,7 @@
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { GOAL_CATEGORIES, currentMonth, type MonthlyGoal, type GoalEntry } from "@/lib/sheets/monthly-goals";
+import { GOAL_CATEGORIES, currentMonth, type MonthlyGoal, type GoalEntry } from "@/lib/sheets/monthly-goals-shared";
 
 const GoalChart = dynamic(() => import("./goal-chart").then((m) => m.GoalChart), {
   ssr: false,

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { GOAL_CATEGORIES, currentMonth, type GoalCategory, type MonthlyGoal, type GoalEntry } from "@/lib/sheets/monthly-goals";
+import { GOAL_CATEGORIES, currentMonth, type GoalCategory, type MonthlyGoal, type GoalEntry } from "@/lib/sheets/monthly-goals-shared";
 
 const GoalChart = dynamic(() => import("./goal-chart").then((m) => m.GoalChart), {
   ssr: false,

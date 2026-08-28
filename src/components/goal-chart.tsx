@@ -1,6 +1,6 @@
 "use client";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import type { GoalCategory, GoalEntry } from "@/lib/sheets/monthly-goals";
+import type { GoalCategory, GoalEntry } from "@/lib/sheets/monthly-goals-shared";
 
 export function GoalChart({ entries, category }: { entries: GoalEntry[]; category: GoalCategory }) {
   if (entries.length === 0) {

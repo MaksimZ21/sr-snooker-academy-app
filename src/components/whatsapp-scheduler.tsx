@@ -18,8 +18,10 @@ import {
 } from "@/components/ui/select";
 import {
   CheckCircle2,
+  ChevronDown,
   Clock,
   Image,
+  ListChecks,
   Loader2,
   Lock,
   MessageSquare,
@@ -78,6 +80,32 @@ function parseDisplay(raw: string): ParsedMsg {
     }
   } catch {}
   return { type: "text", preview: raw };
+}
+
+type ListItem =
+  | { kind: "single"; message: ScheduledMessage }
+  | { kind: "batch"; runId: string; automationName: string; chatName: string; messages: ScheduledMessage[] };
+
+function groupByAutomationRun(messages: ScheduledMessage[]): ListItem[] {
+  const seen = new Set<string>();
+  const items: ListItem[] = [];
+  for (const m of messages) {
+    if (m.automation_run_id) {
+      if (seen.has(m.automation_run_id)) continue;
+      seen.add(m.automation_run_id);
+      const batch = messages.filter((x) => x.automation_run_id === m.automation_run_id);
+      items.push({
+        kind: "batch",
+        runId: m.automation_run_id,
+        automationName: m.automation_name ?? "אוטומציה",
+        chatName: m.chat_name,
+        messages: batch,
+      });
+    } else {
+      items.push({ kind: "single", message: m });
+    }
+  }
+  return items;
 }
 
 export function WhatsAppScheduler() {
@@ -682,6 +710,58 @@ function MessageCard({ m, onDelete }: { m: ScheduledMessage; onDelete?: () => vo
         >
           <Trash2 size={14} />
         </Button>
+      )}
+    </div>
+  );
+}
+
+function AutomationBatchCard({
+  batch,
+  onDeleteBatch,
+}: {
+  batch: Extract<ListItem, { kind: "batch" }>;
+  onDeleteBatch?: (runId: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const earliest = [...batch.messages].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))[0];
+
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06] overflow-hidden">
+      <div className="flex items-center gap-3 p-4">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="flex-1 flex items-center gap-3 min-w-0 text-right"
+        >
+          <ListChecks size={15} className="text-muted-foreground shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm truncate">{batch.automationName} · {batch.chatName}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {batch.messages.length} שלבים · {formatLocalDatetime(earliest.scheduled_at)}
+            </p>
+          </div>
+          <ChevronDown
+            size={14}
+            className={cn("text-muted-foreground shrink-0 transition-transform", expanded && "rotate-180")}
+          />
+        </button>
+        {onDeleteBatch && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+            onClick={() => onDeleteBatch(batch.runId)}
+          >
+            <Trash2 size={14} />
+          </Button>
+        )}
+      </div>
+      {expanded && (
+        <div className="flex flex-col gap-2 px-4 pb-4">
+          {batch.messages.map((m) => (
+            <MessageCard key={m.id} m={m} />
+          ))}
+        </div>
       )}
     </div>
   );

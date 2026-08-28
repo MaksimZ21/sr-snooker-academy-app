@@ -1,6 +1,7 @@
 # Tournaments Area — Design Spec
 
-Date: 2026-08-11 (revised 2026-08-25: players, ratings, handicap, public player profiles)
+Date: 2026-08-11 (revised 2026-08-25: players, ratings, handicap, public player
+profiles; revised 2026-08-28: personal player area after login)
 
 ## Purpose
 
@@ -19,7 +20,9 @@ This feature adds a tournaments area where:
 - Every participant is a persistent "player" identity (backed by the existing
   `students` table — see below), tracked with a rating that updates
   automatically from match results and carries over between tournaments, and
-  gets their own shareable public profile page.
+  gets their own shareable public profile page — plus a richer personal view
+  (full match history, computed placements) if they ever log in, using the
+  exact same login/invite mechanism already used for real students.
 
 ## Roles & Permissions
 
@@ -29,6 +32,7 @@ This feature adds a tournaments area where:
 | Assigned tournament manager (a coach) | Add/edit participants, mark who paid, run the house draw, enter house match results, build and play the knockout bracket, mark the tournament as finished |
 | Other logged-in coaches | View-only — see the tournament in `/coach/tournaments`, no edit controls |
 | Anyone with a public link (`/t/[slug]` for a tournament, `/p/[slug]` for a player) | View-only. No login required |
+| Any logged-in student/customer (`/student/tournaments`) | View their own tournament participation, match history, and computed placements only — no editing, and no access to anyone else's personal data |
 
 Only the assigned manager (plus admin) can edit a given tournament — not "any
 coach," per explicit product decision.
@@ -202,6 +206,70 @@ tournament they're part of without anyone needing to separately hand out
 their personal link. The admin/manager can also share a player's link
 directly (e.g. via WhatsApp) if they want to.
 
+## Personal Player Area (after login)
+
+Any `students` row can be sent a login invite via the existing, unchanged
+invite flow (`sendLoginInvite`) — this already applies equally to real
+academy students and `is_tournament_only` customers, since both are just
+rows in the same table. Once logged in, **everyone lands in the same
+`/student` area with the same nav** — no separate cut-down menu for
+tournament-only customers. A tournament-only customer whose account has no
+coaching data simply sees the existing empty states ("אין אימונים
+מתוכננים כרגע", etc.) on the pages that don't apply to them — this already
+happens for any real student with no upcoming sessions today, so it's not a
+new state to design for.
+
+### `/student/tournaments` (new page, new "הטורנירים שלי" item in
+`STUDENT_NAV`, shown to every logged-in student/customer alike)
+
+Richer than the public `/p/[slug]` profile — this is the "private" view of
+the same underlying data, visible only to the logged-in player themselves:
+
+- Current rating, at the top.
+- For every tournament the player has participated in:
+  - **Every match they played**, house and knockout alike: opponent name,
+    frame score, win/loss.
+  - **Computed final placement** for that tournament (see algorithm below).
+
+The public `/p/[slug]` page is unchanged by this — it still shows only
+name, rating, and a plain list of tournaments (per the existing "Public
+Player Profile" section above). This richer, per-match, placement-aware
+view exists **only** here, behind login.
+
+### Placement computation
+
+Derived at render time from existing data — no new column, no stored
+"final result" field:
+
+1. Look at the player's matches in that tournament's knockout bracket
+   (`tournament_knockout_matches` where they're `participant_a_id` or
+   `participant_b_id`), restricted to matches that have a recorded result
+   (`frames_a`/`frames_b` not null).
+   - **No such matches** (never appeared in the knockout stage, or their
+     bracket appearances are all still unplayed): fall through to the house
+     placement below.
+   - **Otherwise**, take the highest `round` number among their played
+     knockout matches — that's their last decided match. Let
+     `totalRounds = log2(bracket size)` for that tournament's knockout tree.
+     - Won that match **and** `round === totalRounds` (the final): **"זכה/תה
+       בטורניר"** (champion).
+     - Lost that match and `round === totalRounds`: **"מקום 2"**.
+     - Lost and `round === totalRounds - 1`: **"הודח/ה בחצי הגמר"**.
+     - Lost and `round === totalRounds - 2`: **"הודח/ה ברבע הגמר"**.
+     - Lost at any earlier round: **"הודח/ה בסיבוב `<round>`"**.
+2. **House-only placement** (used when step 1 falls through): compute the
+   player's position in their house's standings table using the exact same
+   ranking/tie-break logic already defined in "House Stage — Results &
+   Standings" (wins desc → frame difference desc → frames won desc), and
+   show **"מקום `<place>` בבית `<house label>`"**.
+3. If neither a decided knockout match nor any played house match exists
+   yet for that player in that tournament (e.g. the draw just happened,
+   nothing played yet), show no placement line at all for that tournament —
+   just the (empty) match list.
+
+This is pure read-time computation from already-stored match rows; nothing
+here changes the data model.
+
 ## Admin UI: Players List
 
 ### `/admin/players` (new page, new "שחקנים" item in `ADMIN_NAV`)
@@ -297,6 +365,9 @@ Deliberately fully manual — no automatic seeding from house results.
   participant name links to `/p/[slug]`. Built mobile-first since it's meant
   to be shared over WhatsApp.
 - **`/p/[slug]`** — public player profile page, same access model as above.
+- **`/student/tournaments`** (new nav item "הטורנירים שלי" in
+  `STUDENT_NAV`) — the personal player area described above, shown
+  identically to every logged-in student and tournament-only customer.
 
 ## Explicitly Out of Scope (YAGNI)
 
@@ -314,8 +385,15 @@ Deliberately fully manual — no automatic seeding from house results.
 - No configurable ELO K-factor — fixed at 32.
 - No richer **public** player profile (e.g. computed final placement per
   tournament, win/loss record) beyond the plain list of tournaments — only
-  name, rating, and tournament links. A separate, richer private/internal
-  profile view is still an open thread (flagged for a follow-up design pass,
-  not resolved in this revision).
+  name, rating, and tournament links. The richer, per-match/placement view
+  exists only in the logged-in personal area (see "Personal Player Area"
+  above) — resolved as of the 2026-08-28 revision, no longer an open thread.
+- No name-based public player search/directory — a player is only
+  discoverable via their specific `/p/[slug]` link or by clicking their name
+  on a tournament's public page. Considered and explicitly deferred per
+  product decision (2026-08-28): a search feature would let anyone browse
+  every player's data without a specific link, which is a real reduction in
+  the privacy protection the per-player unguessable slug was designed for —
+  worth reconsidering later, but not now.
 - No manual name-splitting UI for a newly-created tournament-only student —
   the typed text goes entirely into `first_name`.

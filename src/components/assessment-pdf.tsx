@@ -10,7 +10,7 @@ import {
 } from "@react-pdf/renderer";
 import path from "path";
 import type { Assessment } from "@/lib/sheets/assessments";
-import { TECHNIQUE_CRITERIA } from "@/lib/sheets/assessments";
+import { TECHNIQUE_CRITERIA, normalizeTechniqueRating } from "@/lib/sheets/assessments";
 
 Font.register({
   family: "Heebo",
@@ -24,6 +24,8 @@ const GREEN       = "#0b7b50";
 const LIGHT_GREEN = "#e8f5ef";
 const RED         = "#cc2222";
 const LIGHT_RED   = "#fff0f0";
+const AMBER       = "#b8790b";
+const LIGHT_AMBER = "#fdf3e3";
 const BORDER      = "#d0e8db";
 
 const s = StyleSheet.create({
@@ -62,6 +64,7 @@ const s = StyleSheet.create({
   },
   sectionHeaderGreen: { backgroundColor: GREEN },
   sectionHeaderRed:   { backgroundColor: RED },
+  sectionHeaderAmber: { backgroundColor: AMBER },
 
   /* ── Attribute rows ── */
   attrRow: {
@@ -86,10 +89,12 @@ const s = StyleSheet.create({
   },
   techRowGreen: { backgroundColor: LIGHT_GREEN },
   techRowRed:   { backgroundColor: LIGHT_RED },
+  techRowAmber: { backgroundColor: LIGHT_AMBER },
   techLabel:    { flex: 1, textAlign: "right", color: "#333" },
   techMark:     { width: 20, textAlign: "center", fontWeight: 700, fontSize: 11 },
   markGreen:    { color: GREEN },
   markRed:      { color: RED },
+  markAmber:    { color: AMBER },
 
   /* ── Score bar ── */
   scoreBar: {
@@ -181,8 +186,9 @@ function NotesWithBullets({ text }: { text: string }) {
 export function AssessmentPdfDocument({ assessment: a }: { assessment: Assessment }) {
   const logoPath = path.join(process.cwd(), "public", "logo.png");
 
-  const strongItems = TECHNIQUE_CRITERIA.filter((c) => a.technique[c.key] === true);
-  const weakItems   = TECHNIQUE_CRITERIA.filter((c) => a.technique[c.key] === false);
+  const strongItems = TECHNIQUE_CRITERIA.filter((c) => normalizeTechniqueRating(a.technique[c.key]) === "good");
+  const mediumItems = TECHNIQUE_CRITERIA.filter((c) => normalizeTechniqueRating(a.technique[c.key]) === "medium");
+  const weakItems   = TECHNIQUE_CRITERIA.filter((c) => normalizeTechniqueRating(a.technique[c.key]) === "bad");
 
   return (
     <Document>
@@ -218,11 +224,11 @@ export function AssessmentPdfDocument({ assessment: a }: { assessment: Assessmen
               <Text style={s.attrValue}>{a.strong_eye ? HAND_EYE[a.strong_eye] : "—"}</Text>
             </View>
 
-            {(strongItems.length + weakItems.length) > 0 && (
+            {(strongItems.length + mediumItems.length + weakItems.length) > 0 && (
               <View style={[s.scoreBar, { marginTop: 10 }]}>
                 <Text style={s.scoreLabel}>ציון טכניקה</Text>
                 <Text style={s.scoreValue}>
-                  {strongItems.length} / {strongItems.length + weakItems.length}
+                  {strongItems.length} / {strongItems.length + mediumItems.length + weakItems.length}
                 </Text>
               </View>
             )}
@@ -240,6 +246,25 @@ export function AssessmentPdfDocument({ assessment: a }: { assessment: Assessmen
                     >
                       <Text style={s.techLabel}>{c.label}</Text>
                       <Text style={[s.techMark, s.markGreen]}>✓</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {mediumItems.length > 0 && (
+              <>
+                <Text style={[s.sectionHeader, s.sectionHeaderAmber, { marginTop: 4 }]}>
+                  בינוני ({mediumItems.length})
+                </Text>
+                <View style={s.techTable}>
+                  {mediumItems.map((c, i) => (
+                    <View
+                      key={c.key}
+                      style={[s.techRow, s.techRowAmber, i === mediumItems.length - 1 ? { borderBottomWidth: 0 } : {}]}
+                    >
+                      <Text style={s.techLabel}>{c.label}</Text>
+                      <Text style={[s.techMark, s.markAmber]}>○</Text>
                     </View>
                   ))}
                 </View>

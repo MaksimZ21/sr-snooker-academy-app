@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { StudentGoalSummary } from "@/components/student-goal-summary";
 import { cn } from "@/lib/utils";
 import { studentFullName } from "@/lib/sheets/schemas";
 import type { Student, Note, Session, Attendance } from "@/lib/sheets/schemas";
@@ -295,6 +296,9 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
             </div>
           </div>
         )}
+
+        {/* Monthly goal */}
+        <StudentGoalSummary studentId={student.id} />
 
         {/* Assessments */}
         {assessments.length > 0 && (

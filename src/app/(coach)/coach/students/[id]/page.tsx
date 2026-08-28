@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, Phone, Users, MessageSquare, CheckCircle, XCircle } from "lucide-react";
+import { StudentGoalSummary } from "@/components/student-goal-summary";
 import { studentFullName } from "@/lib/sheets/schemas";
 import type { Student, Note } from "@/lib/sheets/schemas";
 import { cn } from "@/lib/utils";
@@ -128,6 +129,9 @@ export default function CoachStudentDetailPage({ params }: { params: Promise<{ i
             </div>
           ))}
         </div>
+
+        {/* Monthly goal */}
+        <StudentGoalSummary studentId={student.id} />
 
         {/* Notes */}
         <div>

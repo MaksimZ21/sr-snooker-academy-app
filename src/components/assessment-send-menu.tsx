@@ -102,14 +102,14 @@ export function AssessmentSendMenu({ assessment: a }: { assessment: Assessment }
 
       {open && (
         <div
-          className="absolute left-0 top-full mt-1.5 w-56 bg-popover border border-border/60 rounded-2xl shadow-lg overflow-hidden z-50"
+          className="absolute left-0 top-full mt-1.5 w-72 bg-popover border border-border/60 rounded-2xl shadow-lg overflow-hidden z-50"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
         >
           {a.participant_phone && (
             <button
               type="button"
               onClick={() => { setOpen(false); sendToParticipant(a); }}
-              className="w-full text-right flex items-center gap-3 px-4 py-3 hover:bg-muted/60 transition-colors text-sm"
+              className="w-full text-right flex items-start gap-3 px-4 py-3 hover:bg-muted/60 transition-colors text-sm"
             >
               <Send size={14} className="text-emerald-500 shrink-0" />
               <span className="flex-1 truncate">שלח למשתתף</span>
@@ -129,10 +129,10 @@ export function AssessmentSendMenu({ assessment: a }: { assessment: Assessment }
                 key={g.id}
                 type="button"
                 onClick={() => { setOpen(false); sendToGroup(a, g); }}
-                className="w-full text-right flex items-center gap-3 px-4 py-3 hover:bg-muted/60 transition-colors text-sm border-t border-border/40 first:border-t-0"
+                className="w-full text-right flex items-start gap-3 px-4 py-3 hover:bg-muted/60 transition-colors text-sm border-t border-border/40 first:border-t-0"
               >
                 <Users size={14} className="text-emerald-500 shrink-0" />
-                <span className="flex-1 truncate">{g.name}</span>
+                <span className="flex-1 break-words">{g.name}</span>
               </button>
             ))
           ) : (

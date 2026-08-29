@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import {
   Banknote, ChevronRight, ChevronLeft, ChevronDown, ChevronUp,
   TrendingUp, TrendingDown, CalendarDays, Users, Download, Minus, Plus, Trash2,
+  FileText, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
@@ -381,14 +382,51 @@ function OffsetsSection({ coach, queryKey, currentMonth }: { coach: CoachSalary;
   );
 }
 
+/* ── Send PDF button ──────────────────────────────────────────── */
+
+function SendSalaryPdfButton({ email, month }: { email: string; month: string }) {
+  const [sending, setSending] = useState(false);
+
+  async function send() {
+    setSending(true);
+    const toastId = toast.loading("שולח PDF...");
+    try {
+      const r = await fetch(`/api/admin/salary/${encodeURIComponent(email)}/send-pdf`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ month }),
+      });
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "שגיאה בשליחת ה-PDF");
+      }
+      toast.success("ה-PDF נשלח למאמן", { id: toastId });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "שגיאה בשליחת ה-PDF", { id: toastId });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="border-t border-border/40 px-4 py-3 flex justify-end">
+      <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" disabled={sending} onClick={send}>
+        {sending ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
+        {sending ? "שולח..." : "הפקת ושליחת PDF למאמן"}
+      </Button>
+    </div>
+  );
+}
+
 /* ── Coach card ───────────────────────────────────────────────── */
 
-function CoachRow({ coach, nameMap, rank, queryKey, currentMonth }: {
+function CoachRow({ coach, nameMap, rank, queryKey, currentMonth, monthMode }: {
   coach: CoachSalary;
   nameMap: Record<string, string>;
   rank: number;
   queryKey: unknown[];
   currentMonth: string;
+  monthMode: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const name = nameMap[coach.email] ?? coach.email;
@@ -465,6 +503,9 @@ function CoachRow({ coach, nameMap, rank, queryKey, currentMonth }: {
 
           {/* Offsets */}
           <OffsetsSection coach={coach} queryKey={queryKey} currentMonth={currentMonth} />
+
+          {/* Send PDF */}
+          {monthMode && <SendSalaryPdfButton email={coach.email} month={currentMonth} />}
         </div>
       )}
     </div>
@@ -645,6 +686,7 @@ export function SalaryView() {
               rank={i + 1}
               queryKey={["salary", mode, year, month]}
               currentMonth={mode === "month" ? `${year}-${String(month).padStart(2, "0")}` : `${year}-${String(new Date().getMonth() + 1).padStart(2, "0")}`}
+              monthMode={mode === "month"}
             />
           ))}
         </div>

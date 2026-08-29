@@ -11,6 +11,7 @@ export type SalaryRow = {
 export type SessionDetail = {
   id: string;
   date: string;
+  start_time: string;
   source: string;
   training_type: string;
   price_nis: number;
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
 
     let sessionQuery = db
       .from("sessions")
-      .select("id, coach_email, source, price_nis, training_type, date")
+      .select("id, coach_email, source, price_nis, training_type, date, start_time")
       .neq("status", "cancelled")
       .neq("coach_email", "");
 
@@ -107,6 +108,7 @@ export async function GET(req: NextRequest) {
       sessionsPerCoach.get(email)!.push({
         id: row.id as string,
         date: row.date as string,
+        start_time: (row.start_time as string) ?? "",
         source,
         training_type: type,
         price_nis: price,

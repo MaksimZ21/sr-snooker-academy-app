@@ -13,7 +13,7 @@ Font.register({
 
 const GREEN = "#0b7b50";
 const LIGHT_GREEN = "#e8f5ef";
-const ROSE = "#cc2222";
+const RED = "#cc2222";
 const BORDER = "#d0e8db";
 
 const s = StyleSheet.create({
@@ -54,7 +54,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
-  colDate: { width: 60, textAlign: "right", color: "#333" },
+  colDate: { width: 75, textAlign: "right", color: "#333" },
   colTime: { width: 40, textAlign: "right", color: "#333" },
   colType: { flex: 1, textAlign: "right", color: "#333" },
   colPrice: { width: 60, textAlign: "left", color: GREEN, fontWeight: 700 },
@@ -69,7 +69,7 @@ const s = StyleSheet.create({
     borderBottomColor: BORDER,
   },
   offsetDesc: { flex: 1, textAlign: "right", color: "#333" },
-  offsetAmount: { color: ROSE, fontWeight: 700 },
+  offsetAmount: { color: RED, fontWeight: 700 },
 
   totalsBox: {
     marginTop: 6,
@@ -98,7 +98,7 @@ const s = StyleSheet.create({
 
 function formatDate(d: string) {
   const dt = new Date(d);
-  return `${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}`;
+  return `${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}/${dt.getFullYear()}`;
 }
 
 export function SalaryPdfDocument({
@@ -171,7 +171,7 @@ export function SalaryPdfDocument({
           {coach.offsets_total > 0 && (
             <View style={s.totalsRow}>
               <Text style={s.totalsLabel}>קיזוזים</Text>
-              <Text style={[s.totalsValue, { color: ROSE }]}>
+              <Text style={[s.totalsValue, { color: RED }]}>
                 -{coach.offsets_total.toLocaleString("he-IL")} ₪
               </Text>
             </View>

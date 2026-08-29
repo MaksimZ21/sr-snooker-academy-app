@@ -10,7 +10,7 @@ import { AddSessionPricingRuleDialog } from "@/components/forms/add-session-pric
 export function SessionPricingTable() {
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["session-pricing"],
     queryFn: async () => {
       const r = await fetch("/api/session-pricing");
@@ -41,6 +41,15 @@ export function SessionPricingTable() {
       </div>
     );
   }
+
+  if (isError) {
+    return (
+      <div className="p-4 text-center text-sm text-muted-foreground">
+        שגיאה בטעינת הכללים
+      </div>
+    );
+  }
+
   const rows = data?.rules ?? [];
 
   return (

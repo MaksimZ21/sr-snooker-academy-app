@@ -44,16 +44,16 @@ export type Assessment = {
 };
 
 export const TECHNIQUE_CRITERIA: { key: TechniqueKey; label: string }[] = [
-  { key: "eye_on_cue", label: "עין בקן" },
-  { key: "leg_before_hit", label: "רגל בקן מכה לפני" },
-  { key: "layer_after_descent", label: "ליייר על העין אחרי הירידה" },
-  { key: "focus_vs_layer", label: "פיקוס מקול ביחס לליייר" },
+  { key: "eye_on_cue", label: "עין בקו מכה לפני" },
+  { key: "leg_before_hit", label: "רגל בקו מכה לפני" },
+  { key: "layer_after_descent", label: "לייזר על העין אחרי הירידה" },
+  { key: "focus_vs_layer", label: "מיקום מקל ביחס ללייזר" },
   { key: "bridge_distance", label: "מרחק הגשר מהלבן" },
   { key: "thumb", label: "אגודל" },
-  { key: "bridge_nest", label: "קן הגשר" },
+  { key: "bridge_nest", label: "קו הגשר" },
   { key: "tip_distance", label: "מרחק טיפ מהלבן" },
   { key: "palm_base", label: "בסיס כף היד" },
   { key: "ring", label: "טבעת" },
-  { key: "elbow", label: "מרפק בקן המכה" },
+  { key: "elbow", label: "מרפק בקו המכה" },
   { key: "back_hand_90", label: "90 מעלות יד אחורית" },
 ];

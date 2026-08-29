@@ -84,6 +84,19 @@ export async function deleteGroup(id: string): Promise<void> {
   invalidateGroups();
 }
 
+function normalizeGroupStudentIds(raw: unknown): string[] {
+  return Array.isArray(raw)
+    ? (raw as string[])
+    : String(raw ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+async function addStudentToGroupRow(groupId: string, studentId: string, currentIds: string[]): Promise<void> {
+  if (currentIds.includes(studentId)) return;
+  await db.from("groups").update({ student_ids: [...currentIds, studentId] }).eq("id", groupId);
+  invalidateGroups();
+  await syncGroupMembershipToSessions(groupId, [studentId], []);
+}
+
 export async function ensureStudentInCollegeGroup(
   collegeName: string,
   studentId: string,
@@ -98,18 +111,38 @@ export async function ensureStudentInCollegeGroup(
     .maybeSingle();
 
   if (data) {
-    const group = data as { id: string; student_ids: string[] };
-    const ids: string[] = Array.isArray(group.student_ids)
-      ? group.student_ids
-      : String(group.student_ids ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-    if (!ids.includes(studentId)) {
-      await db.from("groups").update({ student_ids: [...ids, studentId] }).eq("id", group.id);
-      invalidateGroups();
-      await syncGroupMembershipToSessions(group.id, [studentId], []);
-    }
+    const group = data as { id: string; student_ids: unknown };
+    await addStudentToGroupRow(group.id, studentId, normalizeGroupStudentIds(group.student_ids));
   } else {
     await appendGroup(name, [studentId], name);
   }
+}
+
+// Unlike ensureStudentInCollegeGroup, this never creates a new group — a
+// CRM-supplied college_group value is expected to already match an
+// existing group's name exactly (a specific college cohort/time slot, e.g.
+// "מכללת ת"א קבוצה 2 - ימי ראשון 20:00"). If no group matches, the student
+// is simply left unassigned for an admin to place manually — auto-creating
+// a new group per unique CRM string would risk spawning near-duplicate
+// groups from typos/formatting drift in the CRM data, per explicit product
+// decision (2026-08-28).
+export async function assignStudentToExistingGroup(
+  groupName: string,
+  studentId: string,
+): Promise<boolean> {
+  const name = groupName.trim();
+  if (!name) return false;
+
+  const { data } = await db
+    .from("groups")
+    .select("id, student_ids")
+    .ilike("name", name)
+    .maybeSingle();
+
+  if (!data) return false;
+  const group = data as { id: string; student_ids: unknown };
+  await addStudentToGroupRow(group.id, studentId, normalizeGroupStudentIds(group.student_ids));
+  return true;
 }
 
 export async function syncGroupMembershipToSessions(

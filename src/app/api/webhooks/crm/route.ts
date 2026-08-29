@@ -10,6 +10,7 @@ const CrmQuery = z.object({
   phone: z.string().optional(),
   email: z.string().email(),
   college_name: z.string().optional(),
+  college_group: z.string().optional(),
   subscription_type: z.string().optional(),
   birthday: z.string().optional(), // DD/MM/YYYY from CRM
 });

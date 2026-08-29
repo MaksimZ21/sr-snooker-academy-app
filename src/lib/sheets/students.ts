@@ -1,6 +1,6 @@
 import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
-import { ensureStudentInCollegeGroup } from "./groups";
+import { ensureStudentInCollegeGroup, assignStudentToExistingGroup } from "./groups";
 import type { Student } from "./schemas";
 
 export type CrmStudent = {
@@ -9,9 +9,29 @@ export type CrmStudent = {
   phone?: string;
   email: string;
   college_name?: string;
+  college_group?: string;
   subscription_type?: string;
   birth_date?: string | null;
 };
+
+// Resolves group placement from a CRM payload. `college_group` (a specific
+// cohort/time-slot name) takes priority when present — it only ever joins
+// an EXISTING matching group, never creates one, and does NOT fall back to
+// the college_name flow if no match is found (per explicit product
+// decision, 2026-08-28): an admin handles that case manually rather than
+// the student silently landing in the wrong (college-wide) group. Only
+// when `college_group` is absent does the older college_name find-or-create
+// behavior apply, unchanged.
+async function assignGroupFromCrm(input: CrmStudent, studentId: string): Promise<boolean> {
+  if (input.college_group) {
+    return assignStudentToExistingGroup(input.college_group, studentId);
+  }
+  if (input.college_name) {
+    await ensureStudentInCollegeGroup(input.college_name, studentId);
+    return true;
+  }
+  return false;
+}
 
 export const fetchStudents = unstable_cache(
   async (): Promise<Student[]> => {
@@ -129,15 +149,11 @@ export async function upsertStudentFromCrm(input: CrmStudent) {
       ...(input.birth_date !== undefined && { birth_date: input.birth_date }),
     }).eq("id", existing.id);
     revalidateTag("students", { expire: 0 });
-    if (input.college_name) {
-      await ensureStudentInCollegeGroup(input.college_name, existing.id as string);
-    }
-    return { id: existing.id as string, action: "updated" as const };
+    const group_assigned = await assignGroupFromCrm(input, existing.id as string);
+    return { id: existing.id as string, action: "updated" as const, group_assigned };
   }
 
   const id = await appendStudent(input);
-  if (input.college_name) {
-    await ensureStudentInCollegeGroup(input.college_name, id);
-  }
-  return { id, action: "created" as const };
+  const group_assigned = await assignGroupFromCrm(input, id);
+  return { id, action: "created" as const, group_assigned };
 }

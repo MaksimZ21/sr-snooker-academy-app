@@ -1,5 +1,6 @@
 import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
+import { fetchSessionPricingRules, resolveSessionPricing } from "./session-pricing";
 import type { Session } from "./schemas";
 
 function addMinutes(time: string, minutes: number): string {
@@ -208,21 +209,21 @@ export async function upsertSessionFromCrm(input: {
   // appointment_id is unique per occurrence — use it when available, never fall back to event_id.
   // event_id identifies the recurring series and is reused across sessions, so only use it as
   // a fallback when no appointment_id was provided (legacy / non-recurring events).
-  let existing: { id: string } | null = null;
+  let existing: { id: string; price_manual: boolean } | null = null;
   if (input.crm_appointment_id) {
     const { data } = await db
       .from("sessions")
-      .select("id")
+      .select("id, price_manual")
       .eq("crm_appointment_id", input.crm_appointment_id)
       .maybeSingle();
-    existing = data as { id: string } | null;
+    existing = data as { id: string; price_manual: boolean } | null;
   } else {
     const { data } = await db
       .from("sessions")
-      .select("id")
+      .select("id, price_manual")
       .eq("crm_event_id", input.crm_event_id)
       .maybeSingle();
-    existing = data as { id: string } | null;
+    existing = data as { id: string; price_manual: boolean } | null;
   }
 
   // Resolve group → student_ids + coach_email + group_id
@@ -263,11 +264,21 @@ export async function upsertSessionFromCrm(input: {
     group_id: resolvedGroupId,
   };
 
+  // Automatically price/tag the session by matching its name against the
+  // admin-managed rules — but never for a session an admin has already
+  // priced by hand (price_manual: true survives every future CRM sync).
+  const pricingRules = await fetchSessionPricingRules();
+  const pricingMatch = resolveSessionPricing(fields.name, pricingRules);
+
   if (existing) {
     const updateData = {
       ...fields,
       ...(studentIds.length > 0 && { student_ids: studentIds }),
       ...(resolvedCoachEmail && { coach_email: resolvedCoachEmail }),
+      ...(pricingMatch && !existing.price_manual && {
+        source: pricingMatch.source,
+        price_nis: pricingMatch.price_nis,
+      }),
     };
     await db.from("sessions").update(updateData).eq("id", existing.id);
     invalidateSessions();
@@ -322,6 +333,7 @@ export async function upsertSessionFromCrm(input: {
     student_ids: studentIds,
     drive_folder_url: "",
     status: "scheduled",
+    ...(pricingMatch && { source: pricingMatch.source, price_nis: pricingMatch.price_nis }),
   });
   invalidateSessions();
   return { id, action: "created" };

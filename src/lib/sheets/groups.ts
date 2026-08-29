@@ -97,6 +97,20 @@ async function addStudentToGroupRow(groupId: string, studentId: string, currentI
   await syncGroupMembershipToSessions(groupId, [studentId], []);
 }
 
+// The CRM sends "מכללה <location>" (e.g. "מכללה תל אביב"), but groups in
+// this app are conventionally named with the grammatically-correct
+// construct form "מכללת <location>" (e.g. "מכללת תל אביב"). Without
+// accounting for this, the two spellings never match on a plain equality/
+// ilike check, and a fresh near-duplicate group gets created on every CRM
+// sync for the same college. Try both forms before deciding no matching
+// group exists.
+function collegeNameVariants(name: string): string[] {
+  const variants = new Set([name]);
+  if (name.startsWith("מכללה ")) variants.add("מכללת " + name.slice("מכללה ".length));
+  if (name.startsWith("מכללת ")) variants.add("מכללה " + name.slice("מכללת ".length));
+  return [...variants];
+}
+
 export async function ensureStudentInCollegeGroup(
   collegeName: string,
   studentId: string,
@@ -104,14 +118,15 @@ export async function ensureStudentInCollegeGroup(
   const name = collegeName.trim();
   if (!name) return;
 
+  const variants = collegeNameVariants(name);
   const { data } = await db
     .from("groups")
     .select("id, student_ids")
-    .ilike("name", name)
-    .maybeSingle();
+    .or(variants.map((v) => `name.ilike.${v}`).join(","))
+    .limit(1);
 
-  if (data) {
-    const group = data as { id: string; student_ids: unknown };
+  const group = data?.[0] as { id: string; student_ids: unknown } | undefined;
+  if (group) {
     await addStudentToGroupRow(group.id, studentId, normalizeGroupStudentIds(group.student_ids));
   } else {
     await appendGroup(name, [studentId], name);

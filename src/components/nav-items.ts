@@ -35,5 +35,6 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/assessments", label: "דוחות אבחון", icon: "ClipboardList" },
   { href: "/admin/guidelines", label: "שליפים למאמן", icon: "FolderOpen" },
   { href: "/admin/pricing", label: "מחירון", icon: "Tag" },
+  { href: "/admin/session-pricing", label: "תמחור אימונים", icon: "Sparkles" },
   { href: "/admin/profile", label: "פרופיל", icon: "User" },
 ];

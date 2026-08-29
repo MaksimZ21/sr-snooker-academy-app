@@ -55,6 +55,7 @@ const PatchBody = z.object({
   coach_email: z.string().optional(),
   training_type: z.string().optional(),
   status: z.string().optional(),
+  price_nis: z.coerce.number().int().nonnegative().optional(),
 });
 
 export async function PATCH(

@@ -117,15 +117,23 @@ export async function updateSession(
     coach_email?: string;
     training_type?: string;
     status?: string;
+    price_nis?: number;
   },
 ): Promise<void> {
-  const patch: Record<string, string> = {};
+  const patch: Record<string, string | number | boolean> = {};
   if (input.date !== undefined) patch.date = input.date;
   if (input.start_time !== undefined) patch.start_time = input.start_time;
   if (input.end_time !== undefined) patch.end_time = input.end_time;
   if (input.coach_email !== undefined) patch.coach_email = input.coach_email.trim().toLowerCase();
   if (input.training_type !== undefined) patch.training_type = input.training_type;
   if (input.status !== undefined) patch.status = input.status;
+  if (input.price_nis !== undefined) {
+    // A manually-entered price is locked in — price_manual survives every
+    // future automatic CRM sync (see upsertSessionFromCrm), so this
+    // session's price is never silently overwritten again.
+    patch.price_nis = input.price_nis;
+    patch.price_manual = true;
+  }
   if (Object.keys(patch).length === 0) return;
   await db.from("sessions").update(patch).eq("id", id);
   invalidateSessions();

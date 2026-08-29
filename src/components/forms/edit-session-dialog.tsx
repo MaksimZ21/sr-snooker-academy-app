@@ -34,6 +34,7 @@ export function EditSessionDialog({ session }: { session: Session }) {
   const [coachEmail, setCoachEmail] = useState(session.coach_email);
   const [trainingType, setTrainingType] = useState<string>(session.training_type);
   const [status, setStatus] = useState(session.status);
+  const [price, setPrice] = useState(session.price_nis != null ? String(session.price_nis) : "");
   const qc = useQueryClient();
 
   const coachesQ = useQuery({
@@ -57,6 +58,7 @@ export function EditSessionDialog({ session }: { session: Session }) {
       setCoachEmail(session.coach_email);
       setTrainingType(session.training_type);
       setStatus(session.status);
+      setPrice(session.price_nis != null ? String(session.price_nis) : "");
     }
     setOpen(v);
   }
@@ -70,7 +72,10 @@ export function EditSessionDialog({ session }: { session: Session }) {
       const r = await fetch(`/api/sessions/${session.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ date, start_time: startTime, end_time: endTime, coach_email: coachEmail, training_type: trainingType, status }),
+        body: JSON.stringify({
+          date, start_time: startTime, end_time: endTime, coach_email: coachEmail, training_type: trainingType, status,
+          ...(price.trim() !== "" && { price_nis: Number(price) }),
+        }),
       });
       if (!r.ok) throw new Error("failed");
     },
@@ -157,6 +162,15 @@ export function EditSessionDialog({ session }: { session: Session }) {
                 <SelectItem value="cancelled">בוטל</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label>מחיר (₪)</Label>
+            <Input
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="אוטומטי אם ריק"
+            />
           </div>
         </div>
         <DialogFooter>

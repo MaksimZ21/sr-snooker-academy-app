@@ -15,6 +15,10 @@ export type SessionDetail = {
   source: string;
   training_type: string;
   price_nis: number;
+  // The session's own name, falling back to its linked group's name when
+  // the session has none of its own (see session-card.tsx's identical
+  // name || groupName fallback).
+  name: string;
 };
 
 export type OffsetEntry = {
@@ -55,7 +59,7 @@ export async function GET(req: NextRequest) {
 
     let sessionQuery = db
       .from("sessions")
-      .select("id, coach_email, source, price_nis, training_type, date, start_time")
+      .select("id, coach_email, source, price_nis, training_type, date, start_time, name, group_id")
       .neq("status", "cancelled")
       .neq("coach_email", "");
 
@@ -72,15 +76,21 @@ export async function GET(req: NextRequest) {
       periodLabel = year;
     }
 
-    const [{ data, error }, { data: coachRows }] = await Promise.all([
+    const [{ data, error }, { data: coachRows }, { data: groupRows }] = await Promise.all([
       sessionQuery,
       db.from("coaches").select("email, offsets"),
+      db.from("groups").select("id, name"),
     ]);
     if (error) throw error;
 
     const offsetsByCoach = new Map<string, OffsetEntry[]>();
     for (const c of coachRows ?? []) {
       offsetsByCoach.set(c.email as string, (c.offsets ?? []) as OffsetEntry[]);
+    }
+
+    const groupNameById = new Map<string, string>();
+    for (const g of groupRows ?? []) {
+      groupNameById.set(g.id as string, g.name as string);
     }
 
     // Aggregate by coach + source
@@ -105,6 +115,7 @@ export async function GET(req: NextRequest) {
 
       // Per coach session detail
       if (!sessionsPerCoach.has(email)) sessionsPerCoach.set(email, []);
+      const name = (row.name as string) || groupNameById.get(row.group_id as string) || "";
       sessionsPerCoach.get(email)!.push({
         id: row.id as string,
         date: row.date as string,
@@ -112,6 +123,7 @@ export async function GET(req: NextRequest) {
         source,
         training_type: type,
         price_nis: price,
+        name,
       });
 
       // Global by source

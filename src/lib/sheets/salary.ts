@@ -18,16 +18,22 @@ export async function fetchCoachSalaryForMonth(
   const start = `${month}-01`;
   const nextMonth = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
 
-  const [{ data: sessionRows }, { data: coachRow }] = await Promise.all([
+  const [{ data: sessionRows }, { data: coachRow }, { data: groupRows }] = await Promise.all([
     db
       .from("sessions")
-      .select("id, source, price_nis, training_type, date, start_time")
+      .select("id, source, price_nis, training_type, date, start_time, name, group_id")
       .eq("coach_email", email)
       .neq("status", "cancelled")
       .gte("date", start)
       .lt("date", nextMonth),
     db.from("coaches").select("offsets").eq("email", email).maybeSingle(),
+    db.from("groups").select("id, name"),
   ]);
+
+  const groupNameById = new Map<string, string>();
+  for (const g of groupRows ?? []) {
+    groupNameById.set(g.id as string, g.name as string);
+  }
 
   const sessions: SessionDetail[] = (sessionRows ?? [])
     .map((row) => ({
@@ -37,6 +43,7 @@ export async function fetchCoachSalaryForMonth(
       source: (row.source as string) || "אחר",
       training_type: (row.training_type as string) || "אחר",
       price_nis: (row.price_nis as number) ?? 0,
+      name: (row.name as string) || groupNameById.get(row.group_id as string) || "",
     }))
     .sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time));
 

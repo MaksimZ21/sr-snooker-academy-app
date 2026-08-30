@@ -126,7 +126,7 @@ export function SalaryPdfDocument({
           <View style={s.tableHeaderRow}>
             <Text style={[s.colDate, s.headerCell]}>תאריך</Text>
             <Text style={[s.colTime, s.headerCell]}>שעה</Text>
-            <Text style={[s.colType, s.headerCell]}>סוג אימון</Text>
+            <Text style={[s.colType, s.headerCell]}>אימון</Text>
             <Text style={[s.colPrice, s.headerCell]}>סכום</Text>
           </View>
           {coach.sessions.map((sess, i) => (
@@ -136,7 +136,7 @@ export function SalaryPdfDocument({
             >
               <Text style={s.colDate}>{formatDate(sess.date)}</Text>
               <Text style={s.colTime}>{sess.start_time || "—"}</Text>
-              <Text style={s.colType}>{sess.training_type}</Text>
+              <Text style={s.colType}>{sess.name || "—"}</Text>
               <Text style={s.colPrice}>{sess.price_nis.toLocaleString("he-IL")} ₪</Text>
             </View>
           ))}
@@ -165,7 +165,7 @@ export function SalaryPdfDocument({
             <Text style={s.totalsValue}>{coach.sessions_total}</Text>
           </View>
           <View style={s.totalsRow}>
-            <Text style={s.totalsLabel}>הכנסה גולמית</Text>
+            <Text style={s.totalsLabel}>סה״כ</Text>
             <Text style={s.totalsValue}>{coach.amount_total.toLocaleString("he-IL")} ₪</Text>
           </View>
           {coach.offsets_total > 0 && (

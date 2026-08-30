@@ -1,5 +1,5 @@
 import React from "react";
-import { Document, Page, View, Text, StyleSheet, Font } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image as PDFImage, StyleSheet, Font } from "@react-pdf/renderer";
 import path from "path";
 import type { CoachSalary } from "@/app/api/admin/salary/route";
 
@@ -19,7 +19,14 @@ const BORDER = "#d0e8db";
 const s = StyleSheet.create({
   page: { fontFamily: "Heebo", backgroundColor: "#fff", padding: 28, fontSize: 10 },
 
-  header: { alignItems: "center", marginBottom: 10 },
+  header: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  logo: { width: 44, height: 44, objectFit: "contain" },
+  headerCenter: { flex: 1, alignItems: "center" },
   academyName: { fontSize: 8, color: "#888", marginBottom: 3, textAlign: "center" },
   title: { fontSize: 15, fontWeight: 700, color: GREEN, textAlign: "center" },
   subtitle: { fontSize: 9, color: "#666", marginTop: 3, textAlign: "center" },
@@ -110,13 +117,20 @@ export function SalaryPdfDocument({
   coachName: string;
   period: string;
 }) {
+  const logoPath = path.join(process.cwd(), "public", "logo.png");
+
   return (
     <Document>
       <Page size="A4" style={s.page}>
         <View style={s.header}>
-          <Text style={s.academyName}>SHACHAR RUBERG SNOOKER ACADEMY</Text>
-          <Text style={s.title}>{coachName} – סיכום אימונים</Text>
-          <Text style={s.subtitle}>תקופה: {period}</Text>
+          {/* Spacer to balance logo width */}
+          <View style={{ width: 44 }} />
+          <View style={s.headerCenter}>
+            <Text style={s.academyName}>SHACHAR RUBERG SNOOKER ACADEMY</Text>
+            <Text style={s.title}>{coachName} – סיכום אימונים</Text>
+            <Text style={s.subtitle}>תקופה: {period}</Text>
+          </View>
+          <PDFImage src={logoPath} style={s.logo} />
         </View>
 
         <View style={s.divider} />

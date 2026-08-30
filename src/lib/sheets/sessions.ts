@@ -169,6 +169,24 @@ export async function appendSession(input: {
     .filter((n) => n > 0);
   const next = nums.length ? Math.max(...nums) + 1 : 1;
   const id = `${prefix}${String(next).padStart(3, "0")}`;
+
+  // Manually-created sessions never get their own `name` (there's no name
+  // field in the "הוסף מפגש" dialog) — the linked group's own name is what
+  // the rest of the UI already falls back to for display (see the
+  // session.name || groupName fallback in session-card.tsx), so it's what
+  // auto-pricing matches against here too.
+  let pricingMatch: { source: string; price_nis: number } | null = null;
+  if (input.group_id) {
+    const { data: groupRow } = await db
+      .from("groups")
+      .select("name")
+      .eq("id", input.group_id)
+      .maybeSingle();
+    const groupName = (groupRow?.name as string) ?? "";
+    const pricingRules = await fetchSessionPricingRules();
+    pricingMatch = resolveSessionPricing(groupName, pricingRules);
+  }
+
   await db.from("sessions").insert({
     id,
     date: input.date,
@@ -180,6 +198,7 @@ export async function appendSession(input: {
     drive_folder_url: input.drive_folder_url ?? "",
     group_id: input.group_id ?? null,
     status: "scheduled",
+    ...(pricingMatch && { source: pricingMatch.source, price_nis: pricingMatch.price_nis }),
   });
   invalidateSessions();
   return id;
@@ -240,6 +259,7 @@ export async function upsertSessionFromCrm(input: {
   let studentIds: string[] = [];
   let resolvedCoachEmail = "";
   let resolvedGroupId: string | null = null;
+  let resolvedGroupName = "";
   if (input.group_name) {
     const { data: allGroups } = await db.from("groups").select("id, name, student_ids, coach_email");
     const groups = (allGroups ?? []) as { id: string; name: string; student_ids: unknown; coach_email: string }[];
@@ -254,6 +274,7 @@ export async function upsertSessionFromCrm(input: {
         : String(raw ?? "").split(",").map((s: string) => s.trim()).filter(Boolean);
       resolvedCoachEmail = matched.coach_email ?? "";
       resolvedGroupId = matched.id;
+      resolvedGroupName = matched.name;
     }
   }
 
@@ -273,10 +294,13 @@ export async function upsertSessionFromCrm(input: {
   };
 
   // Automatically price/tag the session by matching its name against the
-  // admin-managed rules — but never for a session an admin has already
-  // priced by hand (price_manual: true survives every future CRM sync).
+  // admin-managed rules — falling back to the linked group's name when the
+  // session itself has none (mirrors the session.name || groupName fallback
+  // the UI already uses in session-card.tsx) — but never for a session an
+  // admin has already priced by hand (price_manual: true survives every
+  // future CRM sync).
   const pricingRules = await fetchSessionPricingRules();
-  const pricingMatch = resolveSessionPricing(fields.name, pricingRules);
+  const pricingMatch = resolveSessionPricing(fields.name || resolvedGroupName, pricingRules);
 
   if (existing) {
     const updateData = {

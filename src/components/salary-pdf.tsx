@@ -115,7 +115,7 @@ export function SalaryPdfDocument({
       <Page size="A4" style={s.page}>
         <View style={s.header}>
           <Text style={s.academyName}>SHACHAR RUBERG SNOOKER ACADEMY</Text>
-          <Text style={s.title}>{coachName} – דוח שכר</Text>
+          <Text style={s.title}>{coachName} – סיכום אימונים</Text>
           <Text style={s.subtitle}>תקופה: {period}</Text>
         </View>
 

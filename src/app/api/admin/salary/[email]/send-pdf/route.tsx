@@ -57,9 +57,9 @@ export async function POST(
     await sendWhatsAppFileByUpload(
       phone,
       buffer,
-      `דוח שכר - ${coachName} - ${label}.pdf`,
+      `סיכום אימונים - ${coachName} - ${label}.pdf`,
       "application/pdf",
-      `📊 דוח שכר – ${label}`,
+      `📊 סיכום אימונים – ${coachName} – ${label}`,
     );
 
     return NextResponse.json({ ok: true });

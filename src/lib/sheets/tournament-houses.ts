@@ -56,6 +56,7 @@ export async function runHouseDraw(tournamentId: string, numHouses: number): Pro
     .eq("tournament_id", tournamentId);
   const participantIds = (participantRows ?? []).map((p) => p.id as string);
   if (participantIds.length === 0) throw new Error("no participants to draw");
+  if (numHouses < 1) throw new Error("numHouses must be at least 1");
   if (numHouses > participantIds.length) throw new Error("numHouses cannot exceed participant count");
 
   // Deleting existing houses cascades their tournament_house_matches and
@@ -113,14 +114,29 @@ export async function moveParticipantToHouse(
 
   const { data: participant } = await db
     .from("tournament_participants")
-    .select("id, tournament_id")
+    .select("id, tournament_id, house_id")
     .eq("id", participantId)
     .maybeSingle();
   if (!participant || participant.tournament_id !== tournamentId) throw new Error("participant not found");
 
-  // A participant only ever belongs to one house at a time, so removing
-  // every house match they're currently in (regardless of which house)
-  // correctly clears their old house's fixtures before re-pairing them.
+  // Already in the target house — nothing to do, and definitely don't wipe
+  // and regenerate that house's fixtures for no reason.
+  if (participant.house_id === newHouseId) return;
+
+  // A participant only ever belongs to one house at a time, so this looks
+  // at every match they're currently in (regardless of which house). If
+  // any of them already has a recorded result, refuse the move — silently
+  // deleting a played match's result would lose real data with no way to
+  // recover it.
+  const { data: existingMatches } = await db
+    .from("tournament_house_matches")
+    .select("frames_a")
+    .or(`participant_a_id.eq.${participantId},participant_b_id.eq.${participantId}`);
+  const hasPlayedMatch = (existingMatches ?? []).some((m) => m.frames_a !== null);
+  if (hasPlayedMatch) {
+    throw new Error("cannot move a participant who has already played a match in their current house");
+  }
+
   const { error: deleteError } = await db
     .from("tournament_house_matches")
     .delete()

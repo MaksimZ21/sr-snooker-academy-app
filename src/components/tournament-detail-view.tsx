@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TournamentParticipantPicker } from "@/components/tournament-participant-picker";
+import { TournamentHousesView } from "@/components/tournament-houses-view";
 
 type TournamentParticipant = {
   id: string;
@@ -179,6 +180,15 @@ export function TournamentDetailView({
             </div>
           )}
         </div>
+
+        {participants.length > 0 && (
+          <TournamentHousesView
+            tournamentId={tournamentId}
+            participants={participants}
+            handicapPointsPerRatingGap={tournament.handicap_points_per_rating_gap}
+            canEdit={canEdit}
+          />
+        )}
       </div>
     </div>
   );

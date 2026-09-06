@@ -27,6 +27,7 @@ import {
   MessageSquare,
   BarChart2,
   Plus,
+  RotateCcw,
   Trash2,
   Upload,
   X,
@@ -280,6 +281,42 @@ export function WhatsAppScheduler() {
     }
   }
 
+  // Pre-fills the compose form from a past (sent/failed) message so it can
+  // be scheduled again, and switches to the compose tab. The date/time is
+  // deliberately left empty — the admin always picks a fresh one.
+  function handleReschedule(m: ScheduledMessage) {
+    setRecipientMode(m.chat_id.startsWith("coach:") || m.chat_id === "coaches:all" ? "coaches" : "group");
+    setChatId(m.chat_id);
+    setChatName(m.chat_name);
+
+    try {
+      const p = JSON.parse(m.message) as Record<string, unknown>;
+      if (p.__type === "image") {
+        setMsgType("image");
+        setImageUrl(typeof p.url === "string" ? p.url : "");
+        setImageCaption(typeof p.caption === "string" ? p.caption : "");
+        setImageFileName("");
+      } else if (p.__type === "poll") {
+        setMsgType("poll");
+        setPollQuestion(typeof p.question === "string" ? p.question : "");
+        const opts = Array.isArray(p.options) ? (p.options as string[]) : [];
+        setPollOptions(opts.length >= 2 ? opts : ["", ""]);
+      } else if (p.__type === "group_settings") {
+        setMsgType("group_settings");
+        setGroupOpen(p.allowParticipantsSendMessages === true);
+      } else {
+        throw new Error("unrecognized message shape");
+      }
+    } catch {
+      setMsgType("text");
+      setText(m.message);
+    }
+
+    setScheduledAt("");
+    setComposeKey((k) => k + 1);
+    setActiveTab("compose");
+  }
+
   function handleRecipientChange(val: string) {
     setChatId(val);
     if (recipientMode === "group") {
@@ -362,9 +399,9 @@ export function WhatsAppScheduler() {
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">היסטוריה</p>
                 {groupByAutomationRun(history).map((item) =>
                   item.kind === "batch" ? (
-                    <AutomationBatchCard key={item.runId} batch={item} />
+                    <AutomationBatchCard key={item.runId} batch={item} onRescheduleMessage={handleReschedule} />
                   ) : (
-                    <MessageCard key={item.message.id} m={item.message} />
+                    <MessageCard key={item.message.id} m={item.message} onReschedule={() => handleReschedule(item.message)} />
                   ),
                 )}
                 {scheduledQuery.hasNextPage && (
@@ -705,7 +742,15 @@ export function WhatsAppScheduler() {
   );
 }
 
-function MessageCard({ m, onDelete }: { m: ScheduledMessage; onDelete?: () => void }) {
+function MessageCard({
+  m,
+  onDelete,
+  onReschedule,
+}: {
+  m: ScheduledMessage;
+  onDelete?: () => void;
+  onReschedule?: () => void;
+}) {
   const { label, variant } = STATUS_BADGE[m.status] ?? STATUS_BADGE.pending;
   const StatusIcon =
     m.status === "sent" ? CheckCircle2 : m.status === "failed" ? XCircle : Clock;
@@ -750,6 +795,17 @@ function MessageCard({ m, onDelete }: { m: ScheduledMessage; onDelete?: () => vo
           <Trash2 size={14} />
         </Button>
       )}
+      {(m.status === "sent" || m.status === "failed") && onReschedule && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 shrink-0"
+          title="תזמן שוב"
+          onClick={onReschedule}
+        >
+          <RotateCcw size={14} />
+        </Button>
+      )}
     </div>
   );
 }
@@ -757,9 +813,11 @@ function MessageCard({ m, onDelete }: { m: ScheduledMessage; onDelete?: () => vo
 function AutomationBatchCard({
   batch,
   onDeleteBatch,
+  onRescheduleMessage,
 }: {
   batch: Extract<ListItem, { kind: "batch" }>;
   onDeleteBatch?: (runId: string) => void;
+  onRescheduleMessage?: (m: ScheduledMessage) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const earliest = [...batch.messages].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))[0];
@@ -798,7 +856,11 @@ function AutomationBatchCard({
       {expanded && (
         <div className="flex flex-col gap-2 px-4 pb-4">
           {batch.messages.map((m) => (
-            <MessageCard key={m.id} m={m} />
+            <MessageCard
+              key={m.id}
+              m={m}
+              onReschedule={onRescheduleMessage ? () => onRescheduleMessage(m) : undefined}
+            />
           ))}
         </div>
       )}

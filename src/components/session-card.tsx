@@ -70,6 +70,13 @@ export function SessionCard({
           )} />
 
           <div className="flex-1 px-3.5 py-3 flex flex-col gap-1.5 min-w-0">
+            {/* Group name, so it's clear at a glance which group this is */}
+            {groupName && (
+              <p className="text-[11px] font-medium text-muted-foreground truncate -mb-1">
+                {groupName}
+              </p>
+            )}
+
             {/* Top row: time + badges */}
             <div className="flex justify-between items-start gap-2">
               <div className={cn(

@@ -212,7 +212,7 @@ export function TournamentHousesView({
                   );
                   return (
                     <HouseMatchRow
-                      key={m.id}
+                      key={`${m.id}:${m.frames_a ?? ""}:${m.frames_b ?? ""}`}
                       nameA={nameA}
                       nameB={nameB}
                       handicap={handicap}

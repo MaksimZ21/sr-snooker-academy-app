@@ -36,9 +36,12 @@ export async function POST(
   try {
     const user = await requireUser();
     const { id } = await params;
-    if (user.role !== "student") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    const self = await getStudentByEmail(user.email);
-    if (!self || self.id !== id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (user.role === "student") {
+      const self = await getStudentByEmail(user.email);
+      if (!self || self.id !== id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    } else if (user.role !== "admin" && user.role !== "coach") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const { category } = CreateSchema.parse(await req.json());
     const goal = await createMonthlyGoal(id, category);
     return NextResponse.json({ goal });

@@ -31,35 +31,62 @@ export function PublicTournamentView({ tournament }: { tournament: PublicTournam
             return (
               <div key={house.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
                 <p className="text-sm font-semibold px-4 pt-3 pb-2">{house.label}</p>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-xs text-muted-foreground border-b border-border/40">
-                      <th className="text-right px-4 py-1.5 font-medium">מקום</th>
-                      <th className="text-right px-2 py-1.5 font-medium">שם</th>
-                      <th className="text-center px-2 py-1.5 font-medium">נצחונות</th>
-                      <th className="text-center px-2 py-1.5 font-medium">פרשים</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {standings.map((row, i) => {
-                      const p = lookup(row.participantId);
-                      return (
-                        <tr key={row.participantId} className="border-b border-border/20 last:border-b-0">
-                          <td className="px-4 py-1.5">{i + 1}</td>
-                          <td className="px-2 py-1.5">
-                            {p?.publicSlug ? (
-                              <a href={`/p/${p.publicSlug}`} className="text-primary underline">{p.name}</a>
-                            ) : (
-                              p?.name ?? "?"
-                            )}
-                          </td>
-                          <td className="text-center px-2 py-1.5">{row.wins}</td>
-                          <td className="text-center px-2 py-1.5">{row.framesWon}-{row.framesLost}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-xs text-muted-foreground border-b border-border/40">
+                        <th className="text-right px-4 py-1.5 font-medium">מקום</th>
+                        <th className="text-right px-2 py-1.5 font-medium">שם</th>
+                        <th className="text-center px-2 py-1.5 font-medium">נצחונות</th>
+                        <th className="text-center px-2 py-1.5 font-medium">פרשים</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {standings.map((row, i) => {
+                        const p = lookup(row.participantId);
+                        return (
+                          <tr key={row.participantId} className="border-b border-border/20 last:border-b-0">
+                            <td className="px-4 py-1.5">{i + 1}</td>
+                            <td className="px-2 py-1.5 max-w-[9rem] truncate">
+                              {p?.publicSlug ? (
+                                <a href={`/p/${p.publicSlug}`} className="text-primary underline">{p.name}</a>
+                              ) : (
+                                p?.name ?? "?"
+                              )}
+                            </td>
+                            <td className="text-center px-2 py-1.5">{row.wins}</td>
+                            <td className="text-center px-2 py-1.5">{row.framesWon}-{row.framesLost}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex flex-col gap-2 px-4 py-3 border-t border-border/40">
+                  {house.matches.map((m) => {
+                    const nameA = lookup(m.participant_a_id);
+                    const nameB = lookup(m.participant_b_id);
+                    const played = m.frames_a !== null && m.frames_b !== null;
+                    const handicap =
+                      nameA && nameB
+                        ? formatHandicapLabel(nameA.name, nameA.rating, nameB.name, nameB.rating, tournament.handicapPointsPerRatingGap)
+                        : "";
+                    return (
+                      <div key={m.id} className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="flex-1 truncate">{nameA?.name ?? "?"} נגד {nameB?.name ?? "?"}</span>
+                          {played ? (
+                            <span className="font-medium tabular-nums">{m.frames_a} - {m.frames_b}</span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">טרם שוחק</span>
+                          )}
+                        </div>
+                        {handicap && !played && <p className="text-[11px] text-muted-foreground">{handicap}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}

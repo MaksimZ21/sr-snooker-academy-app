@@ -83,7 +83,7 @@ export async function assignParticipantToSlot(
 ): Promise<void> {
   const { data: match } = await db
     .from("tournament_knockout_matches")
-    .select("id, tournament_id, round, frames_a, frames_b")
+    .select("id, tournament_id, round, participant_a_id, participant_b_id, frames_a, frames_b")
     .eq("id", matchId)
     .maybeSingle();
   if (!match || match.tournament_id !== tournamentId) throw new Error("match not found");
@@ -99,6 +99,11 @@ export async function assignParticipantToSlot(
       .eq("id", participantId)
       .maybeSingle();
     if (!participant || participant.tournament_id !== tournamentId) throw new Error("participant not found");
+
+    const otherSideId = side === "a" ? match.participant_b_id : match.participant_a_id;
+    if (otherSideId === participantId) {
+      throw new Error("a participant cannot play against themselves");
+    }
   }
 
   const column = side === "a" ? "participant_a_id" : "participant_b_id";

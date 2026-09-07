@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TournamentParticipantPicker } from "@/components/tournament-participant-picker";
 import { TournamentHousesView } from "@/components/tournament-houses-view";
+import { TournamentKnockoutView } from "@/components/tournament-knockout-view";
 
 type TournamentParticipant = {
   id: string;
@@ -183,6 +184,15 @@ export function TournamentDetailView({
 
         {participants.length > 0 && (
           <TournamentHousesView
+            tournamentId={tournamentId}
+            participants={participants}
+            handicapPointsPerRatingGap={tournament.handicap_points_per_rating_gap}
+            canEdit={canEdit}
+          />
+        )}
+
+        {participants.length > 0 && (
+          <TournamentKnockoutView
             tournamentId={tournamentId}
             participants={participants}
             handicapPointsPerRatingGap={tournament.handicap_points_per_rating_gap}

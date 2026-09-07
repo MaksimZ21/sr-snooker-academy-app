@@ -223,10 +223,9 @@ export function SessionDetail({
       {/* Tabs */}
       <div className="p-4 flex flex-col gap-4">
         <Tabs defaultValue="attendance">
-          <TabsList className="grid grid-cols-3">
+          <TabsList className="grid grid-cols-2">
             <TabsTrigger value="attendance">נוכחות</TabsTrigger>
             <TabsTrigger value="notes">הערות</TabsTrigger>
-            <TabsTrigger value="goal">מטרה</TabsTrigger>
           </TabsList>
           <TabsContent value="attendance">
             <AttendancePanel
@@ -237,20 +236,30 @@ export function SessionDetail({
             />
           </TabsContent>
           <TabsContent value="notes">
-            <NotesPanel
-              sessionId={sessionId}
-              students={students}
-              notesByStudent={notesByStudent}
-              readOnly={!canEditNotes}
-            />
-          </TabsContent>
-          <TabsContent value="goal">
-            <GoalPanel
-              sessionId={sessionId}
-              students={students}
-              goalsByStudent={goalsByStudent}
-              readOnly={!canEditAttendance}
-            />
+            <div className="flex flex-col gap-5">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                  מטרה חודשית
+                </p>
+                <GoalPanel
+                  sessionId={sessionId}
+                  students={students}
+                  goalsByStudent={goalsByStudent}
+                  readOnly={!canEditAttendance}
+                />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                  הערות
+                </p>
+                <NotesPanel
+                  sessionId={sessionId}
+                  students={students}
+                  notesByStudent={notesByStudent}
+                  readOnly={!canEditNotes}
+                />
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

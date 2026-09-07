@@ -22,7 +22,7 @@ export function GoalPanel({
   readOnly: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-2.5 mt-4">
+    <div className="flex flex-col gap-2.5">
       {students.map((s) => {
         const info = goalsByStudent[s.id];
         if (!info?.goal) {

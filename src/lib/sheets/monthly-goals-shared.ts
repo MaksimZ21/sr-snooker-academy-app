@@ -11,9 +11,9 @@ export type GoalCategory = "technique" | "angle" | "cue_ball_control" | "breaks"
 
 export const GOAL_CATEGORIES: { key: GoalCategory; label: string; description: string }[] = [
   { key: "technique", label: "טכניקה", description: "שיפור כניסה למכה ו/או הוצאת המכה" },
-  { key: "angle", label: "זווית", description: "שיפור אחוז ההצלחה בהכנסת כדורים ממרחקים קצרים" },
+  { key: "angle", label: "זוויות", description: "שיפור אחוז ההצלחה בהכנסת כדורים ממרחקים קצרים" },
   { key: "cue_ball_control", label: "שליטה בלבן", description: "שיפור הדיוק בשליטה בלבן בנוסף להכנסת כדורים" },
-  { key: "breaks", label: "ברייקים", description: "שיפור הרצף האישי שלי" },
+  { key: "breaks", label: "בריקים", description: "שיפור הרצף האישי שלי" },
 ];
 
 export type MonthlyGoal = {

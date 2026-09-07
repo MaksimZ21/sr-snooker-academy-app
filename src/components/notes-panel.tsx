@@ -30,7 +30,7 @@ export function NotesPanel({
   readOnly: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-2.5 mt-3">
+    <div className="flex flex-col gap-2.5">
       {students.map((s) => (
         <StudentNotes
           key={s.id}

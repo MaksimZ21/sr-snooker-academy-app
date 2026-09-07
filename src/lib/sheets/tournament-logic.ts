@@ -87,3 +87,33 @@ export function formatHandicapLabel(
   if (diff > 0) return `${nameA} נותן/ת ל${nameB} ${diff} נקודות`;
   return `${nameB} נותן/ת ל${nameA} ${-diff} נקודות`;
 }
+
+const VALID_BRACKET_SIZES = [4, 8, 16, 32];
+
+export function isValidBracketSize(size: number): boolean {
+  return VALID_BRACKET_SIZES.includes(size);
+}
+
+export function knockoutRoundCount(bracketSize: number): number {
+  return Math.log2(bracketSize);
+}
+
+// Names the last few rounds the way players actually talk about them; earlier
+// rounds fall back to a plain number. Matches the exact same naming already
+// used in the spec's placement-computation section ("הודח/ה בחצי הגמר" etc.).
+export function knockoutRoundLabel(round: number, totalRounds: number): string {
+  const fromEnd = totalRounds - round;
+  if (fromEnd === 0) return "גמר";
+  if (fromEnd === 1) return "חצי גמר";
+  if (fromEnd === 2 && totalRounds >= 4) return "רבע גמר";
+  return `סיבוב ${round}`;
+}
+
+export function knockoutMatchWinner(
+  framesA: number | null,
+  framesB: number | null,
+): "a" | "b" | null {
+  if (framesA === null || framesB === null) return null;
+  if (framesA === framesB) return null;
+  return framesA > framesB ? "a" : "b";
+}

@@ -7,6 +7,10 @@ import {
   computeEloUpdate,
   computeHandicapPoints,
   formatHandicapLabel,
+  isValidBracketSize,
+  knockoutRoundCount,
+  knockoutRoundLabel,
+  knockoutMatchWinner,
 } from "./tournament-logic";
 
 describe("shuffle", () => {
@@ -106,5 +110,60 @@ describe("formatHandicapLabel", () => {
   });
   it("returns an empty string when there's no handicap", () => {
     expect(formatHandicapLabel("דני", 1000, "יוסי", 1000, 20)).toBe("");
+  });
+});
+
+describe("isValidBracketSize", () => {
+  it("accepts the four supported sizes", () => {
+    expect(isValidBracketSize(4)).toBe(true);
+    expect(isValidBracketSize(8)).toBe(true);
+    expect(isValidBracketSize(16)).toBe(true);
+    expect(isValidBracketSize(32)).toBe(true);
+  });
+  it("rejects anything else", () => {
+    expect(isValidBracketSize(2)).toBe(false);
+    expect(isValidBracketSize(6)).toBe(false);
+    expect(isValidBracketSize(64)).toBe(false);
+    expect(isValidBracketSize(0)).toBe(false);
+  });
+});
+
+describe("knockoutRoundCount", () => {
+  it("computes log2 of the bracket size", () => {
+    expect(knockoutRoundCount(4)).toBe(2);
+    expect(knockoutRoundCount(8)).toBe(3);
+    expect(knockoutRoundCount(16)).toBe(4);
+    expect(knockoutRoundCount(32)).toBe(5);
+  });
+});
+
+describe("knockoutRoundLabel", () => {
+  it("names the final and semi-final specially", () => {
+    expect(knockoutRoundLabel(3, 3)).toBe("גמר");
+    expect(knockoutRoundLabel(2, 3)).toBe("חצי גמר");
+  });
+  it("names the quarter-final specially when there are enough rounds", () => {
+    expect(knockoutRoundLabel(2, 4)).toBe("רבע גמר");
+  });
+  it("falls back to a numbered round label for earlier rounds", () => {
+    expect(knockoutRoundLabel(1, 4)).toBe("סיבוב 1");
+    expect(knockoutRoundLabel(1, 3)).toBe("סיבוב 1");
+  });
+});
+
+describe("knockoutMatchWinner", () => {
+  it("returns 'a' when A scored more frames", () => {
+    expect(knockoutMatchWinner(3, 1)).toBe("a");
+  });
+  it("returns 'b' when B scored more frames", () => {
+    expect(knockoutMatchWinner(1, 3)).toBe("b");
+  });
+  it("returns null when either score is missing", () => {
+    expect(knockoutMatchWinner(null, 3)).toBeNull();
+    expect(knockoutMatchWinner(3, null)).toBeNull();
+    expect(knockoutMatchWinner(null, null)).toBeNull();
+  });
+  it("returns null for a tie", () => {
+    expect(knockoutMatchWinner(2, 2)).toBeNull();
   });
 });

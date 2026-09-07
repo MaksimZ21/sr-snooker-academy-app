@@ -8,6 +8,16 @@ import { fetchKnockoutBracket, type KnockoutMatch } from "./tournament-knockout"
 // email, etc.) just because an internal type happens to. Payment status
 // and contact details are never selected from the database here at all,
 // not just omitted from the response.
+//
+// Caveat: this isolation only covers this file's own three queries below.
+// `fetchTournamentHouses`/`fetchKnockoutBracket` (imported from the
+// authenticated modules) do `select("*")` against tournament_houses/
+// tournament_house_matches/tournament_knockout_matches. Those tables are
+// purely structural today (ids, labels, slots, frame scores) with nothing
+// sensitive on them, so reusing them here is safe — but if either table
+// ever gains a column not meant for public eyes, it would flow onto this
+// public page with no line in this file for a reviewer to notice. Re-audit
+// this file if those tables' schemas change.
 
 export type PublicParticipant = {
   id: string;

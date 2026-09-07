@@ -104,6 +104,22 @@ export async function assignParticipantToSlot(
     if (otherSideId === participantId) {
       throw new Error("a participant cannot play against themselves");
     }
+
+    // Also block double-booking across DIFFERENT round-1 matches — the UI
+    // already filters this out of the picker, but the same check belongs
+    // here too so a direct API call (or a race between two tabs) can't
+    // bypass it.
+    const { data: elsewhere } = await db
+      .from("tournament_knockout_matches")
+      .select("id")
+      .eq("tournament_id", tournamentId)
+      .eq("round", 1)
+      .neq("id", matchId)
+      .or(`participant_a_id.eq.${participantId},participant_b_id.eq.${participantId}`)
+      .limit(1);
+    if ((elsewhere ?? []).length > 0) {
+      throw new Error("this participant is already placed in another round-1 match");
+    }
   }
 
   const column = side === "a" ? "participant_a_id" : "participant_b_id";

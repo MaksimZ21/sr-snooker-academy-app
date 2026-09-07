@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { knockoutRoundCount, knockoutRoundLabel, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
+import { knockoutRoundLabel, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
 
 type Participant = {
   id: string;
@@ -147,6 +147,12 @@ export function TournamentKnockoutView({
     label: knockoutRoundLabel(round, totalRounds),
     matches: matches.filter((m) => m.round === round).sort((a, b) => a.slot - b.slot),
   }));
+  const assignedInRound1 = new Set(
+    matches
+      .filter((m) => m.round === 1)
+      .flatMap((m) => [m.participant_a_id, m.participant_b_id])
+      .filter((id): id is string => id !== null),
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -221,6 +227,7 @@ export function TournamentKnockoutView({
                       handicap={handicap}
                       canEdit={canEdit}
                       participants={participants}
+                      assignedInRound1={assignedInRound1}
                       onAssign={(side, participantId) => assignMut.mutate({ matchId: m.id, side, participantId })}
                       onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
                       saving={resultMut.isPending}
@@ -244,6 +251,7 @@ function KnockoutMatchCard({
   handicap,
   canEdit,
   participants,
+  assignedInRound1,
   onAssign,
   onSave,
   saving,
@@ -255,6 +263,7 @@ function KnockoutMatchCard({
   handicap: string;
   canEdit: boolean;
   participants: Participant[];
+  assignedInRound1: Set<string>;
   onAssign: (side: "a" | "b", participantId: string | null) => void;
   onSave: (framesA: number, framesB: number) => void;
   saving: boolean;
@@ -281,11 +290,13 @@ function KnockoutMatchCard({
                 <SelectTrigger className="h-7 flex-1 text-xs"><SelectValue placeholder="בחר משתתף..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— ריק —</SelectItem>
-                  {participants.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
-                    </SelectItem>
-                  ))}
+                  {participants
+                    .filter((p) => p.id === participantId || !assignedInRound1.has(p.id))
+                    .map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             ) : (

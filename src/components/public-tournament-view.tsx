@@ -38,7 +38,9 @@ export function PublicTournamentView({ tournament }: { tournament: PublicTournam
                         <th className="text-right px-4 py-1.5 font-medium">מקום</th>
                         <th className="text-right px-2 py-1.5 font-medium">שם</th>
                         <th className="text-center px-2 py-1.5 font-medium">נצחונות</th>
-                        <th className="text-center px-2 py-1.5 font-medium">פרשים</th>
+                        <th className="text-center px-2 py-1.5 font-medium">פריימים לטובה</th>
+                        <th className="text-center px-2 py-1.5 font-medium">פריימים לרעה</th>
+                        <th className="text-center px-2 py-1.5 font-medium">הפרש</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -55,7 +57,12 @@ export function PublicTournamentView({ tournament }: { tournament: PublicTournam
                               )}
                             </td>
                             <td className="text-center px-2 py-1.5">{row.wins}</td>
-                            <td className="text-center px-2 py-1.5">{row.framesWon}-{row.framesLost}</td>
+                            <td className="text-center px-2 py-1.5">{row.framesWon}</td>
+                            <td className="text-center px-2 py-1.5">{row.framesLost}</td>
+                            <td className="text-center px-2 py-1.5">
+                              {row.framesWon - row.framesLost > 0 ? "+" : ""}
+                              {row.framesWon - row.framesLost}
+                            </td>
                           </tr>
                         );
                       })}

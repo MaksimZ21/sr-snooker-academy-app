@@ -29,6 +29,18 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   ]);
 }
 
+// @serwist/next's <SerwistProvider> already registers the service worker on
+// app load, but its register() call is fire-and-forget (`void ...register()`
+// internally) — if it fails, nothing ever surfaces that. Registering again
+// here explicitly is a safe no-op if it's already registered (the browser
+// dedupes by script URL + scope), and — critically — lets us actually see
+// the rejection if registration itself is what's failing, instead of just
+// timing out later on `.ready` with no idea why.
+async function getReadyRegistration(): Promise<ServiceWorkerRegistration> {
+  await withTimeout(navigator.serviceWorker.register("/sw.js", { scope: "/" }), 10_000, "רישום ה-Service Worker (register)");
+  return withTimeout(navigator.serviceWorker.ready, 10_000, "הפעלת ה-Service Worker (ready)");
+}
+
 export function PushNotificationBanner() {
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -61,7 +73,7 @@ export function PushNotificationBanner() {
     // prompt. Since the browser won't ask again, re-check for an actual
     // subscription and keep offering the button until one truly exists.
     try {
-      const registration = await withTimeout(navigator.serviceWorker.ready, 10_000, "רישום ה-Service Worker");
+      const registration = await getReadyRegistration();
       const existing = await registration.pushManager.getSubscription();
       setVisible(!existing);
     } catch {
@@ -85,7 +97,7 @@ export function PushNotificationBanner() {
         return;
       }
 
-      const registration = await withTimeout(navigator.serviceWorker.ready, 10_000, "רישום ה-Service Worker");
+      const registration = await getReadyRegistration();
       const subscription = await withTimeout(
         registration.pushManager.subscribe({
           userVisibleOnly: true,

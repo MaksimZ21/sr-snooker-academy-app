@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
@@ -59,13 +60,14 @@ export function PushNotificationBanner() {
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
+        toast.error("לא אושרה הרשאה להתראות");
         setVisible(false);
         return;
       }
 
       const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!publicKey) {
-        console.error("[push] NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set");
+        toast.error("שגיאת הגדרה: מפתח ההתראות חסר בשרת");
         return;
       }
 
@@ -74,13 +76,20 @@ export function PushNotificationBanner() {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
-      await fetch("/api/push/subscribe", {
+      const res = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(subscription.toJSON()),
       });
+      if (!res.ok) throw new Error(`שרת החזיר שגיאה (${res.status})`);
+      toast.success("התראות הופעלו בהצלחה");
       setVisible(false);
     } catch (err) {
+      // Surface the actual error on-screen — this runs on phones with no
+      // devtools access, so console.error alone is invisible to whoever's
+      // debugging this live.
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`ההפעלה נכשלה: ${message}`);
       console.error("[push] subscribe failed", err);
       // Leave the banner visible so the admin can retry (e.g. transient
       // network error) instead of getting silently stuck forever.

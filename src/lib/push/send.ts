@@ -8,13 +8,17 @@ export type PushPayload = {
 };
 
 let configured = false;
+let warnedMissingConfig = false;
 
 function ensureConfigured(): boolean {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT;
   if (!publicKey || !privateKey || !subject) {
-    console.warn("[push] VAPID env vars not set — skipping push send");
+    if (!warnedMissingConfig) {
+      console.warn("[push] VAPID env vars not set — skipping push send");
+      warnedMissingConfig = true;
+    }
     return false;
   }
   if (!configured) {

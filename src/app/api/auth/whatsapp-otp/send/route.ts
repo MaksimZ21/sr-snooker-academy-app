@@ -9,7 +9,7 @@ function normalizePhone(raw: string) {
   return { local: `0${core}`, intl: `972${core}` };
 }
 
-export function signOtp(phone: string, code: string, expiresAt: number): string {
+function signOtp(phone: string, code: string, expiresAt: number): string {
   const sig = createHmac("sha256", process.env.OTP_SECRET!)
     .update(`${phone}:${code}:${expiresAt}`)
     .digest("hex");

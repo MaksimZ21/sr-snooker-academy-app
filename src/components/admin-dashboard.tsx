@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { PushNotificationBanner } from "@/components/push-notification-banner";
 import dynamic from "next/dynamic";
 import {
   Users,
@@ -91,6 +92,8 @@ export function AdminDashboard({ displayName = "" }: { displayName?: string }) {
           מחובר
         </div>
       </div>
+
+      <PushNotificationBanner />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 animate-fade-in-up" style={{ animationDelay: "60ms" }}>

@@ -7,20 +7,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 import type { ContactRequest } from "@/lib/sheets/contact";
 
 async function fetchMessages(): Promise<ContactRequest[]> {
   const res = await fetch("/api/admin/messages");
+  if (!res.ok) throw new Error("שגיאה בטעינת הפניות");
   const data = (await res.json()) as { requests: ContactRequest[] };
   return data.requests;
 }
 
 async function patchMessage(id: string, status: "read" | "handled"): Promise<void> {
-  await fetch("/api/admin/messages", {
+  const res = await fetch("/api/admin/messages", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id, status }),
   });
+  if (!res.ok) throw new Error("שגיאה בעדכון הפנייה");
 }
 
 export function AdminMessages() {
@@ -35,11 +38,13 @@ export function AdminMessages() {
   const { mutate: markAsRead } = useMutation({
     mutationFn: (id: string) => patchMessage(id, "read"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-messages"] }),
+    onError: () => toast.error("שגיאה בסימון הפנייה כנקראה"),
   });
 
   const { mutate: markAsHandled, isPending: handling } = useMutation({
     mutationFn: (id: string) => patchMessage(id, "handled"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-messages"] }),
+    onError: () => toast.error("שגיאה בסימון הפנייה כטופלה"),
   });
 
   function handleExpand(id: string, status: string) {

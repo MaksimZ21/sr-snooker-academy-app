@@ -162,7 +162,7 @@ type Tab = "staff" | "student";
 
 function LoginTabs() {
   const [tab, setTab] = useState<Tab>("staff");
-  // Staff defaults to WhatsApp; student defaults to email+password. Each tab button resets to its own default.
+  // Both staff and student default to WhatsApp. Each tab button resets to its own default.
   const [showWa, setShowWa] = useState(true);
 
   return (
@@ -179,7 +179,7 @@ function LoginTabs() {
         </button>
         <button
           type="button"
-          onClick={() => { setTab("student"); setShowWa(false); }}
+          onClick={() => { setTab("student"); setShowWa(true); }}
           className={`rounded-md py-1.5 font-medium transition-colors ${
             tab === "student" ? "bg-background shadow-sm" : "text-muted-foreground"
           }`}

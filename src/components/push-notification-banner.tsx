@@ -19,20 +19,49 @@ export function PushNotificationBanner() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    void checkVisibility();
+  }, []);
+
+  async function checkVisibility() {
     const supported =
       typeof window !== "undefined" &&
       "serviceWorker" in navigator &&
       "PushManager" in window &&
       "Notification" in window;
     if (!supported) return;
-    setVisible(Notification.permission === "default");
-  }, []);
+
+    if (Notification.permission === "denied") {
+      // The browser will never re-prompt — nothing this banner can do.
+      setVisible(false);
+      return;
+    }
+    if (Notification.permission === "default") {
+      setVisible(true);
+      return;
+    }
+
+    // Permission is already "granted", but that doesn't guarantee a working
+    // subscription exists — e.g. it was granted before the VAPID keys were
+    // configured, or a previous subscribe attempt failed after the OS-level
+    // prompt. Since the browser won't ask again, re-check for an actual
+    // subscription and keep offering the button until one truly exists.
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const existing = await registration.pushManager.getSubscription();
+      setVisible(!existing);
+    } catch {
+      setVisible(false);
+    }
+  }
 
   async function enable() {
     setLoading(true);
     try {
       const permission = await Notification.requestPermission();
-      if (permission !== "granted") return;
+      if (permission !== "granted") {
+        setVisible(false);
+        return;
+      }
 
       const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!publicKey) {
@@ -50,10 +79,12 @@ export function PushNotificationBanner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(subscription.toJSON()),
       });
+      setVisible(false);
     } catch (err) {
       console.error("[push] subscribe failed", err);
+      // Leave the banner visible so the admin can retry (e.g. transient
+      // network error) instead of getting silently stuck forever.
     } finally {
-      setVisible(false);
       setLoading(false);
     }
   }

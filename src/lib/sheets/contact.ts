@@ -17,11 +17,14 @@ export async function insertContactRequest(input: {
   subject: string;
   message: string;
 }): Promise<void> {
-  await db.from("contact_requests").insert({
+  const { error } = await db.from("contact_requests").insert({
     student_id: input.student_id,
     subject: input.subject,
     message: input.message,
   });
+  // If the insert itself failed, don't page every admin about a request
+  // that was never actually saved.
+  if (error) return;
 
   const { data: student } = await db
     .from("students")
@@ -32,7 +35,10 @@ export async function insertContactRequest(input: {
     ? [student.first_name, student.last_name].filter(Boolean).join(" ") || "מתאמן"
     : "מתאמן";
 
-  void sendPushToAdmins({
+  // Awaited (not fire-and-forget): sendPushToAdmins never throws, so this
+  // only costs latency — but on a serverless platform, an un-awaited call
+  // can be dropped once the response is sent, silently losing the push.
+  await sendPushToAdmins({
     title: "פנייה חדשה",
     body: `${studentName}: ${input.subject}`,
     url: "/admin/messages",

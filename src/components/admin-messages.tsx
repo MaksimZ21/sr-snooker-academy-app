@@ -30,7 +30,7 @@ export function AdminMessages() {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const { data: messages, isLoading } = useQuery({
+  const { data: messages, isLoading, isError } = useQuery({
     queryKey: ["admin-messages"],
     queryFn: fetchMessages,
   });
@@ -58,6 +58,14 @@ export function AdminMessages() {
         {[1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-16 w-full rounded-lg" />
         ))}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-4 text-center text-sm text-muted-foreground">
+        שגיאה בטעינת הפניות
       </div>
     );
   }

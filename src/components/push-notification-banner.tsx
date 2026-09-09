@@ -35,7 +35,10 @@ export function PushNotificationBanner() {
       if (permission !== "granted") return;
 
       const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!publicKey) return;
+      if (!publicKey) {
+        console.error("[push] NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set");
+        return;
+      }
 
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({

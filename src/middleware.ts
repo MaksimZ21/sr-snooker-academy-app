@@ -37,5 +37,10 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
+  // sw.js and manifest.webmanifest must be reachable as plain static files,
+  // with no middleware in the way — the browser requires the service
+  // worker script response to come back as an exact 200 with no redirect
+  // or error, or registration fails outright (this is what broke it: the
+  // Supabase session check here ran on every /sw.js request too).
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.webmanifest|api/).*)"],
 };

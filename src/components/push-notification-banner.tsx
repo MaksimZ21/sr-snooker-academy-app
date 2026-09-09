@@ -15,6 +15,20 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   return outputArray;
 }
 
+// Some of the promises below (service worker readiness, above all) can hang
+// forever instead of rejecting if something's wrong in the browser/PWA
+// environment — with no console access on a phone, an infinite spinner and
+// no error is the worst possible failure mode. Bound every await so a stuck
+// step turns into a visible, specific error instead.
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} — לא הגיב תוך ${ms / 1000} שניות`)), ms),
+    ),
+  ]);
+}
+
 export function PushNotificationBanner() {
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -47,7 +61,7 @@ export function PushNotificationBanner() {
     // prompt. Since the browser won't ask again, re-check for an actual
     // subscription and keep offering the button until one truly exists.
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await withTimeout(navigator.serviceWorker.ready, 10_000, "רישום ה-Service Worker");
       const existing = await registration.pushManager.getSubscription();
       setVisible(!existing);
     } catch {
@@ -71,16 +85,24 @@ export function PushNotificationBanner() {
         return;
       }
 
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
-      });
-      const res = await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(subscription.toJSON()),
-      });
+      const registration = await withTimeout(navigator.serviceWorker.ready, 10_000, "רישום ה-Service Worker");
+      const subscription = await withTimeout(
+        registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        }),
+        10_000,
+        "הרשמה להתראות בדפדפן",
+      );
+      const res = await withTimeout(
+        fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(subscription.toJSON()),
+        }),
+        10_000,
+        "שמירת ההרשמה בשרת",
+      );
       if (!res.ok) throw new Error(`שרת החזיר שגיאה (${res.status})`);
       toast.success("התראות הופעלו בהצלחה");
       setVisible(false);

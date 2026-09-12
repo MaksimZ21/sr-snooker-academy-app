@@ -119,6 +119,7 @@ export async function updateStudent(
     birth_date?: string | null;
     last_payment_date?: string | null;
     active?: boolean;
+    rating?: number;
   },
 ): Promise<void> {
   await db.from("students").update(input).eq("id", id);

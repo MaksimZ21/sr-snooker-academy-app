@@ -6,13 +6,13 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   LogOut, Sun, Moon, LayoutGrid, X,
-  Activity, Banknote, Calendar, ClipboardList, FolderOpen,
+  Activity, Award, Banknote, Calendar, ClipboardList, FolderOpen,
   GraduationCap, History, Home, MessageCircle, MessageSquare,
   Sparkles, Tag, Target, Trophy, User, Users, UsersRound,
 } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>> = {
-  Activity, Banknote, Calendar, ClipboardList, FolderOpen,
+  Activity, Award, Banknote, Calendar, ClipboardList, FolderOpen,
   GraduationCap, History, Home, MessageCircle, MessageSquare,
   Sparkles, Tag, Target, Trophy, User, Users, UsersRound,
 };

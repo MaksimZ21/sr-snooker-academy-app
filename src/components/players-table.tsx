@@ -124,8 +124,12 @@ function PlayerRow({
   const [value, setValue] = useState(String(player.rating));
 
   function save() {
-    const n = Number(value);
-    if (!Number.isInteger(n)) return;
+    const trimmed = value.trim();
+    const n = Number(trimmed);
+    if (trimmed === "" || !Number.isInteger(n)) {
+      toast.error("יש להזין מספר שלם");
+      return;
+    }
     onSaveRating(n);
     setEditing(false);
   }

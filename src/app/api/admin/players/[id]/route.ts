@@ -3,8 +3,11 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { updateStudent } from "@/lib/sheets/students";
 
+// No .coerce: z.coerce.number() turns "" and null into 0 (Number("") === 0),
+// which would silently accept an empty/missing rating as a real value of 0
+// instead of rejecting the request. Require an actual number in the body.
 const PatchBody = z.object({
-  rating: z.coerce.number().int(),
+  rating: z.number().int(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {

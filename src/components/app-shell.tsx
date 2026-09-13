@@ -8,13 +8,13 @@ import {
   LogOut, Sun, Moon, LayoutGrid, X,
   Activity, Award, Banknote, Calendar, ClipboardList, FolderOpen,
   GraduationCap, History, Home, MessageCircle, MessageSquare,
-  Sparkles, Tag, Target, Trophy, User, Users, UsersRound,
+  Sparkles, Shield, Tag, Target, Trophy, User, Users, UsersRound,
 } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>> = {
   Activity, Award, Banknote, Calendar, ClipboardList, FolderOpen,
   GraduationCap, History, Home, MessageCircle, MessageSquare,
-  Sparkles, Tag, Target, Trophy, User, Users, UsersRound,
+  Sparkles, Shield, Tag, Target, Trophy, User, Users, UsersRound,
 };
 import { useTheme } from "next-themes";
 import type { NavItem } from "./nav-items";

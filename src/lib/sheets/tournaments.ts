@@ -9,6 +9,7 @@ export type Tournament = {
   completed: boolean;
   public_slug: string;
   handicap_points_per_rating_gap: number;
+  type: "regular" | "multi_location";
   created_at: string;
 };
 
@@ -17,6 +18,8 @@ export type TournamentParticipant = {
   tournament_id: string;
   student_id: string;
   paid: boolean;
+  location_id: string | null;
+  house_id: string | null;
   created_at: string;
 };
 
@@ -69,6 +72,7 @@ export async function createTournament(input: {
   manager_email: string;
   rules_url?: string;
   handicap_points_per_rating_gap?: number;
+  type?: "regular" | "multi_location";
 }): Promise<Tournament> {
   const { data, error } = await db
     .from("tournaments")
@@ -77,6 +81,7 @@ export async function createTournament(input: {
       manager_email: input.manager_email,
       rules_url: input.rules_url ?? null,
       handicap_points_per_rating_gap: input.handicap_points_per_rating_gap ?? 20,
+      type: input.type ?? "regular",
       public_slug: generatePublicSlug(),
     })
     .select()

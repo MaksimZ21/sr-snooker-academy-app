@@ -15,6 +15,7 @@ export const COACH_NAV: NavItem[] = [
 
 export const STUDENT_NAV: NavItem[] = [
   { href: "/student", label: "האימונים שלי", icon: "Calendar" },
+  { href: "/student/tournaments", label: "הטורנירים שלי", icon: "Trophy" },
   { href: "/student/goal", label: "המטרה שלי", icon: "Target" },
   { href: "/student/history", label: "היסטוריה", icon: "History" },
   { href: "/student/contact", label: "פנייה לאדמין", icon: "MessageSquare" },

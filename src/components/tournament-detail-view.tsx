@@ -193,14 +193,18 @@ export function TournamentDetailView({
                     </p>
                   </div>
                   {tournament.type === "multi_location" && (
-                    p.house_id ? (
-                      <span className="text-xs text-muted-foreground" title="יש להסיר מהבית לפני שינוי מיקום">
+                    !canEdit || p.house_id ? (
+                      <span
+                        className="text-xs text-muted-foreground"
+                        title={p.house_id ? "יש להסיר מהבית לפני שינוי מיקום" : undefined}
+                      >
                         {locations.find((l) => l.id === p.location_id)?.label ?? "ללא מיקום"}
                       </span>
                     ) : (
                       <Select
                         value={p.location_id ?? "none"}
                         onValueChange={(v) => v && assignLocationMut.mutate({ participantId: p.id, locationId: v === "none" ? null : v })}
+                        disabled={assignLocationMut.isPending}
                       >
                         <SelectTrigger className="h-8 w-32 text-xs">
                           <SelectValue placeholder="ללא מיקום" />

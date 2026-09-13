@@ -169,6 +169,28 @@ export function computeTournamentPlacement(
   return null;
 }
 
+type PlacementDistrict = {
+  memberIds: string[];
+  matches: { participant_a_id: string; participant_b_id: string; frames_a: number | null; frames_b: number | null }[];
+  label: string;
+};
+
+/**
+ * Computes a player's current standing within one league district from
+ * already-stored match results — no stored "placement" field, this is pure
+ * read-time derivation, same philosophy as computeTournamentPlacement.
+ * Simpler than the tournament version: a league has no knockout stage, so
+ * a placement is always just "current position in the district table,"
+ * computable as soon as at least one match in that district has a result.
+ */
+export function computeLeaguePlacement(participantId: string, district: PlacementDistrict): string | null {
+  const anyPlayed = district.matches.some((m) => m.frames_a !== null && m.frames_b !== null);
+  if (!anyPlayed) return null;
+  const standings = computeHouseStandings(district.memberIds, district.matches);
+  const idx = standings.findIndex((s) => s.participantId === participantId);
+  return idx === -1 ? null : `מקום ${idx + 1} ב${district.label}`;
+}
+
 export function knockoutMatchWinner(
   framesA: number | null,
   framesB: number | null,

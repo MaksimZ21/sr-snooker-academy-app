@@ -13,6 +13,7 @@ import {
   knockoutMatchWinner,
   computeTournamentPlacement,
   generateLeagueRounds,
+  computeLeaguePlacement,
 } from "./tournament-logic";
 
 describe("shuffle", () => {
@@ -310,5 +311,39 @@ describe("generateLeagueRounds", () => {
     for (const [, playersInRound] of byRound) {
       expect(new Set(playersInRound).size).toBe(playersInRound.length);
     }
+  });
+});
+
+describe("computeLeaguePlacement", () => {
+  it("returns the player's rank and district label once at least one match has a result", () => {
+    const district = {
+      memberIds: ["p1", "p2", "p3"],
+      matches: [
+        { participant_a_id: "p1", participant_b_id: "p2", frames_a: 3, frames_b: 1 },
+        { participant_a_id: "p1", participant_b_id: "p3", frames_a: 2, frames_b: 3 },
+        { participant_a_id: "p2", participant_b_id: "p3", frames_a: 1, frames_b: 3 },
+      ],
+      label: "צפון",
+    };
+    // Standings by wins: p3 (2), p1 (1), p2 (0) — p1 is 2nd place.
+    expect(computeLeaguePlacement("p1", district)).toBe("מקום 2 בצפון");
+  });
+
+  it("returns null when no match in the district has a result yet", () => {
+    const district = {
+      memberIds: ["p1", "p2"],
+      matches: [{ participant_a_id: "p1", participant_b_id: "p2", frames_a: null, frames_b: null }],
+      label: "צפון",
+    };
+    expect(computeLeaguePlacement("p1", district)).toBeNull();
+  });
+
+  it("returns null when the participant isn't a member of the district", () => {
+    const district = {
+      memberIds: ["p1", "p2"],
+      matches: [{ participant_a_id: "p1", participant_b_id: "p2", frames_a: 3, frames_b: 1 }],
+      label: "צפון",
+    };
+    expect(computeLeaguePlacement("p9", district)).toBeNull();
   });
 });

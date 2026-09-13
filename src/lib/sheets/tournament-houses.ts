@@ -5,7 +5,7 @@ import {
   computeEloUpdate,
 } from "./tournament-logic";
 
-export type House = { id: string; tournament_id: string; label: string };
+export type House = { id: string; tournament_id: string; label: string; location_id: string | null };
 export type HouseMatch = {
   id: string;
   house_id: string;
@@ -50,6 +50,12 @@ export async function hasAnyHouseResult(tournamentId: string): Promise<boolean> 
 }
 
 export async function runHouseDraw(tournamentId: string, numHouses: number): Promise<void> {
+  const { data: tournament } = await db.from("tournaments").select("id, type").eq("id", tournamentId).maybeSingle();
+  if (!tournament) throw new Error("tournament not found");
+  if (tournament.type !== "regular") {
+    throw new Error("a random house draw only applies to a regular tournament");
+  }
+
   const { data: participantRows } = await db
     .from("tournament_participants")
     .select("id")
@@ -100,6 +106,27 @@ export async function runHouseDraw(tournamentId: string, numHouses: number): Pro
   }
 }
 
+// The manual equivalent of runHouseDraw for a multi-location tournament:
+// creates one empty house within a specific location — no shuffle, no
+// participants assigned yet. The manager fills it afterward, one
+// participant at a time, via moveParticipantToHouse.
+export async function addLocationHouse(tournamentId: string, locationId: string, label: string): Promise<House> {
+  const { data: location } = await db
+    .from("tournament_locations")
+    .select("id, tournament_id")
+    .eq("id", locationId)
+    .maybeSingle();
+  if (!location || location.tournament_id !== tournamentId) throw new Error("location not found");
+
+  const { data, error } = await db
+    .from("tournament_houses")
+    .insert({ tournament_id: tournamentId, location_id: locationId, label })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as House;
+}
+
 export async function moveParticipantToHouse(
   tournamentId: string,
   participantId: string,
@@ -107,17 +134,25 @@ export async function moveParticipantToHouse(
 ): Promise<void> {
   const { data: house } = await db
     .from("tournament_houses")
-    .select("id, tournament_id")
+    .select("id, tournament_id, location_id")
     .eq("id", newHouseId)
     .maybeSingle();
   if (!house || house.tournament_id !== tournamentId) throw new Error("house not found");
 
   const { data: participant } = await db
     .from("tournament_participants")
-    .select("id, tournament_id, house_id")
+    .select("id, tournament_id, house_id, location_id")
     .eq("id", participantId)
     .maybeSingle();
   if (!participant || participant.tournament_id !== tournamentId) throw new Error("participant not found");
+
+  // A multi-location tournament's houses each belong to exactly one
+  // location — a participant can only be placed into a house within the
+  // location they're already assigned to. For a regular tournament both
+  // sides of this comparison are always null, so the check is a no-op there.
+  if (house.location_id !== participant.location_id) {
+    throw new Error("a participant can only be placed into a house within their own assigned location");
+  }
 
   // Already in the target house — nothing to do, and definitely don't wipe
   // and regenerate that house's fixtures for no reason.
@@ -166,6 +201,42 @@ export async function moveParticipantToHouse(
     const { error: insertError } = await db.from("tournament_house_matches").insert(pairs);
     if (insertError) throw new Error(insertError.message);
   }
+}
+
+// The explicit "הסר משיבוץ" action — required before a participant's
+// location can be changed once they're already placed in a house (see
+// assignParticipantToLocation's guard). Refuses if any of their pending
+// matches in that house already has a result, same rule moveParticipantToHouse
+// already applies.
+export async function removeParticipantFromHouse(tournamentId: string, participantId: string): Promise<void> {
+  const { data: participant } = await db
+    .from("tournament_participants")
+    .select("id, tournament_id, house_id")
+    .eq("id", participantId)
+    .maybeSingle();
+  if (!participant || participant.tournament_id !== tournamentId) throw new Error("participant not found");
+  if (!participant.house_id) return; // already not in a house — nothing to do
+
+  const { data: existingMatches } = await db
+    .from("tournament_house_matches")
+    .select("frames_a")
+    .or(`participant_a_id.eq.${participantId},participant_b_id.eq.${participantId}`);
+  const hasPlayedMatch = (existingMatches ?? []).some((m) => m.frames_a !== null);
+  if (hasPlayedMatch) {
+    throw new Error("cannot remove a participant who has already played a match in their current house");
+  }
+
+  const { error: deleteError } = await db
+    .from("tournament_house_matches")
+    .delete()
+    .or(`participant_a_id.eq.${participantId},participant_b_id.eq.${participantId}`);
+  if (deleteError) throw new Error(deleteError.message);
+
+  const { error: updateError } = await db
+    .from("tournament_participants")
+    .update({ house_id: null })
+    .eq("id", participantId);
+  if (updateError) throw new Error(updateError.message);
 }
 
 export async function enterHouseMatchResult(

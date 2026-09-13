@@ -132,19 +132,23 @@ export function LeagueDistrictsView({
         districts.map((district) => {
           const standings = computeHouseStandings(district.memberIds, district.matches);
           const hasFixtures = district.matches.length > 0;
+          const hasResults = district.matches.some((m) => m.frames_a !== null);
           const rounds = [...new Set(district.matches.map((m) => m.round))].sort((a, b) => a - b);
           return (
             <div key={district.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
               <div className="flex items-center justify-between px-4 pt-3 pb-2">
                 <p className="text-sm font-semibold">{district.label}</p>
-                {canEdit && !hasFixtures && (
+                {canEdit && !hasResults && (
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={generateMut.isPending || district.memberIds.length < 2}
-                    onClick={() => generateMut.mutate(district.id)}
+                    onClick={() => {
+                      if (hasFixtures && !window.confirm("כבר יש לוח משחקים במחוז זה — יצירה מחדש תמחק אותו. להמשיך?")) return;
+                      generateMut.mutate(district.id);
+                    }}
                   >
-                    צור לוח משחקים
+                    {hasFixtures ? "צור לוח משחקים מחדש" : "צור לוח משחקים"}
                   </Button>
                 )}
               </div>

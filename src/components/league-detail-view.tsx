@@ -70,6 +70,7 @@ export function LeagueDetailView({
       if (!r.ok) throw new Error(await r.text());
     },
     onSuccess: () => {
+      toast.success("שויך למחוז");
       qc.invalidateQueries({ queryKey: ["league", leagueId] });
       qc.invalidateQueries({ queryKey: ["league-districts", leagueId] });
     },

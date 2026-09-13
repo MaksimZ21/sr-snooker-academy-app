@@ -1,6 +1,6 @@
 "use client";
 import { use } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -12,11 +12,14 @@ import {
   XCircle,
   ClipboardList,
   ChevronRight,
+  Trophy,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { StudentGoalSummary } from "@/components/student-goal-summary";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { studentFullName } from "@/lib/sheets/schemas";
 import type { Student, Note, Session, Attendance } from "@/lib/sheets/schemas";
 import type { Assessment } from "@/lib/sheets/assessment-types";
@@ -74,6 +77,19 @@ function formatDate(d: string) {
 
 export default function AdminStudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const queryClient = useQueryClient();
+
+  const activatePlayerMut = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/admin/students/${id}/activate-player`, { method: "POST" });
+      if (!r.ok) throw new Error("failed");
+    },
+    onSuccess: () => {
+      toast.success("אזור הטורנירים נפתח למתאמן");
+      queryClient.invalidateQueries({ queryKey: ["admin:student", id] });
+    },
+    onError: () => toast.error("שגיאה בפתיחת אזור הטורנירים"),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin:student", id],
@@ -191,6 +207,28 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
               </span>
             )}
           </div>
+
+          {!student.is_tournament_only && (
+            <div className="mt-3">
+              {student.public_slug ? (
+                <span className="flex items-center gap-1.5 w-fit bg-white/15 text-white/85 text-xs px-2.5 py-1 rounded-full">
+                  <Trophy size={12} />
+                  שחקן טורנירים
+                </span>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white"
+                  disabled={activatePlayerMut.isPending}
+                  onClick={() => activatePlayerMut.mutate()}
+                >
+                  <Trophy size={12} className="ml-1.5" />
+                  {activatePlayerMut.isPending ? "פותח..." : "פתח לו את אזור הטורנירים"}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

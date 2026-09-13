@@ -223,7 +223,10 @@ export function TournamentLocationsView({
                         {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
                       </span>
                       {canEdit && locationHouses.length > 0 && (
-                        <Select onValueChange={(v: string | null) => v && assignHouseMut.mutate({ participantId: p.id, houseId: v })}>
+                        <Select
+                          key={`${p.id}-${assignHouseMut.variables?.participantId === p.id ? assignHouseMut.failureCount : 0}`}
+                          onValueChange={(v: string | null) => v && assignHouseMut.mutate({ participantId: p.id, houseId: v })}
+                        >
                           <SelectTrigger className="h-8 w-32 text-xs">
                             <SelectValue placeholder="בחר בית..." />
                           </SelectTrigger>

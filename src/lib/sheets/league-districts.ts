@@ -106,9 +106,8 @@ export async function generateDistrictFixtures(leagueId: string, districtId: str
     throw new Error("cannot regenerate a fixture schedule once results have been recorded");
   }
 
-  const { error: deleteError } = await db.from("league_matches").delete().eq("district_id", districtId);
-  if (deleteError) throw new Error(deleteError.message);
-
+  // Validate before deleting — a district that fails this check must be
+  // left exactly as it was, not wiped with nothing to rebuild.
   const { data: memberRows } = await db
     .from("league_participants")
     .select("id")
@@ -116,6 +115,9 @@ export async function generateDistrictFixtures(leagueId: string, districtId: str
     .eq("district_id", districtId);
   const participantIds = (memberRows ?? []).map((m) => m.id as string);
   if (participantIds.length < 2) throw new Error("a district needs at least 2 participants to generate fixtures");
+
+  const { error: deleteError } = await db.from("league_matches").delete().eq("district_id", districtId);
+  if (deleteError) throw new Error(deleteError.message);
 
   const { data: league } = await db.from("leagues").select("num_cycles").eq("id", leagueId).maybeSingle();
   const numCycles = (league?.num_cycles as number) ?? 1;

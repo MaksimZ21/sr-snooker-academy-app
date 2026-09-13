@@ -1,7 +1,7 @@
 import { revalidateTag } from "next/cache";
 import { resolveRole, type Role } from "./resolveRole";
 import { fetchActiveCoachEmails, readActiveCoachEmails } from "@/lib/sheets/coaches";
-import { fetchActiveStudentEmails } from "@/lib/sheets/students";
+import { fetchStudentEmails } from "@/lib/sheets/students";
 
 export async function getUserRole(email: string): Promise<Role> {
   const adminEmails = process.env.ADMIN_EMAILS ?? "";
@@ -10,7 +10,7 @@ export async function getUserRole(email: string): Promise<Role> {
 
   const [cachedCoaches, cachedStudents] = await Promise.all([
     fetchActiveCoachEmails(),
-    fetchActiveStudentEmails(),
+    fetchStudentEmails(),
   ]);
   const cachedRole = resolveRole({ email, adminEmails, activeCoachEmails: cachedCoaches, activeStudentEmails: cachedStudents });
   if (cachedRole !== "denied") return cachedRole;

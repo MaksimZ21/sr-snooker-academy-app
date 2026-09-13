@@ -83,12 +83,18 @@ export async function appendStudent(input: {
   return id;
 }
 
-export const fetchActiveStudentEmails = unstable_cache(
+// Deliberately not filtered by `active` — a student who stopped coming (or
+// a tournament-only customer, who is always `active: false` by design) can
+// still be sent a login invite and must still resolve to the "student"
+// role. `active` is a scheduling/roster concept (who shows up in group and
+// session pickers), not a login gate — see docs/superpowers/specs/2026-08-11-
+// tournaments-design.md, "Personal Player Area".
+export const fetchStudentEmails = unstable_cache(
   async (): Promise<string[]> => {
-    const { data } = await db.from("students").select("email").eq("active", true);
+    const { data } = await db.from("students").select("email");
     return (data ?? []).map((r) => (r.email as string).toLowerCase()).filter(Boolean);
   },
-  ["students:active-emails"],
+  ["students:emails"],
   { revalidate: 300, tags: ["students"] },
 );
 

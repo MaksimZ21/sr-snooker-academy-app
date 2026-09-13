@@ -37,7 +37,9 @@ export async function POST(req: Request) {
 
     const [{ data: coachRow }, { data: studentRow }] = await Promise.all([
       db.from("coaches").select("email").or(`phone.eq.${phone},phone.eq.${intl}`).eq("active", true).maybeSingle(),
-      db.from("students").select("email").or(`phone.eq.${phone},phone.eq.${intl}`).eq("active", true).maybeSingle(),
+      // Students are deliberately not active-filtered — see the matching
+      // comment in whatsapp-otp/send/route.ts.
+      db.from("students").select("email").or(`phone.eq.${phone},phone.eq.${intl}`).maybeSingle(),
     ]);
 
     const email =

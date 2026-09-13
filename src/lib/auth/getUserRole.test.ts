@@ -6,16 +6,16 @@ vi.mock("@/lib/sheets/coaches", () => ({
 }));
 
 vi.mock("@/lib/sheets/students", () => ({
-  fetchActiveStudentEmails: vi.fn(),
+  fetchStudentEmails: vi.fn(),
 }));
 
 import { getUserRole } from "./getUserRole";
 import { fetchActiveCoachEmails, readActiveCoachEmails } from "@/lib/sheets/coaches";
-import { fetchActiveStudentEmails } from "@/lib/sheets/students";
+import { fetchStudentEmails } from "@/lib/sheets/students";
 
 const mockCoaches = fetchActiveCoachEmails as unknown as ReturnType<typeof vi.fn>;
 const mockReadCoaches = readActiveCoachEmails as unknown as ReturnType<typeof vi.fn>;
-const mockStudents = fetchActiveStudentEmails as unknown as ReturnType<typeof vi.fn>;
+const mockStudents = fetchStudentEmails as unknown as ReturnType<typeof vi.fn>;
 
 describe("getUserRole", () => {
   beforeEach(() => {
@@ -42,10 +42,20 @@ describe("getUserRole", () => {
     expect(r).toBe("coach");
   });
 
-  it("returns student when email is in active students", async () => {
+  it("returns student when email is a known student", async () => {
     mockCoaches.mockResolvedValue([]);
     mockStudents.mockResolvedValue(["s@academy.com"]);
     const r = await getUserRole("s@academy.com");
+    expect(r).toBe("student");
+  });
+
+  it("returns student even for an inactive/tournament-only student — fetchStudentEmails is not active-filtered", async () => {
+    mockCoaches.mockResolvedValue([]);
+    // Simulates fetchStudentEmails() returning every student row regardless
+    // of `active` — a churned real student or an is_tournament_only
+    // customer must still be able to log in with an invite.
+    mockStudents.mockResolvedValue(["inactive@academy.com"]);
+    const r = await getUserRole("inactive@academy.com");
     expect(r).toBe("student");
   });
 

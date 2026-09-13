@@ -1,5 +1,6 @@
 import { db } from "@/lib/db/client";
 import { studentFullName } from "@/lib/sheets/schemas";
+import { generatePublicSlug } from "@/lib/sheets/tournaments-slug";
 
 export type Player = {
   id: string;
@@ -45,4 +46,19 @@ export async function fetchPlayers(): Promise<Player[]> {
       publicSlug: s.public_slug,
     }))
     .sort((a, b) => b.rating - a.rating);
+}
+
+/**
+ * Gives a student a public player profile if they don't already have one —
+ * the exact same lazy slug generation that happens automatically the first
+ * time a student is added to a tournament, but callable directly (e.g. from
+ * an admin action on a student who hasn't played a tournament yet). Purely
+ * additive: touches only public_slug, nothing else on the student record.
+ * Idempotent and race-safe via the `.is("public_slug", null)` guard.
+ */
+export async function ensurePlayerSlug(studentId: string): Promise<void> {
+  const { data: existing } = await db.from("students").select("public_slug").eq("id", studentId).maybeSingle();
+  if (existing && !existing.public_slug) {
+    await db.from("students").update({ public_slug: generatePublicSlug() }).eq("id", studentId).is("public_slug", null);
+  }
 }

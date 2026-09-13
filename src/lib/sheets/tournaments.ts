@@ -131,15 +131,12 @@ export async function addTournamentParticipant(
     });
   } else {
     // Existing student — this may be their first-ever tournament, in which
-    // case they don't have a public_slug yet. Generate one now, lazily,
-    // exactly once (never overwritten on subsequent tournaments). The
-    // `.is("public_slug", null)` guard on the update makes this safe
-    // against a race between two near-simultaneous adds of the same
-    // student: only the update that still finds it null actually applies.
-    const { data: existing } = await db.from("students").select("public_slug").eq("id", studentId).maybeSingle();
-    if (existing && !existing.public_slug) {
-      await db.from("students").update({ public_slug: generatePublicSlug() }).eq("id", studentId).is("public_slug", null);
-    }
+    // case they don't have a public_slug yet. ensurePlayerSlug generates
+    // one lazily, exactly once (never overwritten on subsequent
+    // tournaments) — same logic an admin can also trigger directly from a
+    // student's profile page, extracted to src/lib/sheets/players.ts.
+    const { ensurePlayerSlug } = await import("./players");
+    await ensurePlayerSlug(studentId);
   }
 
   const { data, error } = await db

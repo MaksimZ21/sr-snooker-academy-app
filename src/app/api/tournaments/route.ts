@@ -23,6 +23,7 @@ const CreateSchema = z.object({
   manager_email: z.email(),
   rules_url: z.string().optional(),
   handicap_points_per_rating_gap: z.number().int().positive().optional(),
+  type: z.enum(["regular", "multi_location"]).optional(),
 });
 
 export async function POST(req: Request) {

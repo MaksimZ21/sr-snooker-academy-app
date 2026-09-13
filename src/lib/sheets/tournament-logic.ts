@@ -109,6 +109,66 @@ export function knockoutRoundLabel(round: number, totalRounds: number): string {
   return `סיבוב ${round}`;
 }
 
+type PlacementKnockoutMatch = {
+  round: number;
+  participant_a_id: string | null;
+  participant_b_id: string | null;
+  frames_a: number | null;
+  frames_b: number | null;
+};
+
+type PlacementHouse = {
+  memberIds: string[];
+  matches: { participant_a_id: string; participant_b_id: string; frames_a: number | null; frames_b: number | null }[];
+  label: string;
+};
+
+/**
+ * Computes a player's final placement in one tournament from already-stored
+ * match results — no stored "result" field, this is pure read-time derivation.
+ * See docs/superpowers/specs/2026-08-11-tournaments-design.md, "Placement
+ * computation", for the full algorithm this implements.
+ */
+export function computeTournamentPlacement(
+  participantId: string,
+  knockoutMatches: PlacementKnockoutMatch[],
+  house: PlacementHouse | null,
+): string | null {
+  const playedKnockout = knockoutMatches.filter(
+    (m) =>
+      (m.participant_a_id === participantId || m.participant_b_id === participantId) &&
+      m.frames_a !== null &&
+      m.frames_b !== null,
+  );
+
+  if (playedKnockout.length > 0) {
+    const totalRounds = Math.max(...knockoutMatches.map((m) => m.round));
+    const last = playedKnockout.reduce((a, b) => (b.round > a.round ? b : a));
+    const won =
+      (last.participant_a_id === participantId && last.frames_a! > last.frames_b!) ||
+      (last.participant_b_id === participantId && last.frames_b! > last.frames_a!);
+
+    if (won && last.round === totalRounds) return "זכה/תה בטורניר";
+    if (!won && last.round === totalRounds) return "מקום 2";
+    if (!won && last.round === totalRounds - 1) return "הודח/ה בחצי הגמר";
+    if (!won && last.round === totalRounds - 2) return "הודח/ה ברבע הגמר";
+    if (!won) return `הודח/ה בסיבוב ${last.round}`;
+    // Won their last-played match but haven't played the next round yet —
+    // still in progress, not eliminated and not yet champion.
+    return null;
+  }
+
+  if (house) {
+    const anyPlayed = house.matches.some((m) => m.frames_a !== null && m.frames_b !== null);
+    if (!anyPlayed) return null;
+    const standings = computeHouseStandings(house.memberIds, house.matches);
+    const idx = standings.findIndex((s) => s.participantId === participantId);
+    return idx === -1 ? null : `מקום ${idx + 1} ב${house.label}`;
+  }
+
+  return null;
+}
+
 export function knockoutMatchWinner(
   framesA: number | null,
   framesB: number | null,

@@ -11,6 +11,7 @@ import {
   knockoutRoundCount,
   knockoutRoundLabel,
   knockoutMatchWinner,
+  computeTournamentPlacement,
 } from "./tournament-logic";
 
 describe("shuffle", () => {
@@ -165,5 +166,85 @@ describe("knockoutMatchWinner", () => {
   });
   it("returns null for a tie", () => {
     expect(knockoutMatchWinner(2, 2)).toBeNull();
+  });
+});
+
+describe("computeTournamentPlacement", () => {
+  it("returns champion placement for the winner of the final", () => {
+    const matches = [
+      { round: 1, participant_a_id: "p1", participant_b_id: "p2", frames_a: 3, frames_b: 1 },
+      { round: 1, participant_a_id: "p3", participant_b_id: "p4", frames_a: 3, frames_b: 0 },
+      { round: 2, participant_a_id: "p1", participant_b_id: "p3", frames_a: 3, frames_b: 2 },
+    ];
+    expect(computeTournamentPlacement("p1", matches, null)).toBe("זכה/תה בטורניר");
+  });
+
+  it("returns runner-up placement for the loser of the final", () => {
+    const matches = [
+      { round: 1, participant_a_id: "p1", participant_b_id: "p2", frames_a: 3, frames_b: 1 },
+      { round: 1, participant_a_id: "p3", participant_b_id: "p4", frames_a: 3, frames_b: 0 },
+      { round: 2, participant_a_id: "p1", participant_b_id: "p3", frames_a: 3, frames_b: 2 },
+    ];
+    expect(computeTournamentPlacement("p3", matches, null)).toBe("מקום 2");
+  });
+
+  it("returns semi-final placement for a round-1 loser in a 4-player bracket", () => {
+    const matches = [
+      { round: 1, participant_a_id: "p1", participant_b_id: "p2", frames_a: 3, frames_b: 1 },
+      { round: 1, participant_a_id: "p3", participant_b_id: "p4", frames_a: 3, frames_b: 0 },
+      { round: 2, participant_a_id: "p1", participant_b_id: "p3", frames_a: 3, frames_b: 2 },
+    ];
+    expect(computeTournamentPlacement("p2", matches, null)).toBe("הודח/ה בחצי הגמר");
+  });
+
+  it("returns quarter-final placement for a loser two rounds before a 3-round final", () => {
+    const matches = [
+      { round: 1, participant_a_id: "p1", participant_b_id: "p2", frames_a: 1, frames_b: 3 },
+      { round: 3, participant_a_id: "x", participant_b_id: "y", frames_a: 3, frames_b: 2 },
+    ];
+    expect(computeTournamentPlacement("p1", matches, null)).toBe("הודח/ה ברבע הגמר");
+  });
+
+  it("returns a generic round label for an early exit in a large bracket", () => {
+    const matches = [
+      { round: 1, participant_a_id: "p1", participant_b_id: "p2", frames_a: 1, frames_b: 3 },
+      { round: 5, participant_a_id: "x", participant_b_id: "y", frames_a: 3, frames_b: 2 },
+    ];
+    expect(computeTournamentPlacement("p1", matches, null)).toBe("הודח/ה בסיבוב 1");
+  });
+
+  it("returns no placement for a player who won their last-played match but hasn't played the next round yet", () => {
+    const matches = [
+      { round: 1, participant_a_id: "p1", participant_b_id: "p2", frames_a: 3, frames_b: 1 },
+      { round: 2, participant_a_id: "p1", participant_b_id: null, frames_a: null, frames_b: null },
+    ];
+    expect(computeTournamentPlacement("p1", matches, null)).toBeNull();
+  });
+
+  it("falls back to house standings when no knockout match has been played", () => {
+    const house = {
+      memberIds: ["p1", "p2", "p3"],
+      matches: [
+        { participant_a_id: "p1", participant_b_id: "p2", frames_a: 3, frames_b: 1 },
+        { participant_a_id: "p1", participant_b_id: "p3", frames_a: 2, frames_b: 3 },
+        { participant_a_id: "p2", participant_b_id: "p3", frames_a: 1, frames_b: 3 },
+      ],
+      label: "בית 1",
+    };
+    // Standings by wins: p3 (2), p1 (1), p2 (0) — p1 is 2nd place.
+    expect(computeTournamentPlacement("p1", [], house)).toBe("מקום 2 בבית 1");
+  });
+
+  it("returns null when nothing has been played at all", () => {
+    const house = {
+      memberIds: ["p1", "p2"],
+      matches: [{ participant_a_id: "p1", participant_b_id: "p2", frames_a: null, frames_b: null }],
+      label: "בית 1",
+    };
+    expect(computeTournamentPlacement("p1", [], house)).toBeNull();
+  });
+
+  it("returns null when there is no house and no knockout match at all", () => {
+    expect(computeTournamentPlacement("p1", [], null)).toBeNull();
   });
 });

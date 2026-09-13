@@ -12,6 +12,7 @@ import {
   knockoutRoundLabel,
   knockoutMatchWinner,
   computeTournamentPlacement,
+  generateLeagueRounds,
 } from "./tournament-logic";
 
 describe("shuffle", () => {
@@ -246,5 +247,68 @@ describe("computeTournamentPlacement", () => {
 
   it("returns null when there is no house and no knockout match at all", () => {
     expect(computeTournamentPlacement("p1", [], null)).toBeNull();
+  });
+});
+
+describe("generateLeagueRounds", () => {
+  it("returns nothing for fewer than 2 participants", () => {
+    expect(generateLeagueRounds([], 1)).toEqual([]);
+    expect(generateLeagueRounds(["p1"], 1)).toEqual([]);
+  });
+
+  it("pairs every participant with every other exactly once for a single cycle (even count)", () => {
+    const ids = ["p1", "p2", "p3", "p4"];
+    const fixtures = generateLeagueRounds(ids, 1);
+    expect(fixtures).toHaveLength(6); // C(4,2)
+
+    const pairKey = (a: string, b: string) => [a, b].sort().join("-");
+    const seen = new Set(fixtures.map((f) => pairKey(f.participantAId, f.participantBId)));
+    expect(seen.size).toBe(6); // every pair appears, none repeated
+
+    const rounds = new Set(fixtures.map((f) => f.round));
+    expect(rounds).toEqual(new Set([1, 2, 3])); // n-1 rounds
+  });
+
+  it("repeats every pairing exactly numCycles times, with round numbers continuing sequentially", () => {
+    const ids = ["p1", "p2", "p3", "p4"];
+    const fixtures = generateLeagueRounds(ids, 2);
+    expect(fixtures).toHaveLength(12); // 6 pairs x 2 cycles
+
+    const pairKey = (a: string, b: string) => [a, b].sort().join("-");
+    const counts = new Map<string, number>();
+    for (const f of fixtures) {
+      const k = pairKey(f.participantAId, f.participantBId);
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    expect([...counts.values()]).toEqual(Array(6).fill(2));
+
+    const rounds = new Set(fixtures.map((f) => f.round));
+    expect(rounds).toEqual(new Set([1, 2, 3, 4, 5, 6])); // 2 cycles x 3 rounds, not reset per cycle
+  });
+
+  it("handles an odd participant count with a bye — no bye ever appears as a real fixture", () => {
+    const ids = ["p1", "p2", "p3"];
+    const fixtures = generateLeagueRounds(ids, 1);
+    expect(fixtures).toHaveLength(3); // C(3,2)
+    for (const f of fixtures) {
+      expect(f.participantAId).not.toBeNull();
+      expect(f.participantBId).not.toBeNull();
+    }
+    const rounds = new Set(fixtures.map((f) => f.round));
+    expect(rounds).toEqual(new Set([1, 2, 3])); // one round per participant when odd
+  });
+
+  it("never schedules the same participant twice in the same round", () => {
+    const ids = ["p1", "p2", "p3", "p4", "p5", "p6"];
+    const fixtures = generateLeagueRounds(ids, 1);
+    const byRound = new Map<number, string[]>();
+    for (const f of fixtures) {
+      const list = byRound.get(f.round) ?? [];
+      list.push(f.participantAId, f.participantBId);
+      byRound.set(f.round, list);
+    }
+    for (const [, playersInRound] of byRound) {
+      expect(new Set(playersInRound).size).toBe(playersInRound.length);
+    }
   });
 });

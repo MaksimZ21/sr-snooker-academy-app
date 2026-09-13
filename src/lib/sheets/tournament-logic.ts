@@ -177,3 +177,46 @@ export function knockoutMatchWinner(
   if (framesA === framesB) return null;
   return framesA > framesB ? "a" : "b";
 }
+
+export type LeagueFixture = { round: number; participantAId: string; participantBId: string };
+
+/**
+ * Schedules a round-robin season for one district: every pair meets exactly
+ * `numCycles` times, no participant plays twice in the same round, and
+ * round numbers are unique and sequential across the whole district (cycle
+ * 2 continues numbering where cycle 1 left off — it does not restart at 1).
+ *
+ * Standard "circle method": one participant fixed, the rest rotate each
+ * round. An odd participant count gets one bye slot per round (dropped,
+ * never a real fixture) so the rotation still works.
+ */
+export function generateLeagueRounds(participantIds: string[], numCycles: number): LeagueFixture[] {
+  if (participantIds.length < 2) return [];
+
+  const ids: (string | null)[] = [...participantIds];
+  if (ids.length % 2 !== 0) ids.push(null);
+
+  const n = ids.length;
+  const roundsPerCycle = n - 1;
+  const half = n / 2;
+  const fixtures: LeagueFixture[] = [];
+
+  for (let cycle = 0; cycle < numCycles; cycle++) {
+    let rotation = [...ids];
+    for (let r = 0; r < roundsPerCycle; r++) {
+      const round = cycle * roundsPerCycle + r + 1;
+      for (let i = 0; i < half; i++) {
+        const a = rotation[i];
+        const b = rotation[n - 1 - i];
+        if (a !== null && b !== null) {
+          fixtures.push({ round, participantAId: a, participantBId: b });
+        }
+      }
+      // Keep the first participant fixed, rotate everyone else by one
+      // position — the standard circle-method rotation step.
+      rotation = [rotation[0], rotation[n - 1], ...rotation.slice(1, n - 1)];
+    }
+  }
+
+  return fixtures;
+}

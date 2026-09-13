@@ -7,8 +7,16 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TournamentParticipantPicker } from "@/components/tournament-participant-picker";
 import { TournamentHousesView } from "@/components/tournament-houses-view";
+import { TournamentLocationsView } from "@/components/tournament-locations-view";
 import { TournamentKnockoutView } from "@/components/tournament-knockout-view";
 
 type TournamentParticipant = {
@@ -16,6 +24,8 @@ type TournamentParticipant = {
   tournament_id: string;
   student_id: string;
   paid: boolean;
+  location_id: string | null;
+  house_id: string | null;
   created_at: string;
   student: { id: string; first_name: string; last_name: string; phone: string; rating: number };
 };
@@ -28,8 +38,11 @@ type Tournament = {
   completed: boolean;
   public_slug: string;
   handicap_points_per_rating_gap: number;
+  type: "regular" | "multi_location";
   created_at: string;
 };
+
+type TournamentLocation = { id: string; tournament_id: string; label: string };
 
 export function TournamentDetailView({
   tournamentId,
@@ -53,6 +66,16 @@ export function TournamentDetailView({
     },
   });
 
+  const { data: locationsData } = useQuery({
+    queryKey: ["tournament-locations", tournamentId],
+    queryFn: async () => {
+      const r = await fetch(`/api/tournaments/${tournamentId}/locations`);
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as { locations: TournamentLocation[] };
+    },
+    enabled: data?.tournament.type === "multi_location",
+  });
+
   const paidMut = useMutation({
     mutationFn: async ({ participantId, paid }: { participantId: string; paid: boolean }) => {
       const r = await fetch(`/api/tournaments/${tournamentId}/participants/${participantId}`, {
@@ -64,6 +87,22 @@ export function TournamentDetailView({
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tournament", tournamentId] }),
     onError: () => toast.error("שגיאה בעדכון"),
+  });
+
+  const assignLocationMut = useMutation({
+    mutationFn: async ({ participantId, locationId }: { participantId: string; locationId: string | null }) => {
+      const r = await fetch(`/api/tournaments/${tournamentId}/participants/${participantId}/location`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ locationId }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+    },
+    onSuccess: () => {
+      toast.success("שויך למיקום");
+      qc.invalidateQueries({ queryKey: ["tournament", tournamentId] });
+    },
+    onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה בשיוך למיקום"),
   });
 
   const removeMut = useMutation({
@@ -88,6 +127,7 @@ export function TournamentDetailView({
   }
 
   const { tournament, participants } = data;
+  const locations = locationsData?.locations ?? [];
   const canEdit = isAdmin || tournament.manager_email.trim().toLowerCase() === currentEmail.trim().toLowerCase();
   const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/t/${tournament.public_slug}` : "";
 
@@ -152,6 +192,28 @@ export function TournamentDetailView({
                       {p.student.phone || "—"} · דירוג {p.student.rating}
                     </p>
                   </div>
+                  {tournament.type === "multi_location" && (
+                    p.house_id ? (
+                      <span className="text-xs text-muted-foreground" title="יש להסיר מהבית לפני שינוי מיקום">
+                        {locations.find((l) => l.id === p.location_id)?.label ?? "ללא מיקום"}
+                      </span>
+                    ) : (
+                      <Select
+                        value={p.location_id ?? "none"}
+                        onValueChange={(v) => v && assignLocationMut.mutate({ participantId: p.id, locationId: v === "none" ? null : v })}
+                      >
+                        <SelectTrigger className="h-8 w-32 text-xs">
+                          <SelectValue placeholder="ללא מיקום" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">ללא מיקום</SelectItem>
+                          {locations.map((l) => (
+                            <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )
+                  )}
                   {canEdit ? (
                     <button
                       type="button"
@@ -182,8 +244,17 @@ export function TournamentDetailView({
           )}
         </div>
 
-        {participants.length > 0 && (
+        {participants.length > 0 && tournament.type === "regular" && (
           <TournamentHousesView
+            tournamentId={tournamentId}
+            participants={participants}
+            handicapPointsPerRatingGap={tournament.handicap_points_per_rating_gap}
+            canEdit={canEdit}
+          />
+        )}
+
+        {participants.length > 0 && tournament.type === "multi_location" && (
+          <TournamentLocationsView
             tournamentId={tournamentId}
             participants={participants}
             handicapPointsPerRatingGap={tournament.handicap_points_per_rating_gap}

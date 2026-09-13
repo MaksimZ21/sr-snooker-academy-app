@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddStudentDialog } from "@/components/forms/add-student-dialog";
 import { EditStudentDialog } from "@/components/forms/edit-student-dialog";
 import { StudentHistoryDialog } from "@/components/student-history-dialog";
@@ -17,7 +18,10 @@ import { cn } from "@/lib/utils";
 import type { Student } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
 
+type Category = "students" | "players";
+
 export function StudentsList() {
+  const [category, setCategory] = useState<Category>("students");
   const [selected, setSelected] = useState<Student | null>(null);
   const [editing, setEditing] = useState<Student | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -65,17 +69,29 @@ export function StudentsList() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בשליחת הקישור"),
   });
 
+  const studentsOnly = useMemo(
+    () => (data?.students ?? []).filter((s) => !s.is_tournament_only),
+    [data],
+  );
+  const playersOnly = useMemo(
+    () => (data?.students ?? []).filter((s) => s.is_tournament_only),
+    [data],
+  );
+  const categoryRows = category === "students" ? studentsOnly : playersOnly;
+
   const colleges = useMemo(() => {
-    const names = (data?.students ?? []).map((s) => s.college_name).filter(Boolean);
+    const names = studentsOnly.map((s) => s.college_name).filter(Boolean);
     return Array.from(new Set(names)).sort();
-  }, [data]);
+  }, [studentsOnly]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return (data?.students ?? []).filter((s) => {
-      if (statusFilter === "active" && !s.active) return false;
-      if (statusFilter === "inactive" && s.active) return false;
-      if (collegeFilter !== "all" && s.college_name !== collegeFilter) return false;
+    return categoryRows.filter((s) => {
+      if (category === "students") {
+        if (statusFilter === "active" && !s.active) return false;
+        if (statusFilter === "inactive" && s.active) return false;
+        if (collegeFilter !== "all" && s.college_name !== collegeFilter) return false;
+      }
       if (!q) return true;
       return (
         studentFullName(s).toLowerCase().includes(q) ||
@@ -83,19 +99,37 @@ export function StudentsList() {
         s.email.toLowerCase().includes(q)
       );
     });
-  }, [data, search, statusFilter, collegeFilter]);
+  }, [categoryRows, category, search, statusFilter, collegeFilter]);
 
-  const hasFilters = search || statusFilter !== "all" || collegeFilter !== "all";
+  const hasFilters = Boolean(search) || (category === "students" && (statusFilter !== "all" || collegeFilter !== "all"));
+
+  function changeCategory(v: string) {
+    setCategory(v as Category);
+    setSearch("");
+    setStatusFilter("all");
+    setCollegeFilter("all");
+  }
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         icon={<GraduationCap size={20} />}
         title="מתאמנים"
-        subtitle={isLoading ? "טוען..." : `${filtered.length} מתאמנים${hasFilters ? ` מתוך ${data?.students.length ?? 0}` : ""}`}
+        subtitle={
+          isLoading
+            ? "טוען..."
+            : `${filtered.length} ${category === "students" ? "מתאמנים" : "שחקנים"}${hasFilters ? ` מתוך ${categoryRows.length}` : ""}`
+        }
         action={<AddStudentDialog />}
       />
       <div className="px-4 md:px-6 flex flex-col gap-4">
+
+      <Tabs value={category} onValueChange={changeCategory} dir="rtl">
+        <TabsList>
+          <TabsTrigger value="students">מתאמנים{studentsOnly.length > 0 ? ` (${studentsOnly.length})` : ""}</TabsTrigger>
+          <TabsTrigger value="players">שחקנים{playersOnly.length > 0 ? ` (${playersOnly.length})` : ""}</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Filters */}
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -109,28 +143,32 @@ export function StudentsList() {
             dir="rtl"
           />
         </div>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-          <SelectTrigger className="w-full sm:w-32 h-9 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">כל הסטטוסים</SelectItem>
-            <SelectItem value="active">פעיל</SelectItem>
-            <SelectItem value="inactive">לא פעיל</SelectItem>
-          </SelectContent>
-        </Select>
-        {colleges.length > 0 && (
-          <Select value={collegeFilter} onValueChange={(v) => setCollegeFilter(v ?? "all")}>
-            <SelectTrigger className="w-full sm:w-40 h-9 text-sm">
-              <SelectValue placeholder="כל המכללות" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">כל המכללות</SelectItem>
-              {colleges.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {category === "students" && (
+          <>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+              <SelectTrigger className="w-full sm:w-32 h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל הסטטוסים</SelectItem>
+                <SelectItem value="active">פעיל</SelectItem>
+                <SelectItem value="inactive">לא פעיל</SelectItem>
+              </SelectContent>
+            </Select>
+            {colleges.length > 0 && (
+              <Select value={collegeFilter} onValueChange={(v) => setCollegeFilter(v ?? "all")}>
+                <SelectTrigger className="w-full sm:w-40 h-9 text-sm">
+                  <SelectValue placeholder="כל המכללות" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל המכללות</SelectItem>
+                  {colleges.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </>
         )}
         {hasFilters && (
           <Button
@@ -162,7 +200,11 @@ export function StudentsList() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center text-sm text-muted-foreground">
-            {hasFilters ? "לא נמצאו מתאמנים תואמים לסינון" : "אין מתאמנים עדיין"}
+            {hasFilters
+              ? "לא נמצאו תוצאות תואמות לסינון"
+              : category === "students"
+                ? "אין מתאמנים עדיין"
+                : "אין שחקנים עדיין"}
           </div>
         ) : (
           <div className="divide-y divide-border/40">
@@ -170,6 +212,7 @@ export function StudentsList() {
               <StudentRow
                 key={s.id}
                 student={s}
+                hideInactiveBadge={category === "players"}
                 confirmDelete={confirmDelete}
                 deleting={deleting}
                 onEdit={() => setEditing(s)}
@@ -206,6 +249,7 @@ export function StudentsList() {
 
 function StudentRow({
   student: s,
+  hideInactiveBadge,
   confirmDelete,
   deleting,
   onEdit,
@@ -216,6 +260,7 @@ function StudentRow({
   onInvite,
 }: {
   student: Student;
+  hideInactiveBadge: boolean;
   confirmDelete: string | null;
   deleting: boolean;
   onEdit: () => void;
@@ -245,7 +290,7 @@ function StudentRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium leading-none group-hover/link:text-primary transition-colors">{name}</span>
-            {!s.active && (
+            {!hideInactiveBadge && !s.active && (
               <Badge variant="secondary" className="text-[10px] h-4 px-1.5 py-0">לא פעיל</Badge>
             )}
           </div>

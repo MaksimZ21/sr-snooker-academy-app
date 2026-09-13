@@ -37,6 +37,7 @@ export default function AdminTournamentsPage() {
   const [managerEmail, setManagerEmail] = useState("");
   const [rulesUrl, setRulesUrl] = useState("");
   const [handicapGap, setHandicapGap] = useState("20");
+  const [type, setType] = useState<"regular" | "multi_location">("regular");
 
   const { data, isLoading } = useQuery({
     queryKey: ["tournaments"],
@@ -65,6 +66,7 @@ export default function AdminTournamentsPage() {
           manager_email: managerEmail,
           rules_url: rulesUrl.trim() || undefined,
           handicap_points_per_rating_gap: Number(handicapGap) || undefined,
+          type,
         }),
       });
       if (!r.ok) throw new Error("failed");
@@ -78,6 +80,7 @@ export default function AdminTournamentsPage() {
       setManagerEmail("");
       setRulesUrl("");
       setHandicapGap("20");
+      setType("regular");
       router.push(`/admin/tournaments/${tournament.id}`);
     },
     onError: () => toast.error("שגיאה ביצירה"),
@@ -118,6 +121,18 @@ export default function AdminTournamentsPage() {
                       {(coachData?.coaches ?? []).map((c) => (
                         <SelectItem key={c.email} value={c.email}>{c.name}</SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">סוג טורניר</Label>
+                  <Select value={type} onValueChange={(v) => v && setType(v as "regular" | "multi_location")}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="regular">רגיל</SelectItem>
+                      <SelectItem value="multi_location">רב-מיקומי</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

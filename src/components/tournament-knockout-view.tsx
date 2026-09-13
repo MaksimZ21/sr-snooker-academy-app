@@ -271,6 +271,21 @@ function KnockoutMatchCard({
   const [framesA, setFramesA] = useState(match.frames_a?.toString() ?? "");
   const [framesB, setFramesB] = useState(match.frames_b?.toString() ?? "");
   const played = match.frames_a !== null && match.frames_b !== null;
+
+  function save() {
+    const a = framesA.trim();
+    const b = framesB.trim();
+    const na = Number(a);
+    const nb = Number(b);
+    // Number("") and Number(" ") both coerce to 0 — trim + explicit
+    // emptiness + Number.isInteger together are required to reject a
+    // whitespace-only input instead of silently recording a 0 result.
+    if (a === "" || b === "" || !Number.isInteger(na) || !Number.isInteger(nb) || na < 0 || nb < 0) {
+      toast.error("יש להזין תוצאה תקינה");
+      return;
+    }
+    onSave(na, nb);
+  }
   const canAssign = canEdit && round === 1 && !played;
   const canEnterResult = canEdit && !played && !!match.participant_a_id && !!match.participant_b_id;
 
@@ -328,8 +343,8 @@ function KnockoutMatchCard({
             size="sm"
             variant="outline"
             className="h-7 flex-1 px-2 text-xs"
-            disabled={saving || framesA === "" || framesB === ""}
-            onClick={() => onSave(Number(framesA), Number(framesB))}
+            disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
+            onClick={save}
           >
             שמור
           </Button>

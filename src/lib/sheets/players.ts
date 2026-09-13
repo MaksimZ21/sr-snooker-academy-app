@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
 import { studentFullName } from "@/lib/sheets/schemas";
 import { generatePublicSlug } from "@/lib/sheets/tournaments-slug";
@@ -60,5 +61,9 @@ export async function ensurePlayerSlug(studentId: string): Promise<void> {
   const { data: existing } = await db.from("students").select("public_slug").eq("id", studentId).maybeSingle();
   if (existing && !existing.public_slug) {
     await db.from("students").update({ public_slug: generatePublicSlug() }).eq("id", studentId).is("public_slug", null);
+    // fetchStudents() is unstable_cache-wrapped under the "students" tag —
+    // without this, the admin UI (student detail page, students list) can
+    // keep showing the old null public_slug for up to its 5-minute TTL.
+    revalidateTag("students", { expire: 0 });
   }
 }

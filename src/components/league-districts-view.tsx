@@ -27,6 +27,7 @@ type DistrictWithMatches = {
   id: string;
   league_id: string;
   label: string;
+  num_cycles: number;
   matches: DistrictMatch[];
   memberIds: string[];
 };
@@ -44,6 +45,7 @@ export function LeagueDistrictsView({
 }) {
   const qc = useQueryClient();
   const [newLabel, setNewLabel] = useState("");
+  const [newNumCycles, setNewNumCycles] = useState("1");
 
   const { data, isLoading } = useQuery({
     queryKey: ["league-districts", leagueId],
@@ -55,17 +57,18 @@ export function LeagueDistrictsView({
   });
 
   const addDistrictMut = useMutation({
-    mutationFn: async (label: string) => {
+    mutationFn: async ({ label, numCycles }: { label: string; numCycles: number }) => {
       const r = await fetch(`/api/leagues/${leagueId}/districts`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ label }),
+        body: JSON.stringify({ label, numCycles }),
       });
       if (!r.ok) throw new Error("failed");
     },
     onSuccess: () => {
       toast.success("המחוז נוסף");
       setNewLabel("");
+      setNewNumCycles("1");
       qc.invalidateQueries({ queryKey: ["league-districts", leagueId] });
       qc.invalidateQueries({ queryKey: ["league", leagueId] });
     },
@@ -117,7 +120,14 @@ export function LeagueDistrictsView({
             <label className="text-xs text-muted-foreground mb-1 block">מחוז חדש</label>
             <Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="למשל: צפון" dir="auto" />
           </div>
-          <Button onClick={() => addDistrictMut.mutate(newLabel.trim())} disabled={!newLabel.trim() || addDistrictMut.isPending}>
+          <div className="w-28">
+            <label className="text-xs text-muted-foreground mb-1 block">מספר סיבובים</label>
+            <Input type="number" min={1} value={newNumCycles} onChange={(e) => setNewNumCycles(e.target.value)} />
+          </div>
+          <Button
+            onClick={() => addDistrictMut.mutate({ label: newLabel.trim(), numCycles: Number(newNumCycles) || 1 })}
+            disabled={!newLabel.trim() || addDistrictMut.isPending}
+          >
             <Plus size={14} className="ml-1.5" />
             הוסף מחוז
           </Button>
@@ -137,7 +147,12 @@ export function LeagueDistrictsView({
           return (
             <div key={district.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
               <div className="flex items-center justify-between px-4 pt-3 pb-2">
-                <p className="text-sm font-semibold">{district.label}</p>
+                <div>
+                  <p className="text-sm font-semibold">{district.label}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {district.num_cycles === 1 ? "סיבוב אחד" : `${district.num_cycles} סיבובים`}
+                  </p>
+                </div>
                 {canEdit && !hasResults && (
                   <Button
                     size="sm"

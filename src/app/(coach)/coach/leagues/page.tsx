@@ -5,7 +5,7 @@ import { Shield, ChevronLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type League = { id: string; name: string; manager_email: string; completed: boolean };
+type League = { id: string; name: string; completed: boolean };
 
 export default function CoachLeaguesPage() {
   const { data, isLoading } = useQuery({

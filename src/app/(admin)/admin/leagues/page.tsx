@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Shield, Plus, ChevronLeft } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,24 +18,14 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
-type League = { id: string; name: string; manager_email: string; completed: boolean };
-type Coach = { email: string; name: string; phone: string };
+type League = { id: string; name: string; completed: boolean };
 
 export default function AdminLeaguesPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [managerEmail, setManagerEmail] = useState("");
-  const [numCycles, setNumCycles] = useState("1");
   const [handicapGap, setHandicapGap] = useState("20");
 
   const { data, isLoading } = useQuery({
@@ -45,15 +36,6 @@ export default function AdminLeaguesPage() {
     },
   });
 
-  const { data: coachData } = useQuery({
-    queryKey: ["coaches"],
-    queryFn: async () => {
-      const r = await fetch("/api/coaches");
-      return (await r.json()) as { coaches: Coach[] };
-    },
-    enabled: open,
-  });
-
   const createMut = useMutation({
     mutationFn: async () => {
       const r = await fetch("/api/leagues", {
@@ -61,24 +43,21 @@ export default function AdminLeaguesPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
-          manager_email: managerEmail,
-          num_cycles: Number(numCycles) || undefined,
           handicap_points_per_rating_gap: Number(handicapGap) || undefined,
         }),
       });
-      if (!r.ok) throw new Error("failed");
+      if (!r.ok) throw new Error(await r.text());
       return (await r.json()) as { league: League };
     },
     onSuccess: ({ league }) => {
+      toast.success("הליגה נוצרה");
       qc.invalidateQueries({ queryKey: ["leagues"] });
       setOpen(false);
       setName("");
-      setManagerEmail("");
-      setNumCycles("1");
       setHandicapGap("20");
       router.push(`/admin/leagues/${league.id}`);
     },
-    onError: () => {},
+    onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה ביצירת הליגה"),
   });
 
   const leagues = data?.leagues ?? [];
@@ -107,23 +86,6 @@ export default function AdminLeaguesPage() {
                   <Input value={name} onChange={(e) => setName(e.target.value)} dir="auto" />
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">מאמן אחראי</Label>
-                  <Select value={managerEmail} onValueChange={(v) => setManagerEmail(v ?? "")}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="בחר מאמן..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(coachData?.coaches ?? []).map((c) => (
-                        <SelectItem key={c.email} value={c.email}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">מספר סיבובים (1 = כל זוג פעם אחת)</Label>
-                  <Input type="number" min={1} value={numCycles} onChange={(e) => setNumCycles(e.target.value)} />
-                </div>
-                <div>
                   <Label className="text-xs text-muted-foreground mb-1 block">מקדם פור (ברירת מחדל 20)</Label>
                   <Input type="number" value={handicapGap} onChange={(e) => setHandicapGap(e.target.value)} />
                 </div>
@@ -132,7 +94,7 @@ export default function AdminLeaguesPage() {
                 <Button variant="outline" onClick={() => setOpen(false)} disabled={createMut.isPending}>
                   ביטול
                 </Button>
-                <Button onClick={() => createMut.mutate()} disabled={!name.trim() || !managerEmail || createMut.isPending}>
+                <Button onClick={() => createMut.mutate()} disabled={!name.trim() || createMut.isPending}>
                   {createMut.isPending ? "יוצר..." : "צור"}
                 </Button>
               </DialogFooter>

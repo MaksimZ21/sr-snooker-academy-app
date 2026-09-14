@@ -7,6 +7,6 @@ export default async function AdminLeagueDetailPage({
 }) {
   const { id } = await params;
   return (
-    <LeagueDetailView leagueId={id} backHref="/admin/leagues" currentEmail="" isAdmin={true} />
+    <LeagueDetailView leagueId={id} backHref="/admin/leagues" isAdmin={true} />
   );
 }

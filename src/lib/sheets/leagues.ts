@@ -5,8 +5,6 @@ import { districtHasFixtures, type LeagueDistrict } from "./league-districts";
 export type League = {
   id: string;
   name: string;
-  manager_email: string;
-  num_cycles: number;
   completed: boolean;
   public_slug: string;
   handicap_points_per_rating_gap: number;
@@ -31,8 +29,12 @@ export type LeagueDetail = {
   districts: LeagueDistrict[];
 };
 
-export function isLeagueManager(league: League, user: { email: string; role: string }): boolean {
-  return user.role === "admin" || league.manager_email.trim().toLowerCase() === user.email.trim().toLowerCase();
+// Unlike tournaments, a league has no per-league manager coach — the admin
+// manages every league directly. Kept as a named helper (rather than an
+// inline `user.role === "admin"` check at every call site) so every league
+// route reads the same way and stays easy to grep for.
+export function canManageLeagues(user: { role: string }): boolean {
+  return user.role === "admin";
 }
 
 export async function fetchLeagues(): Promise<League[]> {
@@ -42,16 +44,12 @@ export async function fetchLeagues(): Promise<League[]> {
 
 export async function createLeague(input: {
   name: string;
-  manager_email: string;
-  num_cycles?: number;
   handicap_points_per_rating_gap?: number;
 }): Promise<League> {
   const { data, error } = await db
     .from("leagues")
     .insert({
       name: input.name,
-      manager_email: input.manager_email,
-      num_cycles: input.num_cycles ?? 1,
       handicap_points_per_rating_gap: input.handicap_points_per_rating_gap ?? 20,
       public_slug: generatePublicSlug(),
     })
@@ -61,10 +59,7 @@ export async function createLeague(input: {
   return data as League;
 }
 
-export async function updateLeague(
-  id: string,
-  input: { name?: string; manager_email?: string; completed?: boolean },
-): Promise<void> {
+export async function updateLeague(id: string, input: { name?: string; completed?: boolean }): Promise<void> {
   const { error } = await db.from("leagues").update(input).eq("id", id);
   if (error) throw new Error(error.message);
 }

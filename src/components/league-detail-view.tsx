@@ -25,13 +25,11 @@ type LeagueParticipant = {
   student: { id: string; first_name: string; last_name: string; phone: string; rating: number };
 };
 
-type LeagueDistrict = { id: string; league_id: string; label: string };
+type LeagueDistrict = { id: string; league_id: string; label: string; num_cycles: number };
 
 type League = {
   id: string;
   name: string;
-  manager_email: string;
-  num_cycles: number;
   completed: boolean;
   public_slug: string;
   handicap_points_per_rating_gap: number;
@@ -41,12 +39,10 @@ type League = {
 export function LeagueDetailView({
   leagueId,
   backHref,
-  currentEmail,
   isAdmin,
 }: {
   leagueId: string;
   backHref: string;
-  currentEmail: string;
   isAdmin: boolean;
 }) {
   const qc = useQueryClient();
@@ -100,7 +96,7 @@ export function LeagueDetailView({
   }
 
   const { league, participants, districts } = data;
-  const canEdit = isAdmin || league.manager_email.trim().toLowerCase() === currentEmail.trim().toLowerCase();
+  const canEdit = isAdmin;
   const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/l/${league.public_slug}` : "";
 
   return (
@@ -108,7 +104,7 @@ export function LeagueDetailView({
       <PageHeader
         icon={<Shield size={20} />}
         title={league.name}
-        subtitle={`מנהל: ${league.manager_email}${league.completed ? " · הסתיימה" : ""}`}
+        subtitle={league.completed ? "הסתיימה" : undefined}
         action={
           <Link href={backHref} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
             <ArrowRight size={14} />
@@ -124,10 +120,6 @@ export function LeagueDetailView({
               /l/{league.public_slug}
               <ExternalLink size={12} />
             </a>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">מספר סיבובים:</span>
-            <span>{league.num_cycles}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">מקדם פור:</span>

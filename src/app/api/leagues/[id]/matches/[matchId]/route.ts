@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
-import { fetchLeagueDetail, isLeagueManager } from "@/lib/sheets/leagues";
+import { fetchLeagueDetail, canManageLeagues } from "@/lib/sheets/leagues";
 import { enterLeagueMatchResult } from "@/lib/sheets/league-districts";
 
 const ResultSchema = z
@@ -20,7 +20,7 @@ export async function PATCH(
     const { id, matchId } = await params;
     const detail = await fetchLeagueDetail(id);
     if (!detail) return NextResponse.json({ error: "not found" }, { status: 404 });
-    if (!isLeagueManager(detail.league, user)) {
+    if (!canManageLeagues(user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const { framesA, framesB } = ResultSchema.parse(await req.json());

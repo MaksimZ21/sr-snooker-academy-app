@@ -1,7 +1,7 @@
 import { db } from "@/lib/db/client";
 import { generateLeagueRounds, computeEloUpdate } from "./tournament-logic";
 
-export type LeagueDistrict = { id: string; league_id: string; label: string };
+export type LeagueDistrict = { id: string; league_id: string; label: string; num_cycles: number };
 
 export type LeagueMatch = {
   id: string;
@@ -43,10 +43,10 @@ export async function districtHasFixtures(districtId: string): Promise<boolean> 
   return (data ?? []).length > 0;
 }
 
-export async function addLeagueDistrict(leagueId: string, label: string): Promise<LeagueDistrict> {
+export async function addLeagueDistrict(leagueId: string, label: string, numCycles: number): Promise<LeagueDistrict> {
   const { data, error } = await db
     .from("league_districts")
-    .insert({ league_id: leagueId, label })
+    .insert({ league_id: leagueId, label, num_cycles: numCycles })
     .select()
     .single();
   if (error) throw new Error(error.message);
@@ -91,7 +91,7 @@ export async function assignParticipantToDistrict(
 export async function generateDistrictFixtures(leagueId: string, districtId: string): Promise<void> {
   const { data: district } = await db
     .from("league_districts")
-    .select("id, league_id")
+    .select("id, league_id, num_cycles")
     .eq("id", districtId)
     .maybeSingle();
   if (!district || district.league_id !== leagueId) throw new Error("district not found");
@@ -119,10 +119,10 @@ export async function generateDistrictFixtures(leagueId: string, districtId: str
   const { error: deleteError } = await db.from("league_matches").delete().eq("district_id", districtId);
   if (deleteError) throw new Error(deleteError.message);
 
-  const { data: league } = await db.from("leagues").select("num_cycles").eq("id", leagueId).maybeSingle();
-  const numCycles = (league?.num_cycles as number) ?? 1;
-
-  const fixtures = generateLeagueRounds(participantIds, numCycles);
+  // Each district runs its own number of cycles — districts in the same
+  // league are independent competitions and aren't required to repeat the
+  // same number of times as one another.
+  const fixtures = generateLeagueRounds(participantIds, district.num_cycles as number);
   const rows = fixtures.map((f) => ({
     district_id: districtId,
     round: f.round,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
-import { fetchLeagueDetail, addLeagueParticipant, isLeagueManager } from "@/lib/sheets/leagues";
+import { fetchLeagueDetail, addLeagueParticipant, canManageLeagues } from "@/lib/sheets/leagues";
 
 const AddSchema = z
   .object({
@@ -19,7 +19,7 @@ export async function POST(
     const { id } = await params;
     const detail = await fetchLeagueDetail(id);
     if (!detail) return NextResponse.json({ error: "not found" }, { status: 404 });
-    if (!isLeagueManager(detail.league, user)) {
+    if (!canManageLeagues(user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const body = AddSchema.parse(await req.json());

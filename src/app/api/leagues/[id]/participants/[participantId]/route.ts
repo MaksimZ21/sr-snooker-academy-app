@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
-import { fetchLeagueDetail, removeLeagueParticipant, isLeagueManager } from "@/lib/sheets/leagues";
+import { fetchLeagueDetail, removeLeagueParticipant, canManageLeagues } from "@/lib/sheets/leagues";
 import { assignParticipantToDistrict } from "@/lib/sheets/league-districts";
 
 const AssignSchema = z.object({ districtId: z.string().min(1).nullable() });
@@ -15,7 +15,7 @@ export async function PATCH(
     const { id, participantId } = await params;
     const detail = await fetchLeagueDetail(id);
     if (!detail) return NextResponse.json({ error: "not found" }, { status: 404 });
-    if (!isLeagueManager(detail.league, user)) {
+    if (!canManageLeagues(user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const { districtId } = AssignSchema.parse(await req.json());
@@ -37,7 +37,7 @@ export async function DELETE(
     const { id, participantId } = await params;
     const detail = await fetchLeagueDetail(id);
     if (!detail) return NextResponse.json({ error: "not found" }, { status: 404 });
-    if (!isLeagueManager(detail.league, user)) {
+    if (!canManageLeagues(user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     await removeLeagueParticipant(id, participantId);

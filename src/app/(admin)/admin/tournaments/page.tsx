@@ -65,7 +65,7 @@ export default function AdminTournamentsPage() {
           name: name.trim(),
           manager_email: type === "multi_location" ? undefined : managerEmail,
           rules_url: rulesUrl.trim() || undefined,
-          handicap_points_per_rating_gap: Number(handicapGap) || undefined,
+          handicap_points_per_rating_gap: type === "multi_location" ? undefined : Number(handicapGap) || undefined,
           type,
         }),
       });
@@ -142,10 +142,12 @@ export default function AdminTournamentsPage() {
                   <Label className="text-xs text-muted-foreground mb-1 block">קישור לתקנון (אופציונלי)</Label>
                   <Input value={rulesUrl} onChange={(e) => setRulesUrl(e.target.value)} dir="ltr" placeholder="https://..." />
                 </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">מקדם פור (ברירת מחדל 20)</Label>
-                  <Input type="number" value={handicapGap} onChange={(e) => setHandicapGap(e.target.value)} />
-                </div>
+                {type === "regular" && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">מקדם פור (ברירת מחדל 20)</Label>
+                    <Input type="number" value={handicapGap} onChange={(e) => setHandicapGap(e.target.value)} />
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)} disabled={createMut.isPending}>

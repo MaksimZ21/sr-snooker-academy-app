@@ -173,10 +173,12 @@ export function TournamentDetailView({
               </a>
             </div>
           )}
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">מקדם פור:</span>
-            <span>{tournament.handicap_points_per_rating_gap}</span>
-          </div>
+          {tournament.type === "regular" && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">מקדם פור:</span>
+              <span>{tournament.handicap_points_per_rating_gap}</span>
+            </div>
+          )}
         </div>
 
         {canEdit && (
@@ -200,9 +202,11 @@ export function TournamentDetailView({
                     <p className="text-sm font-medium truncate">
                       {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {p.student.phone || "—"} · דירוג {p.student.rating}
-                    </p>
+                    {tournament.type === "regular" && (
+                      <p className="text-xs text-muted-foreground">
+                        {p.student.phone || "—"} · דירוג {p.student.rating}
+                      </p>
+                    )}
                   </div>
                   {tournament.type === "multi_location" && (
                     !canEdit || p.house_id ? (
@@ -230,7 +234,7 @@ export function TournamentDetailView({
                       </Select>
                     )
                   )}
-                  {canEdit ? (
+                  {tournament.type === "regular" && (canEdit ? (
                     <button
                       type="button"
                       onClick={() => paidMut.mutate({ participantId: p.id, paid: !p.paid })}
@@ -242,7 +246,7 @@ export function TournamentDetailView({
                     </button>
                   ) : (
                     <Badge variant={p.paid ? "default" : "secondary"}>{p.paid ? "שולם" : "לא שולם"}</Badge>
-                  )}
+                  ))}
                   {canEdit && (
                     <Button
                       variant="ghost"

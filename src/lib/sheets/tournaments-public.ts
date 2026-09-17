@@ -1,6 +1,7 @@
 import { db } from "@/lib/db/client";
 import { fetchTournamentHouses, type HouseWithMatches } from "./tournament-houses";
 import { fetchKnockoutBracket, type KnockoutMatch } from "./tournament-knockout";
+import { fetchTournamentLocations, type TournamentLocation } from "./tournament-locations";
 
 // Deliberately separate from tournaments.ts/tournament-houses.ts's own
 // internal types: these shapes are what's safe to put in front of an
@@ -9,15 +10,16 @@ import { fetchKnockoutBracket, type KnockoutMatch } from "./tournament-knockout"
 // and contact details are never selected from the database here at all,
 // not just omitted from the response.
 //
-// Caveat: this isolation only covers this file's own three queries below.
-// `fetchTournamentHouses`/`fetchKnockoutBracket` (imported from the
-// authenticated modules) do `select("*")` against tournament_houses/
-// tournament_house_matches/tournament_knockout_matches. Those tables are
-// purely structural today (ids, labels, slots, frame scores) with nothing
-// sensitive on them, so reusing them here is safe — but if either table
-// ever gains a column not meant for public eyes, it would flow onto this
-// public page with no line in this file for a reviewer to notice. Re-audit
-// this file if those tables' schemas change.
+// Caveat: this isolation only covers this file's own four queries below.
+// `fetchTournamentHouses`/`fetchKnockoutBracket`/`fetchTournamentLocations`
+// (imported from the authenticated modules) do `select("*")` against
+// tournament_houses/tournament_house_matches/tournament_knockout_matches/
+// tournament_locations. Those tables are purely structural today (ids,
+// labels, slots, frame scores) with nothing sensitive on them, so reusing
+// them here is safe — but if any of them ever gains a column not meant for
+// public eyes, it would flow onto this public page with no line in this
+// file for a reviewer to notice. Re-audit this file if those tables'
+// schemas change.
 
 export type PublicParticipant = {
   id: string;
@@ -34,12 +36,18 @@ export type PublicTournament = {
   participants: PublicParticipant[];
   houses: HouseWithMatches[];
   knockoutMatches: KnockoutMatch[];
+  // Empty for a `regular` tournament — houses render as one flat grid.
+  // Non-empty only for `multi_location`, where houses group under their
+  // location. No student personal-area equivalent exists for this by
+  // product decision: multi-location tournament participants aren't
+  // expected to be existing academy students with accounts.
+  locations: TournamentLocation[];
 };
 
 export async function fetchPublicTournament(slug: string): Promise<PublicTournament | null> {
   const { data: tournament } = await db
     .from("tournaments")
-    .select("id, name, rules_url, completed, handicap_points_per_rating_gap")
+    .select("id, name, rules_url, completed, handicap_points_per_rating_gap, type")
     .eq("public_slug", slug)
     .maybeSingle();
   if (!tournament) return null;
@@ -68,9 +76,10 @@ export async function fetchPublicTournament(slug: string): Promise<PublicTournam
     };
   });
 
-  const [houses, knockoutMatches] = await Promise.all([
+  const [houses, knockoutMatches, locations] = await Promise.all([
     fetchTournamentHouses(tournamentId),
     fetchKnockoutBracket(tournamentId),
+    tournament.type === "multi_location" ? fetchTournamentLocations(tournamentId) : Promise.resolve([]),
   ]);
 
   return {
@@ -81,6 +90,7 @@ export async function fetchPublicTournament(slug: string): Promise<PublicTournam
     participants,
     houses,
     knockoutMatches,
+    locations,
   };
 }
 

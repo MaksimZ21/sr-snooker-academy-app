@@ -56,17 +56,26 @@ export async function fetchPublicTournament(slug: string): Promise<PublicTournam
 
   const { data: participantRows } = await db
     .from("tournament_participants")
-    .select("id, student_id")
+    .select("id, student_id, local_name")
     .eq("tournament_id", tournamentId);
-  const rows = (participantRows ?? []) as { id: string; student_id: string }[];
+  const rows = (participantRows ?? []) as { id: string; student_id: string | null; local_name: string | null }[];
 
-  const studentIds = rows.map((r) => r.student_id);
+  const studentIds = rows.map((r) => r.student_id).filter((id): id is string => id !== null);
   const { data: studentRows } = studentIds.length
     ? await db.from("students").select("id, first_name, last_name, rating, public_slug").in("id", studentIds)
     : { data: [] as { id: string; first_name: string; last_name: string; rating: number; public_slug: string | null }[] };
   const studentsById = new Map((studentRows ?? []).map((s) => [s.id as string, s]));
 
+  // A local (multi-location) participant has no student row and no real
+  // rating. The dummy 1000 below isn't ignored, but it's harmless: every
+  // local participant in the same tournament gets the identical dummy
+  // value, so the handicap gap between any two of them is always zero —
+  // and formatHandicapLabel already renders nothing for a zero gap. No
+  // handicap line ever appears for a multi-location tournament's matches.
   const participants: PublicParticipant[] = rows.map((r) => {
+    if (!r.student_id) {
+      return { id: r.id, name: r.local_name ?? "?", rating: 1000, publicSlug: null };
+    }
     const s = studentsById.get(r.student_id);
     return {
       id: r.id,

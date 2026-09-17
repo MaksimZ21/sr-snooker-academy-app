@@ -2,11 +2,21 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 type StudentSearchResult = { id: string; first_name: string; last_name: string; phone: string };
 
-export function TournamentParticipantPicker({ tournamentId }: { tournamentId: string }) {
+export function TournamentParticipantPicker({
+  tournamentId,
+  multiLocation,
+}: {
+  tournamentId: string;
+  // A multi-location tournament's participants are local to it — a plain
+  // name, never a search/create against the students table. See
+  // docs/superpowers/specs/2026-09-17-multi-location-local-participants-design.md.
+  multiLocation?: boolean;
+}) {
   const [query, setQuery] = useState("");
   const qc = useQueryClient();
 
@@ -17,25 +27,38 @@ export function TournamentParticipantPicker({ tournamentId }: { tournamentId: st
       if (!r.ok) throw new Error("search failed");
       return (await r.json()) as { students: StudentSearchResult[] };
     },
-    enabled: query.trim().length >= 2,
+    enabled: !multiLocation && query.trim().length >= 2,
   });
 
   const addMut = useMutation({
-    mutationFn: async (body: { studentId?: string; newStudentName?: string }) => {
+    mutationFn: async (body: { studentId?: string; newStudentName?: string; localName?: string }) => {
       const r = await fetch(`/api/tournaments/${tournamentId}/participants`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (!r.ok) throw new Error("failed");
+      if (!r.ok) throw new Error(await r.text());
     },
     onSuccess: () => {
       toast.success("משתתף נוסף");
       setQuery("");
       qc.invalidateQueries({ queryKey: ["tournament", tournamentId] });
     },
-    onError: () => toast.error("שגיאה בהוספת משתתף"),
+    onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה בהוספת משתתף"),
   });
+
+  if (multiLocation) {
+    return (
+      <div className="flex items-end gap-2">
+        <div className="flex-1">
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="שם המשתתף" dir="auto" />
+        </div>
+        <Button onClick={() => addMut.mutate({ localName: query.trim() })} disabled={!query.trim() || addMut.isPending}>
+          הוסף
+        </Button>
+      </div>
+    );
+  }
 
   const results = data?.students ?? [];
 

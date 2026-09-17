@@ -7,8 +7,11 @@ const AddSchema = z
   .object({
     studentId: z.string().min(1).optional(),
     newStudentName: z.string().min(1).optional(),
+    localName: z.string().min(1).optional(),
   })
-  .refine((v) => v.studentId || v.newStudentName, { message: "studentId or newStudentName required" });
+  .refine((v) => v.studentId || v.newStudentName || v.localName, {
+    message: "studentId, newStudentName, or localName required",
+  });
 
 export async function POST(
   req: Request,
@@ -27,6 +30,7 @@ export async function POST(
     return NextResponse.json({ participant });
   } catch (e) {
     if (e instanceof Response) return e;
+    if (e instanceof Error) return NextResponse.json({ error: e.message }, { status: 400 });
     return NextResponse.json({ error: "internal error" }, { status: 500 });
   }
 }

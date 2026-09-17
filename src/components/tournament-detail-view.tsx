@@ -22,7 +22,8 @@ import { TournamentKnockoutView } from "@/components/tournament-knockout-view";
 type TournamentParticipant = {
   id: string;
   tournament_id: string;
-  student_id: string;
+  student_id: string | null;
+  local_name: string | null;
   paid: boolean;
   location_id: string | null;
   house_id: string | null;
@@ -170,7 +171,7 @@ export function TournamentDetailView({
         {canEdit && (
           <div className="rounded-2xl border border-border/60 bg-card p-4">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">הוספת משתתף</p>
-            <TournamentParticipantPicker tournamentId={tournamentId} />
+            <TournamentParticipantPicker tournamentId={tournamentId} multiLocation={tournament.type === "multi_location"} />
           </div>
         )}
 

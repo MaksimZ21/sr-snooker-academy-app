@@ -1,3 +1,5 @@
+"use client";
+import { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { computeHouseStandings, knockoutRoundLabel, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
@@ -5,6 +7,7 @@ import type { PublicTournament, PublicParticipant } from "@/lib/sheets/tournamen
 import type { HouseWithMatches } from "@/lib/sheets/tournament-houses";
 
 export function PublicTournamentView({ tournament }: { tournament: PublicTournament }) {
+  const [search, setSearch] = useState("");
   const participantById = new Map(tournament.participants.map((p) => [p.id, p]));
   function lookup(id: string | null): PublicParticipant | null {
     return id ? participantById.get(id) ?? null : null;
@@ -13,6 +16,18 @@ export function PublicTournamentView({ tournament }: { tournament: PublicTournam
   const totalRounds = tournament.knockoutMatches.length
     ? Math.max(...tournament.knockoutMatches.map((m) => m.round))
     : 0;
+
+  // Find-yourself search — only meaningful for a multi-location tournament
+  // (tournament.locations is only ever non-empty for that type). Narrows
+  // down to whole location cards, not individual rows, so a match still
+  // sees their entire group's standings and fixtures together.
+  const normalizedSearch = search.trim().toLowerCase();
+  function locationHasMatch(locationHouses: HouseWithMatches[]): boolean {
+    if (!normalizedSearch) return true;
+    return locationHouses.some((h) =>
+      h.memberIds.some((id) => (lookup(id)?.name ?? "").toLowerCase().includes(normalizedSearch)),
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-background" dir="rtl">
@@ -47,25 +62,43 @@ export function PublicTournamentView({ tournament }: { tournament: PublicTournam
           <section className="flex flex-col gap-5">
             <h2 className="text-lg font-semibold">שלב הבתים</h2>
             {tournament.locations.length > 0 ? (
-              tournament.locations.map((location) => {
-                const locationHouses = tournament.houses.filter((h) => h.location_id === location.id);
-                if (locationHouses.length === 0) return null;
-                return (
-                  <div key={location.id} className="flex flex-col gap-3">
-                    <h3 className="text-sm font-semibold text-muted-foreground">{location.label}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {locationHouses.map((house) => (
-                        <HouseCard
-                          key={house.id}
-                          house={house}
-                          lookup={lookup}
-                          handicapPointsPerRatingGap={tournament.handicapPointsPerRatingGap}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })
+              <>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="חיפוש לפי שם — מצא את המיקום שלך..."
+                  dir="auto"
+                  className="w-full rounded-xl border border-border/60 bg-card px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                {(() => {
+                  const visibleLocations = tournament.locations.filter((location) =>
+                    locationHasMatch(tournament.houses.filter((h) => h.location_id === location.id)),
+                  );
+                  if (normalizedSearch && visibleLocations.length === 0) {
+                    return <p className="text-center text-sm text-muted-foreground py-6">לא נמצאה התאמה</p>;
+                  }
+                  return visibleLocations.map((location) => {
+                    const locationHouses = tournament.houses.filter((h) => h.location_id === location.id);
+                    if (locationHouses.length === 0) return null;
+                    return (
+                      <div key={location.id} className="flex flex-col gap-3">
+                        <h3 className="text-sm font-semibold text-muted-foreground">{location.label}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {locationHouses.map((house) => (
+                            <HouseCard
+                              key={house.id}
+                              house={house}
+                              lookup={lookup}
+                              handicapPointsPerRatingGap={tournament.handicapPointsPerRatingGap}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {tournament.houses.map((house) => (

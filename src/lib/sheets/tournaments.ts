@@ -16,7 +16,13 @@ export type Tournament = {
 export type TournamentParticipant = {
   id: string;
   tournament_id: string;
-  student_id: string;
+  // Exactly one of these two is ever set, decided by the parent
+  // tournament's type: `regular`/league participants always have
+  // student_id (shared student record, shared rating); `multi_location`
+  // participants are local to the tournament — a plain name, never a
+  // students row, never a rating.
+  student_id: string | null;
+  local_name: string | null;
   paid: boolean;
   location_id: string | null;
   house_id: string | null;
@@ -52,7 +58,7 @@ export async function fetchTournamentDetail(id: string): Promise<TournamentDetai
     .order("created_at", { ascending: true });
 
   const participants = (participantRows ?? []) as TournamentParticipant[];
-  const studentIds = participants.map((p) => p.student_id);
+  const studentIds = participants.map((p) => p.student_id).filter((id): id is string => id !== null);
   const { data: studentRows } = studentIds.length
     ? await db.from("students").select("id, first_name, last_name, phone, rating").in("id", studentIds)
     : { data: [] as { id: string; first_name: string; last_name: string; phone: string; rating: number }[] };
@@ -62,7 +68,12 @@ export async function fetchTournamentDetail(id: string): Promise<TournamentDetai
     tournament: tournament as Tournament,
     participants: participants.map((p) => ({
       ...p,
-      student: studentsById.get(p.student_id) ?? { id: p.student_id, first_name: "(נמחק)", last_name: "", phone: "", rating: 1000 },
+      // A local (multi-location) participant was never a student to begin
+      // with — that's a different case from "(נמחק)", which means a real
+      // student record existed and later got deleted.
+      student: p.student_id
+        ? (studentsById.get(p.student_id) ?? { id: p.student_id, first_name: "(נמחק)", last_name: "", phone: "", rating: 1000 })
+        : { id: "", first_name: p.local_name ?? "?", last_name: "", phone: "", rating: 1000 },
     })),
   };
 }
@@ -119,8 +130,24 @@ export async function searchStudents(query: string): Promise<StudentSearchResult
 
 export async function addTournamentParticipant(
   tournamentId: string,
-  input: { studentId?: string; newStudentName?: string },
+  input: { studentId?: string; newStudentName?: string; localName?: string },
 ): Promise<TournamentParticipant> {
+  const { data: tournament } = await db.from("tournaments").select("id, type").eq("id", tournamentId).maybeSingle();
+  if (!tournament) throw new Error("tournament not found");
+
+  // A multi-location tournament's participants never touch the students
+  // table at all — a plain name, local to this tournament, no rating.
+  if (tournament.type === "multi_location") {
+    if (!input.localName?.trim()) throw new Error("localName is required for a multi-location tournament");
+    const { data, error } = await db
+      .from("tournament_participants")
+      .insert({ tournament_id: tournamentId, local_name: input.localName.trim() })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data as TournamentParticipant;
+  }
+
   const { appendStudent } = await import("./students");
   let studentId = input.studentId;
 

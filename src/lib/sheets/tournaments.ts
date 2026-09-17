@@ -4,7 +4,9 @@ import { generatePublicSlug } from "./tournaments-slug";
 export type Tournament = {
   id: string;
   name: string;
-  manager_email: string;
+  // null only for a multi_location tournament — it has no manager coach,
+  // only an admin manages it (see isTournamentManager below).
+  manager_email: string | null;
   rules_url: string | null;
   completed: boolean;
   public_slug: string;
@@ -39,7 +41,8 @@ export type TournamentDetail = {
 };
 
 export function isTournamentManager(tournament: Tournament, user: { email: string; role: string }): boolean {
-  return user.role === "admin" || tournament.manager_email.trim().toLowerCase() === user.email.trim().toLowerCase();
+  if (tournament.type === "multi_location") return user.role === "admin";
+  return user.role === "admin" || tournament.manager_email?.trim().toLowerCase() === user.email.trim().toLowerCase();
 }
 
 export async function fetchTournaments(): Promise<Tournament[]> {
@@ -80,7 +83,10 @@ export async function fetchTournamentDetail(id: string): Promise<TournamentDetai
 
 export async function createTournament(input: {
   name: string;
-  manager_email: string;
+  // Required for a `regular` tournament, omitted for `multi_location` —
+  // enforced by the API route, not here (this function just inserts
+  // whatever it's given).
+  manager_email?: string;
   rules_url?: string;
   handicap_points_per_rating_gap?: number;
   type?: "regular" | "multi_location";
@@ -89,7 +95,7 @@ export async function createTournament(input: {
     .from("tournaments")
     .insert({
       name: input.name,
-      manager_email: input.manager_email,
+      manager_email: input.manager_email ?? null,
       rules_url: input.rules_url ?? null,
       handicap_points_per_rating_gap: input.handicap_points_per_rating_gap ?? 20,
       type: input.type ?? "regular",

@@ -5,7 +5,7 @@ import { Trophy, ChevronLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type Tournament = { id: string; name: string; manager_email: string; completed: boolean; public_slug: string };
+type Tournament = { id: string; name: string; manager_email: string | null; completed: boolean; public_slug: string };
 
 export default function CoachTournamentsPage() {
   const { data, isLoading } = useQuery({

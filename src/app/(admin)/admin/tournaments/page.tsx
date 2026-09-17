@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type Tournament = { id: string; name: string; manager_email: string; completed: boolean; public_slug: string };
+type Tournament = { id: string; name: string; manager_email: string | null; completed: boolean; public_slug: string };
 type Coach = { email: string; name: string; phone: string };
 
 export default function AdminTournamentsPage() {
@@ -63,13 +63,13 @@ export default function AdminTournamentsPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
-          manager_email: managerEmail,
+          manager_email: type === "multi_location" ? undefined : managerEmail,
           rules_url: rulesUrl.trim() || undefined,
           handicap_points_per_rating_gap: Number(handicapGap) || undefined,
           type,
         }),
       });
-      if (!r.ok) throw new Error("failed");
+      if (!r.ok) throw new Error(await r.text());
       return (await r.json()) as { tournament: Tournament };
     },
     onSuccess: ({ tournament }) => {
@@ -112,19 +112,6 @@ export default function AdminTournamentsPage() {
                   <Input value={name} onChange={(e) => setName(e.target.value)} dir="auto" />
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">מאמן אחראי</Label>
-                  <Select value={managerEmail} onValueChange={(v) => setManagerEmail(v ?? "")}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="בחר מאמן..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(coachData?.coaches ?? []).map((c) => (
-                        <SelectItem key={c.email} value={c.email}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
                   <Label className="text-xs text-muted-foreground mb-1 block">סוג טורניר</Label>
                   <Select value={type} onValueChange={(v) => v && setType(v as "regular" | "multi_location")}>
                     <SelectTrigger>
@@ -136,6 +123,21 @@ export default function AdminTournamentsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                {type === "regular" && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">מאמן אחראי</Label>
+                    <Select value={managerEmail} onValueChange={(v) => setManagerEmail(v ?? "")}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="בחר מאמן..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(coachData?.coaches ?? []).map((c) => (
+                          <SelectItem key={c.email} value={c.email}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div>
                   <Label className="text-xs text-muted-foreground mb-1 block">קישור לתקנון (אופציונלי)</Label>
                   <Input value={rulesUrl} onChange={(e) => setRulesUrl(e.target.value)} dir="ltr" placeholder="https://..." />
@@ -149,7 +151,10 @@ export default function AdminTournamentsPage() {
                 <Button variant="outline" onClick={() => setOpen(false)} disabled={createMut.isPending}>
                   ביטול
                 </Button>
-                <Button onClick={() => createMut.mutate()} disabled={!name.trim() || !managerEmail || createMut.isPending}>
+                <Button
+                  onClick={() => createMut.mutate()}
+                  disabled={!name.trim() || (type === "regular" && !managerEmail) || createMut.isPending}
+                >
                   {createMut.isPending ? "יוצר..." : "צור"}
                 </Button>
               </DialogFooter>

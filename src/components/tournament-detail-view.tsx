@@ -34,7 +34,7 @@ type TournamentParticipant = {
 type Tournament = {
   id: string;
   name: string;
-  manager_email: string;
+  manager_email: string | null;
   rules_url: string | null;
   completed: boolean;
   public_slug: string;
@@ -129,15 +129,26 @@ export function TournamentDetailView({
 
   const { tournament, participants } = data;
   const locations = locationsData?.locations ?? [];
-  const canEdit = isAdmin || tournament.manager_email.trim().toLowerCase() === currentEmail.trim().toLowerCase();
+  // A multi-location tournament has no manager coach — only an admin can
+  // edit it, mirroring isTournamentManager on the server exactly.
+  const canEdit =
+    isAdmin ||
+    (tournament.type === "regular" &&
+      tournament.manager_email?.trim().toLowerCase() === currentEmail.trim().toLowerCase());
   const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/t/${tournament.public_slug}` : "";
+  const subtitle = [
+    tournament.type === "regular" ? `מנהל: ${tournament.manager_email}` : null,
+    tournament.completed ? "הסתיים" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         icon={<Trophy size={20} />}
         title={tournament.name}
-        subtitle={`מנהל: ${tournament.manager_email}${tournament.completed ? " · הסתיים" : ""}`}
+        subtitle={subtitle || undefined}
         action={
           <Link href={backHref} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
             <ArrowRight size={14} />

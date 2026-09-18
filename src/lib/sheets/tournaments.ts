@@ -5,13 +5,22 @@ export type Tournament = {
   id: string;
   name: string;
   // null only for a multi_location tournament — it has no manager coach,
-  // only an admin manages it (see isTournamentManager below).
+  // only an admin manages it (see isTournamentManager below). Also null
+  // for a tournament just created from a CRM event, until an admin fills
+  // it in via the edit-tournament dialog.
   manager_email: string | null;
   rules_url: string | null;
   completed: boolean;
   public_slug: string;
   handicap_points_per_rating_gap: number;
   type: "regular" | "multi_location";
+  // Set only for a tournament created from a CRM calendar event — that's
+  // what makes it appear on the Schedule (see fetchTournamentsInRange). A
+  // manually-created tournament has none of these four CRM fields set.
+  event_date: string | null;
+  crm_event_id: string;
+  crm_appointment_id: string;
+  crm_event_type: string;
   created_at: string;
 };
 
@@ -205,4 +214,123 @@ export async function removeTournamentParticipant(tournamentId: string, particip
     .eq("id", participantId)
     .eq("tournament_id", tournamentId);
   if (error) throw new Error(error.message);
+}
+
+export async function fetchTournamentByCrmAppointmentId(appointmentId: string): Promise<Tournament | null> {
+  const { data } = await db
+    .from("tournaments")
+    .select("*")
+    .eq("crm_appointment_id", appointmentId)
+    .maybeSingle();
+  return (data as Tournament) ?? null;
+}
+
+// Only ever returns CRM-created tournaments (event_date is null for every
+// manually-created one) — this is exactly what makes a tournament show up
+// on the Schedule alongside sessions, for both /admin/schedule and
+// /coach/schedule (no manager-based filtering, same as fetchTournaments).
+export async function fetchTournamentsInRange(startIso: string, endIso: string): Promise<Tournament[]> {
+  const { data } = await db
+    .from("tournaments")
+    .select("*")
+    .not("event_date", "is", null)
+    .gte("event_date", startIso)
+    .lte("event_date", endIso);
+  return (data ?? []) as Tournament[];
+}
+
+// A calendar event whose meeting_type marks it as a tournament becomes a
+// regular tournament, never multi_location, with no manager yet — an
+// admin fills that in afterward via the edit-tournament dialog. Mirrors
+// upsertSessionFromCrm's idempotent-by-CRM-id matching (appointment_id
+// first, event_id as fallback) so a webhook retry updates the same
+// tournament instead of duplicating it — but skips every session-specific
+// concept (groups, pricing, attach-to-manual-match) that doesn't apply
+// here at all.
+export async function upsertTournamentFromCrm(input: {
+  crm_event_id: string;
+  crm_appointment_id?: string;
+  name?: string;
+  event_date: string;
+  crm_event_type?: string;
+}): Promise<{ id: string; action: "created" | "updated" }> {
+  let existing: { id: string } | null = null;
+  if (input.crm_appointment_id) {
+    const { data } = await db
+      .from("tournaments")
+      .select("id")
+      .eq("crm_appointment_id", input.crm_appointment_id)
+      .maybeSingle();
+    existing = data as { id: string } | null;
+  } else {
+    const { data } = await db
+      .from("tournaments")
+      .select("id")
+      .eq("crm_event_id", input.crm_event_id)
+      .maybeSingle();
+    existing = data as { id: string } | null;
+  }
+
+  const fields = {
+    name: input.name?.trim() || "טורניר",
+    event_date: input.event_date,
+    crm_event_id: input.crm_event_id,
+    crm_appointment_id: input.crm_appointment_id ?? "",
+    crm_event_type: input.crm_event_type ?? "",
+  };
+
+  if (existing) {
+    const { error } = await db.from("tournaments").update(fields).eq("id", existing.id);
+    if (error) throw new Error(error.message);
+    return { id: existing.id, action: "updated" };
+  }
+
+  const { data, error } = await db
+    .from("tournaments")
+    .insert({ ...fields, type: "regular", manager_email: null, public_slug: generatePublicSlug() })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  return { id: data.id as string, action: "created" };
+}
+
+// The CRM equivalent of addTournamentParticipant's regular-tournament
+// path: someone bought a ticket to a CRM-created tournament, so they join
+// the shared students/players table exactly like any other regular
+// participant — never a local (multi_location-style) participant, and
+// always marked paid, since paying for the ticket is what triggered this
+// in the first place. Idempotent: a duplicate delivery of the same
+// appointment_approved event for someone already registered is reported
+// as a no-op, not an error — a webhook has no one to show a Hebrew error
+// toast to.
+export async function addTournamentParticipantFromCrm(
+  tournamentId: string,
+  input: { studentId: string | null; firstName: string; lastName: string; phone: string },
+): Promise<{ action: "added" | "already_registered" }> {
+  let studentId = input.studentId;
+
+  if (studentId) {
+    const { ensurePlayerSlug } = await import("./players");
+    await ensurePlayerSlug(studentId);
+  } else {
+    const { appendStudent } = await import("./students");
+    studentId = await appendStudent({
+      first_name: input.firstName,
+      last_name: input.lastName,
+      phone: input.phone,
+      active: false,
+      is_tournament_only: true,
+      rating: 1000,
+      public_slug: generatePublicSlug(),
+    });
+  }
+
+  const { error } = await db
+    .from("tournament_participants")
+    .insert({ tournament_id: tournamentId, student_id: studentId, paid: true });
+  if (error) {
+    if (error.code === "23505") return { action: "already_registered" };
+    throw new Error(error.message);
+  }
+  return { action: "added" };
 }

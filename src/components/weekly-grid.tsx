@@ -6,8 +6,10 @@ import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
 import { addDays, format, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { SessionCard } from "./session-card";
+import { TournamentScheduleCard } from "./tournament-schedule-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Session } from "@/lib/sheets/schemas";
+import type { Tournament } from "@/lib/sheets/tournaments";
 import { cn } from "@/lib/utils";
 
 export function WeeklyGrid({
@@ -31,6 +33,22 @@ export function WeeklyGrid({
       const r = await fetch(url);
       if (!r.ok) throw new Error("fetch failed");
       return (await r.json()) as { sessions: Session[] };
+    },
+    refetchInterval: basePath === "admin" ? 30_000 : 60_000,
+  });
+
+  // Only CRM-created tournaments ever come back here — see
+  // fetchTournamentsInRange. Not filtered by coach: a tournament has no
+  // per-coach roster concept the way a session does.
+  const { data: tournamentsData } = useQuery({
+    queryKey: ["tournaments:week", startIso, endIso],
+    queryFn: async () => {
+      const url = new URL("/api/tournaments/week", window.location.origin);
+      url.searchParams.set("start", startIso);
+      url.searchParams.set("end", endIso);
+      const r = await fetch(url);
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as { tournaments: Tournament[] };
     },
     refetchInterval: basePath === "admin" ? 30_000 : 60_000,
   });
@@ -83,6 +101,7 @@ export function WeeklyGrid({
       <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
         {days.map((iso) => {
           const ses = (data?.sessions ?? []).filter((s) => s.date === iso);
+          const tournamentsToday = (tournamentsData?.tournaments ?? []).filter((t) => t.event_date === iso);
           const isToday = iso === today;
           return (
             <div
@@ -107,9 +126,12 @@ export function WeeklyGrid({
                 </>
               ) : (
                 <>
-                  {ses.length === 0 && (
+                  {ses.length === 0 && tournamentsToday.length === 0 && (
                     <div className="text-xs text-muted-foreground/50 text-center py-2">—</div>
                   )}
+                  {tournamentsToday.map((t) => (
+                    <TournamentScheduleCard key={t.id} tournament={t} basePath={basePath} />
+                  ))}
                   {ses.map((s) => (
                     <SessionCard key={s.id} session={s} basePath={basePath} />
                   ))}

@@ -18,6 +18,7 @@ import { TournamentParticipantPicker } from "@/components/tournament-participant
 import { TournamentHousesView } from "@/components/tournament-houses-view";
 import { TournamentLocationsView } from "@/components/tournament-locations-view";
 import { TournamentKnockoutView } from "@/components/tournament-knockout-view";
+import { EditTournamentDialog } from "@/components/edit-tournament-dialog";
 
 type TournamentParticipant = {
   id: string;
@@ -150,13 +151,21 @@ export function TournamentDetailView({
         title={tournament.name}
         subtitle={subtitle || undefined}
         action={
-          <Link href={backHref} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-            <ArrowRight size={14} />
-            חזרה
-          </Link>
+          <div className="flex items-center gap-3">
+            {isAdmin && <EditTournamentDialog tournament={tournament} />}
+            <Link href={backHref} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+              <ArrowRight size={14} />
+              חזרה
+            </Link>
+          </div>
         }
       />
       <div className="px-4 md:px-6 flex flex-col gap-4">
+        {tournament.type === "regular" && !tournament.manager_email && (
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-700 dark:text-amber-400">
+            ⚠️ טרם הוגדר מאמן אחראי לטורניר זה
+          </div>
+        )}
         <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-2">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">קישור ציבורי:</span>

@@ -2,10 +2,19 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { upsertSessionFromCrm, fetchSessionByCrmAppointmentId } from "@/lib/sheets/sessions";
 import { upsertAttendance } from "@/lib/sheets/attendance";
+import {
+  upsertTournamentFromCrm,
+  fetchTournamentByCrmAppointmentId,
+  addTournamentParticipantFromCrm,
+} from "@/lib/sheets/tournaments";
 import { db } from "@/lib/db/client";
 import type { Student } from "@/lib/sheets/schemas";
 import { logWebhook } from "@/lib/sheets/webhook-log";
 import { getCrmPaused } from "@/lib/sheets/settings";
+
+// The CRM's exact signal that a calendar event is a tournament, not a
+// training session — see docs/superpowers/specs/2026-09-18-crm-tournament-events-design.md.
+const TOURNAMENT_MEETING_TYPE = "טורניר";
 
 function normalizePhone(raw: string): { local: string; intl: string } {
   const d = raw.replace(/\D/g, "");
@@ -61,6 +70,22 @@ async function handleEventCreated(raw: Record<string, unknown>) {
     void logWebhook({ route: "training", event_type: "event_created", params: raw, status: "invalid", result: { reason: "invalid meeting_time" } });
     return NextResponse.json({ error: "invalid meeting_time format, expected DD/MM/YYYY HH:MM" }, { status: 422 });
   }
+
+  // A tournament-flavored calendar event never becomes a session — it
+  // becomes a real tournament instead, ready for an admin to fill in the
+  // manager afterward.
+  if (meeting_type === TOURNAMENT_MEETING_TYPE) {
+    const result = await upsertTournamentFromCrm({
+      crm_event_id: event_id,
+      crm_appointment_id: appointment_id,
+      name: meeting_title || meeting_type,
+      event_date: time.date,
+      crm_event_type: "event_created",
+    });
+    void logWebhook({ route: "training", event_type: "event_created", params: raw, status: "ok", result });
+    return NextResponse.json(result, { status: 200 });
+  }
+
   const result = await upsertSessionFromCrm({
     crm_event_id: event_id,
     crm_appointment_id: appointment_id,
@@ -81,12 +106,27 @@ async function handleAppointmentApproved(raw: Record<string, unknown>) {
     void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "invalid", result: parsed.error.flatten() });
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
-  const { appointment_id, phone } = parsed.data;
+  const { appointment_id, phone, first_name, last_name } = parsed.data;
 
   const session = await fetchSessionByCrmAppointmentId(appointment_id);
   if (!session) {
-    void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "not_found", result: { reason: "session not found", appointment_id } });
-    return NextResponse.json({ ok: true, warning: "session not found" }, { status: 200 });
+    // Not a session — maybe this appointment_id belongs to a tournament
+    // instead (someone bought a ticket to it through the CRM).
+    const tournament = await fetchTournamentByCrmAppointmentId(appointment_id);
+    if (!tournament) {
+      void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "not_found", result: { reason: "session/tournament not found", appointment_id } });
+      return NextResponse.json({ ok: true, warning: "session not found" }, { status: 200 });
+    }
+
+    const student = phone ? await findStudentByPhone(phone) : null;
+    const result = await addTournamentParticipantFromCrm(tournament.id, {
+      studentId: student?.id ?? null,
+      firstName: first_name,
+      lastName: last_name,
+      phone,
+    });
+    void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "ok", result: { tournament_id: tournament.id, ...result } });
+    return NextResponse.json({ ok: true, tournament_id: tournament.id, ...result });
   }
 
   const student = phone ? await findStudentByPhone(phone) : null;

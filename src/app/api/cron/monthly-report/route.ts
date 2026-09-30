@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/greenapi";
+import { getMonthlyReportPaused } from "@/lib/sheets/settings";
 import type { OffsetEntry } from "@/app/api/admin/salary/route";
 
 const HEBREW_MONTHS = [
@@ -27,6 +28,10 @@ export async function POST(req: Request) {
     if (auth !== `Bearer ${secret}`) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
+  }
+
+  if (await getMonthlyReportPaused()) {
+    return NextResponse.json({ ok: true, paused: true });
   }
 
   const { monthKey, start, end, label } = currentMonthRange();

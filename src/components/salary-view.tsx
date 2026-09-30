@@ -16,6 +16,7 @@ import { dayLabelHe } from "@/lib/date";
 import { toast } from "sonner";
 import type { SalaryResponse, CoachSalary, SessionDetail, OffsetEntry } from "@/app/api/admin/salary/route";
 import type { TrendResponse } from "@/app/api/admin/salary/trend/route";
+import { MonthlyReportPauseToggle } from "@/components/monthly-report-pause-toggle";
 
 const SalaryTrendChart      = dynamic(() => import("@/components/salary-charts").then((m) => m.SalaryTrendChart),      { ssr: false });
 const SalaryBreakdownCharts = dynamic(() => import("@/components/salary-charts").then((m) => m.SalaryBreakdownCharts), { ssr: false });
@@ -582,6 +583,8 @@ export function SalaryView() {
 
   return (
     <div className="p-4 flex flex-col gap-4">
+
+      <MonthlyReportPauseToggle />
 
       {/* Period mode selector */}
       <div className="bg-muted/60 rounded-xl p-1 flex gap-1">

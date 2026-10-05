@@ -279,19 +279,96 @@ export async function upsertTournamentFromCrm(input: {
     crm_event_type: input.crm_event_type ?? "",
   };
 
+  let id: string;
+  let action: "created" | "updated";
+
   if (existing) {
     const { error } = await db.from("tournaments").update(fields).eq("id", existing.id);
     if (error) throw new Error(error.message);
-    return { id: existing.id, action: "updated" };
+    id = existing.id;
+    action = "updated";
+  } else {
+    const { data, error } = await db
+      .from("tournaments")
+      .insert({ ...fields, type: "regular", manager_email: null, public_slug: generatePublicSlug() })
+      .select("id")
+      .single();
+    if (error) {
+      // Race: a concurrent duplicate delivery of the same CRM event inserted
+      // first. With the unique index in place (20260920b) this fails with
+      // 23505 — fall back to the row that won, instead of creating a second
+      // tournament for the same appointment.
+      if (error.code === "23505" && input.crm_appointment_id) {
+        const { data: winner } = await db
+          .from("tournaments")
+          .select("id")
+          .eq("crm_appointment_id", input.crm_appointment_id)
+          .maybeSingle();
+        if (!winner) throw new Error(error.message);
+        id = winner.id as string;
+        action = "updated";
+      } else {
+        throw new Error(error.message);
+      }
+    } else {
+      id = data.id as string;
+      action = "created";
+    }
   }
 
-  const { data, error } = await db
-    .from("tournaments")
-    .insert({ ...fields, type: "regular", manager_email: null, public_slug: generatePublicSlug() })
-    .select("id")
-    .single();
+  if (input.crm_appointment_id) {
+    await drainPendingRegistrations(id, input.crm_appointment_id);
+  }
+  return { id, action };
+}
+
+// Parks an appointment_approved that arrived before its tournament existed.
+export async function queuePendingRegistration(
+  appointmentId: string,
+  input: { firstName: string; lastName: string; phone: string },
+): Promise<void> {
+  const { error } = await db.from("crm_pending_registrations").insert({
+    appointment_id: appointmentId,
+    first_name: input.firstName,
+    last_name: input.lastName,
+    phone: input.phone,
+  });
   if (error) throw new Error(error.message);
-  return { id: data.id as string, action: "created" };
+}
+
+async function findStudentIdByPhone(phone: string): Promise<string | null> {
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return null;
+  const core = digits.startsWith("972") ? digits.slice(3) : digits.startsWith("0") ? digits.slice(1) : digits;
+  const { data } = await db
+    .from("students")
+    .select("id")
+    .or(`phone.eq.0${core},phone.eq.972${core}`)
+    .maybeSingle();
+  return (data?.id as string) ?? null;
+}
+
+// Attaches every registration parked for this appointment to the now-existing
+// tournament, then clears them. addTournamentParticipantFromCrm is idempotent,
+// so a registration that already attached is harmless to process again.
+async function drainPendingRegistrations(tournamentId: string, appointmentId: string): Promise<void> {
+  const { data: pending } = await db
+    .from("crm_pending_registrations")
+    .select("id, first_name, last_name, phone")
+    .eq("appointment_id", appointmentId);
+  const rows = (pending ?? []) as { id: number; first_name: string; last_name: string; phone: string }[];
+  if (rows.length === 0) return;
+
+  for (const row of rows) {
+    const studentId = row.phone ? await findStudentIdByPhone(row.phone) : null;
+    await addTournamentParticipantFromCrm(tournamentId, {
+      studentId,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      phone: row.phone,
+    });
+  }
+  await db.from("crm_pending_registrations").delete().eq("appointment_id", appointmentId);
 }
 
 // The CRM equivalent of addTournamentParticipant's regular-tournament

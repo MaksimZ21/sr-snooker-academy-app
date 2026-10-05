@@ -6,6 +6,7 @@ import {
   upsertTournamentFromCrm,
   fetchTournamentByCrmAppointmentId,
   addTournamentParticipantFromCrm,
+  queuePendingRegistration,
 } from "@/lib/sheets/tournaments";
 import { db } from "@/lib/db/client";
 import type { Student } from "@/lib/sheets/schemas";
@@ -114,8 +115,11 @@ async function handleAppointmentApproved(raw: Record<string, unknown>) {
     // instead (someone bought a ticket to it through the CRM).
     const tournament = await fetchTournamentByCrmAppointmentId(appointment_id);
     if (!tournament) {
-      void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "not_found", result: { reason: "session/tournament not found", appointment_id } });
-      return NextResponse.json({ ok: true, warning: "session not found" }, { status: 200 });
+      // The tournament event may simply not have arrived yet — park the
+      // registration and attach it when the tournament is created.
+      await queuePendingRegistration(appointment_id, { firstName: first_name, lastName: last_name, phone });
+      void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "ok", result: { reason: "queued until tournament exists", appointment_id } });
+      return NextResponse.json({ ok: true, queued: true, appointment_id });
     }
 
     const student = phone ? await findStudentByPhone(phone) : null;

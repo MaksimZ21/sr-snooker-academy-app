@@ -122,9 +122,7 @@ async function handleAppointmentApproved(raw: Record<string, unknown>) {
       return NextResponse.json({ ok: true, queued: true, appointment_id });
     }
 
-    const student = phone ? await findStudentByPhone(phone) : null;
     const result = await addTournamentParticipantFromCrm(tournament.id, {
-      studentId: student?.id ?? null,
       firstName: first_name,
       lastName: last_name,
       phone,

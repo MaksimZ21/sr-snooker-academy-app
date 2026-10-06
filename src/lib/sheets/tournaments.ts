@@ -360,9 +360,7 @@ async function drainPendingRegistrations(tournamentId: string, appointmentId: st
   if (rows.length === 0) return;
 
   for (const row of rows) {
-    const studentId = row.phone ? await findStudentIdByPhone(row.phone) : null;
     await addTournamentParticipantFromCrm(tournamentId, {
-      studentId,
       firstName: row.first_name,
       lastName: row.last_name,
       phone: row.phone,
@@ -376,15 +374,17 @@ async function drainPendingRegistrations(tournamentId: string, appointmentId: st
 // the shared students/players table exactly like any other regular
 // participant — never a local (multi_location-style) participant, and
 // always marked paid, since paying for the ticket is what triggered this
-// in the first place. Idempotent: a duplicate delivery of the same
-// appointment_approved event for someone already registered is reported
-// as a no-op, not an error — a webhook has no one to show a Hebrew error
-// toast to.
+// in the first place. Resolves the student by phone itself (shared by
+// every caller — the appointment_approved flow, the tournament-ticket
+// webhook, and drainPendingRegistrations above — so the lookup lives in
+// exactly one place). Idempotent: a duplicate delivery for someone
+// already registered is reported as a no-op, not an error — a webhook
+// has no one to show a Hebrew error toast to.
 export async function addTournamentParticipantFromCrm(
   tournamentId: string,
-  input: { studentId: string | null; firstName: string; lastName: string; phone: string },
+  input: { firstName: string; lastName: string; phone: string },
 ): Promise<{ action: "added" | "already_registered" }> {
-  let studentId = input.studentId;
+  let studentId = input.phone ? await findStudentIdByPhone(input.phone) : null;
 
   if (studentId) {
     const { ensurePlayerSlug } = await import("./players");

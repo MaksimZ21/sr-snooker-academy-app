@@ -36,6 +36,7 @@ function GroupForm({
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(group?.student_ids ?? []),
   );
+  const [studentSearch, setStudentSearch] = useState("");
   const startTime = startHour ? `${startHour}:${startMin}` : "";
   const qc = useQueryClient();
 
@@ -97,6 +98,13 @@ function GroupForm({
   });
 
   const activeStudents = (studentsQ.data?.students ?? []).filter((s) => s.active);
+  const visibleStudents = useMemo(() => {
+    const q = studentSearch.trim().toLowerCase();
+    if (!q) return activeStudents;
+    return activeStudents.filter(
+      (s) => studentFullName(s).toLowerCase().includes(q) || s.id.toLowerCase().includes(q),
+    );
+  }, [activeStudents, studentSearch]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -177,11 +185,21 @@ function GroupForm({
         {studentsQ.isLoading ? (
           <div className="text-sm text-muted-foreground py-2">טוען...</div>
         ) : (
-          <div className="border rounded-md max-h-56 overflow-y-auto p-2 flex flex-col gap-1 mt-1">
+          <>
+            <Input
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              placeholder="חיפוש מתאמן..."
+              className="mt-1"
+            />
+            <div className="border rounded-md max-h-56 overflow-y-auto p-2 flex flex-col gap-1 mt-1">
             {activeStudents.length === 0 && (
               <span className="text-sm text-muted-foreground">אין מתאמנים פעילים</span>
             )}
-            {activeStudents.map((s) => (
+            {activeStudents.length > 0 && visibleStudents.length === 0 && (
+              <span className="text-sm text-muted-foreground">לא נמצאו מתאמנים</span>
+            )}
+            {visibleStudents.map((s) => (
               <Label
                 key={s.id}
                 className="flex items-center gap-2 cursor-pointer text-sm font-normal"
@@ -199,7 +217,8 @@ function GroupForm({
                 <span className="text-xs text-muted-foreground">{s.id}</span>
               </Label>
             ))}
-          </div>
+            </div>
+          </>
         )}
         <p className="text-xs text-muted-foreground mt-1">{selected.size} נבחרו</p>
       </div>

@@ -97,7 +97,12 @@ function GroupForm({
     onError: () => toast.error("שגיאה בשמירה"),
   });
 
-  const activeStudents = (studentsQ.data?.students ?? []).filter((s) => s.active);
+  // Active students, plus any current member who's since gone inactive —
+  // otherwise an inactive member already in the group is invisible here
+  // and can never be unchecked/removed.
+  const activeStudents = (studentsQ.data?.students ?? []).filter(
+    (s) => s.active || selected.has(s.id),
+  );
   const visibleStudents = useMemo(() => {
     const q = studentSearch.trim().toLowerCase();
     if (!q) return activeStudents;
@@ -215,6 +220,9 @@ function GroupForm({
                 />
                 <span>{studentFullName(s)}</span>
                 <span className="text-xs text-muted-foreground">{s.id}</span>
+                {!s.active && (
+                  <span className="text-xs text-destructive">(לא פעיל)</span>
+                )}
               </Label>
             ))}
             </div>

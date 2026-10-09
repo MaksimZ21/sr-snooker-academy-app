@@ -110,13 +110,14 @@ export async function getStudentByEmail(email: string): Promise<Student | null> 
 export async function deleteStudent(id: string): Promise<void> {
   const { error } = await db.from("students").delete().eq("id", id);
   if (error) {
-    // 23503 = foreign key violation — the student still has rows
-    // referencing them (tournament/league participation, attendance,
-    // etc.) that Postgres refuses to orphan. Without this check the
-    // delete call silently no-ops: the API still returns success and the
-    // row stays exactly where it was.
+    // 23503 = foreign key violation — some other table still has a row
+    // referencing this student that Postgres refuses to orphan (tournament
+    // and league participation are deliberately exempt — see migration
+    // 20261009 — so this is most likely attendance or a group roster).
+    // Without this check the delete call silently no-ops: the API still
+    // returns success and the row stays exactly where it was.
     if (error.code === "23503") {
-      throw new Error("לא ניתן למחוק מתאמן שמשויך לטורניר, ליגה או נוכחות קיימת — יש להסיר אותו משם קודם");
+      throw new Error("לא ניתן למחוק מתאמן — הוא עדיין משויך לרשומות אחרות במערכת (למשל נוכחות באימון)");
     }
     throw new Error(error.message);
   }

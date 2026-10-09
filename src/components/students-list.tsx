@@ -35,11 +35,16 @@ export function StudentsList() {
     setDeleting(true);
     try {
       const r = await fetch(`/api/students/${id}`, { method: "DELETE" });
-      if (!r.ok) throw new Error();
+      if (!r.ok) throw new Error(await r.text());
       await queryClient.invalidateQueries({ queryKey: ["students"] });
       toast.success("המתאמן נמחק");
-    } catch {
-      toast.error("שגיאה במחיקה");
+    } catch (e) {
+      let message = "שגיאה במחיקה";
+      try {
+        const parsed = JSON.parse((e as Error).message) as { error?: string };
+        if (parsed.error) message = parsed.error;
+      } catch {}
+      toast.error(message);
     } finally {
       setDeleting(false);
       setConfirmDelete(null);

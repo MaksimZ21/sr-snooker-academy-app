@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -136,6 +136,37 @@ export function AttendancePanel({
     for (const a of attendance) map[a.student_id] = a.status;
     return map;
   });
+  // That initializer only ever runs once, on mount — a status that arrives
+  // later (e.g. a student confirming via CRM/WhatsApp while this page is
+  // already open, surfaced through a background refetch of `attendance`)
+  // was never picked up, leaving `local` stale and out of sync with the
+  // real server status. That's what the dashed-border "dirty but no
+  // recognized status" styling below was actually showing — not a
+  // deliberate "pending" indicator. Re-sync on every attendance change,
+  // but only for a student the coach hasn't already started editing
+  // locally (local still matching what the server had last) — an
+  // in-progress, unsaved click must never be silently overwritten by a
+  // refetch.
+  const lastServerRef = useRef<Record<string, Attendance["status"]>>(local);
+  useEffect(() => {
+    const nextServer: Record<string, Attendance["status"]> = {};
+    for (const a of attendance) nextServer[a.student_id] = a.status;
+
+    setLocal((prevLocal) => {
+      let changed = false;
+      const merged = { ...prevLocal };
+      for (const s of students) {
+        const prevServerStatus = lastServerRef.current[s.id];
+        const newServerStatus = nextServer[s.id];
+        if (prevLocal[s.id] === prevServerStatus && newServerStatus !== prevServerStatus) {
+          merged[s.id] = newServerStatus;
+          changed = true;
+        }
+      }
+      lastServerRef.current = nextServer;
+      return changed ? merged : prevLocal;
+    });
+  }, [attendance, students]);
 
   const isDirty = students.some((s) => {
     const server = attendance.find((a) => a.student_id === s.id)?.status;

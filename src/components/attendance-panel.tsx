@@ -221,8 +221,8 @@ export function AttendancePanel({
               dirty && !curConfig && "border-dashed",
             )}
           >
-            <div className="flex justify-between items-center gap-2">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="flex items-center gap-3 sm:flex-1 min-w-0">
                 <div
                   className={cn(
                     "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none transition-colors",
@@ -231,7 +231,7 @@ export function AttendancePanel({
                 >
                   {getInitials(studentFullName(s))}
                 </div>
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-wrap">
                   <div className="font-medium text-sm truncate">{studentFullName(s)}</div>
                   {isConfirmed && (
                     <Badge variant="outline" className="text-xs border-blue-400 text-blue-600 dark:text-blue-400 shrink-0">

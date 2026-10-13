@@ -10,6 +10,7 @@ export async function GET() {
     return NextResponse.json({ groups });
   } catch (e) {
     if (e instanceof Response) return e;
+    if (e instanceof Error) return NextResponse.json({ error: e.message }, { status: 502 });
     return NextResponse.json({ error: "internal error" }, { status: 500 });
   }
 }

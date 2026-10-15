@@ -15,16 +15,17 @@ export type CrmStudent = {
 };
 
 // Resolves group placement from a CRM payload. `college_group` (a specific
-// cohort/time-slot name) takes priority when present — it only ever joins
-// an EXISTING matching group, never creates one, and does NOT fall back to
-// the college_name flow if no match is found (per explicit product
-// decision, 2026-08-28): an admin handles that case manually rather than
-// the student silently landing in the wrong (college-wide) group. Only
-// when `college_group` is absent does the older college_name find-or-create
-// behavior apply, unchanged.
+// cohort/time-slot name, e.g. "מכללת כפ\"ס קבוצה 1 - ימי רביעי 19:30")
+// is tried first — it only ever joins an EXISTING matching group, never
+// creates one. When it doesn't match (the exact cohort isn't saved as its
+// own group, or its college abbreviation doesn't match the full name),
+// fall back to the broader college_name find-or-create flow instead of
+// leaving the student unassigned (updated 2026-10-15 — the no-fallback
+// behavior from 2026-08-29 meant every such case needed a manual fix).
 async function assignGroupFromCrm(input: CrmStudent, studentId: string): Promise<boolean> {
   if (input.college_group) {
-    return assignStudentToExistingGroup(input.college_group, studentId);
+    const matched = await assignStudentToExistingGroup(input.college_group, studentId);
+    if (matched) return true;
   }
   if (input.college_name) {
     await ensureStudentInCollegeGroup(input.college_name, studentId);

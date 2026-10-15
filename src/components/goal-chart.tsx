@@ -2,6 +2,15 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { GoalCategory, GoalEntry } from "@/lib/sheets/monthly-goals-shared";
 
+// This project's theme colors are oklch(...) values (globals.css), not the
+// bare HSL triples "hsl(var(--x))" expects — nesting oklch(...) inside
+// hsl() is invalid CSS, so a stroke/fill using that pattern renders
+// invisibly while Recharts' hover tracking (and its Tooltip) still works
+// regardless, which is exactly what looked like "no graph, only the
+// tooltip on hover". The other chart components avoid this by using a
+// literal brand color instead — same fix here.
+const BRAND = "#0b9e70";
+
 export function GoalChart({ entries, category }: { entries: GoalEntry[]; category: GoalCategory }) {
   if (entries.length === 0) {
     return <p className="text-sm text-muted-foreground text-center py-8">עדיין אין נתונים החודש</p>;
@@ -33,7 +42,7 @@ export function GoalChart({ entries, category }: { entries: GoalEntry[]; categor
           }}
           formatter={(v) => [category === "breaks" ? `${v}` : `${v}%`, ""]}
         />
-        <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+        <Line type="monotone" dataKey="value" stroke={BRAND} strokeWidth={2} dot={{ r: 3, fill: BRAND }} />
       </LineChart>
     </ResponsiveContainer>
   );

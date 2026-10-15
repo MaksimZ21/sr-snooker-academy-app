@@ -111,6 +111,16 @@ function collegeNameVariants(name: string): string[] {
   return [...variants];
 }
 
+// Matching against existing groups already tries both spellings (see
+// collegeNameVariants above), but when NO group exists yet — the first
+// student from a brand-new college — a new group must still be created,
+// and the CRM's raw text ("מכללה <location>") isn't the convention this
+// app's groups are named with. Normalize to the construct form so a new
+// college's group doesn't need a manual rename every time.
+function toConstructForm(name: string): string {
+  return name.startsWith("מכללה ") ? "מכללת " + name.slice("מכללה ".length) : name;
+}
+
 export async function ensureStudentInCollegeGroup(
   collegeName: string,
   studentId: string,
@@ -129,7 +139,8 @@ export async function ensureStudentInCollegeGroup(
   if (group) {
     await addStudentToGroupRow(group.id, studentId, normalizeGroupStudentIds(group.student_ids));
   } else {
-    await appendGroup(name, [studentId], name);
+    const normalized = toConstructForm(name);
+    await appendGroup(normalized, [studentId], normalized);
   }
 }
 

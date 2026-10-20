@@ -128,15 +128,9 @@ export function PublicTournamentView({ tournament }: { tournament: PublicTournam
                               { p: pb, score: m.frames_b },
                             ].map(({ p, score }, i) => (
                               <div key={i} className="flex items-center justify-between gap-2 text-sm">
-                                {p?.publicSlug ? (
-                                  <a href={`/p/${p.publicSlug}`} className="flex-1 truncate text-primary underline">
-                                    {p.name}{p.skillLevel && <span className="text-muted-foreground"> ({p.skillLevel})</span>}
-                                  </a>
-                                ) : (
-                                  <span className="flex-1 truncate">
-                                    {p?.name ?? "TBD"}{p?.skillLevel && <span className="text-muted-foreground"> ({p.skillLevel})</span>}
-                                  </span>
-                                )}
+                                <span className="flex-1 truncate">
+                                  {p?.name ?? "TBD"}{p?.skillLevel && <span className="text-muted-foreground"> ({p.skillLevel})</span>}
+                                </span>
                                 {played && <span className="font-medium tabular-nums">{score}</span>}
                               </div>
                             ))}
@@ -196,11 +190,7 @@ function HouseCard({
                 >
                   <td className={cn("px-4 py-1.5", leading && "font-semibold text-primary")}>{i + 1}</td>
                   <td className={cn("px-2 py-1.5 max-w-[9rem] truncate", leading && "font-semibold")}>
-                    {p?.publicSlug ? (
-                      <a href={`/p/${p.publicSlug}`} className="text-primary underline">{p.name}</a>
-                    ) : (
-                      p?.name ?? "?"
-                    )}
+                    {p?.name ?? "?"}
                     {p?.skillLevel && <span className="text-muted-foreground text-xs"> ({p.skillLevel})</span>}
                   </td>
                   <td className="text-center px-2 py-1.5 tabular-nums">{row.wins}</td>

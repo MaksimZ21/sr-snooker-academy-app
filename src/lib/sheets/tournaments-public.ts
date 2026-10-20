@@ -25,7 +25,6 @@ export type PublicParticipant = {
   id: string;
   name: string;
   skillLevel: string | null;
-  publicSlug: string | null;
 };
 
 export type PublicTournament = {
@@ -61,22 +60,21 @@ export async function fetchPublicTournament(slug: string): Promise<PublicTournam
 
   const studentIds = rows.map((r) => r.student_id).filter((id): id is string => id !== null);
   const { data: studentRows } = studentIds.length
-    ? await db.from("students").select("id, first_name, last_name, skill_level, public_slug").in("id", studentIds)
-    : { data: [] as { id: string; first_name: string; last_name: string; skill_level: string | null; public_slug: string | null }[] };
+    ? await db.from("students").select("id, first_name, last_name, skill_level").in("id", studentIds)
+    : { data: [] as { id: string; first_name: string; last_name: string; skill_level: string | null }[] };
   const studentsById = new Map((studentRows ?? []).map((s) => [s.id as string, s]));
 
   // A local (multi-location) participant has no student row and no
   // classification — it's a plain name local to this tournament.
   const participants: PublicParticipant[] = rows.map((r) => {
     if (!r.student_id) {
-      return { id: r.id, name: r.local_name ?? "?", skillLevel: null, publicSlug: null };
+      return { id: r.id, name: r.local_name ?? "?", skillLevel: null };
     }
     const s = studentsById.get(r.student_id);
     return {
       id: r.id,
       name: s ? [s.first_name, s.last_name].filter(Boolean).join(" ") : "?",
       skillLevel: (s?.skill_level as string | null) ?? null,
-      publicSlug: (s?.public_slug as string) ?? null,
     };
   });
 

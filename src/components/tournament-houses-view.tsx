@@ -12,7 +12,7 @@ import { computeHouseStandings } from "@/lib/sheets/tournament-logic";
 
 type Participant = {
   id: string;
-  student: { first_name: string; last_name: string };
+  student: { first_name: string; last_name: string; skill_level: string | null };
 };
 
 type HouseMatch = {
@@ -132,6 +132,10 @@ export function TournamentHousesView({
     return p ? [p.student.first_name, p.student.last_name].filter(Boolean).join(" ") : "?";
   }
 
+  function participantSkillLevel(id: string) {
+    return participants.find((x) => x.id === id)?.student.skill_level ?? null;
+  }
+
   if (isLoading) {
     return <Skeleton className="h-32 w-full rounded-2xl" />;
   }
@@ -199,6 +203,9 @@ export function TournamentHousesView({
                         <td className="px-4 py-1.5">{i + 1}</td>
                         <td className="px-2 py-1.5">
                           {participantName(row.participantId)}
+                          {participantSkillLevel(row.participantId) && (
+                            <span className="text-muted-foreground"> ({participantSkillLevel(row.participantId)})</span>
+                          )}
                         </td>
                         <td className="text-center px-2 py-1.5">{row.wins}</td>
                         <td className="text-center px-2 py-1.5">{row.framesWon}</td>

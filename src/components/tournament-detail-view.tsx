@@ -298,7 +298,9 @@ export function TournamentDetailView({
                             disabled={assignLocationMut.isPending}
                           >
                             <SelectTrigger className="h-8 w-32 text-xs">
-                              <SelectValue placeholder="ללא מיקום" />
+                              <SelectValue placeholder="ללא מיקום">
+                                {(v: string) => (v === "none" ? "ללא מיקום" : locations.find((l) => l.id === v)?.label ?? v)}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="none">ללא מיקום</SelectItem>
@@ -314,10 +316,14 @@ export function TournamentDetailView({
                           <Select
                             value={p.student.skill_level ?? "none"}
                             onValueChange={(v) => v && skillLevelMut.mutate({ participantId: p.id, skillLevel: v === "none" ? null : v })}
-                            disabled={skillLevelMut.isPending}
                           >
                             <SelectTrigger className="h-8 w-20 text-xs">
-                              <SelectValue placeholder="סיווג" />
+                              {/* SelectValue shows the raw value, not the matching
+                                  SelectItem's children, unless Select is given an
+                                  `items` map — map it back to a label ourselves. */}
+                              <SelectValue placeholder="סיווג">
+                                {(v: string) => (v === "none" ? "ללא" : v)}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="none">ללא</SelectItem>
@@ -341,10 +347,11 @@ export function TournamentDetailView({
                               if (v === "unpaid") paidMut.mutate({ participantId: p.id, paid: false, paymentMethod: null });
                               else paidMut.mutate({ participantId: p.id, paid: true, paymentMethod: v as "cash" | "credit" });
                             }}
-                            disabled={paidMut.isPending}
                           >
                             <SelectTrigger className="h-8 w-28 text-xs">
-                              <SelectValue />
+                              <SelectValue>
+                                {(v: string) => (v === "unpaid" ? "לא שולם" : v === "credit" ? "אשראי" : "מזומן")}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="unpaid">לא שולם</SelectItem>

@@ -48,6 +48,8 @@ type Tournament = {
 
 type TournamentLocation = { id: string; tournament_id: string; label: string };
 
+type TournamentQueryData = { tournament: Tournament; participants: TournamentParticipant[] };
+
 export function TournamentDetailView({
   tournamentId,
   backHref,
@@ -66,7 +68,7 @@ export function TournamentDetailView({
     queryFn: async () => {
       const r = await fetch(`/api/tournaments/${tournamentId}`);
       if (!r.ok) throw new Error("fetch failed");
-      return (await r.json()) as { tournament: Tournament; participants: TournamentParticipant[] };
+      return (await r.json()) as TournamentQueryData;
     },
   });
 
@@ -100,8 +102,30 @@ export function TournamentDetailView({
         throw new Error(body?.error ?? "failed");
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tournament", tournamentId] }),
-    onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה בעדכון התשלום"),
+    // Optimistic: flip the cache immediately so the Select reflects the
+    // pick right away instead of visibly reloading until the round trip
+    // completes — only reconciled with the server on error (rollback) or
+    // left as-is on success, since nothing server-side ever computes a
+    // different paid/payment_method than what was sent.
+    onMutate: async ({ participantId, paid, paymentMethod }) => {
+      await qc.cancelQueries({ queryKey: ["tournament", tournamentId] });
+      const previous = qc.getQueryData<TournamentQueryData>(["tournament", tournamentId]);
+      qc.setQueryData<TournamentQueryData>(["tournament", tournamentId], (old) =>
+        old
+          ? {
+              ...old,
+              participants: old.participants.map((p) =>
+                p.id === participantId ? { ...p, paid, payment_method: paymentMethod } : p,
+              ),
+            }
+          : old,
+      );
+      return { previous };
+    },
+    onError: (e, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["tournament", tournamentId], ctx.previous);
+      toast.error(e instanceof Error && e.message ? e.message : "שגיאה בעדכון התשלום");
+    },
   });
 
   const skillLevelMut = useMutation({
@@ -116,8 +140,25 @@ export function TournamentDetailView({
         throw new Error(body?.error ?? "failed");
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tournament", tournamentId] }),
-    onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה בעדכון הסיווג"),
+    onMutate: async ({ participantId, skillLevel }) => {
+      await qc.cancelQueries({ queryKey: ["tournament", tournamentId] });
+      const previous = qc.getQueryData<TournamentQueryData>(["tournament", tournamentId]);
+      qc.setQueryData<TournamentQueryData>(["tournament", tournamentId], (old) =>
+        old
+          ? {
+              ...old,
+              participants: old.participants.map((p) =>
+                p.id === participantId ? { ...p, student: { ...p.student, skill_level: skillLevel } } : p,
+              ),
+            }
+          : old,
+      );
+      return { previous };
+    },
+    onError: (e, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["tournament", tournamentId], ctx.previous);
+      toast.error(e instanceof Error && e.message ? e.message : "שגיאה בעדכון הסיווג");
+    },
   });
 
   const assignLocationMut = useMutation({

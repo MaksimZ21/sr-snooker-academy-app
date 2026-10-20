@@ -408,7 +408,13 @@ export function TournamentDetailView({
                               value={p.student.skill_level ?? "none"}
                               onValueChange={(v) => v && skillLevelMut.mutate({ participantId: p.id, skillLevel: v === "none" ? null : v })}
                             >
-                              <SelectTrigger className="h-8 w-20 text-xs">
+                              <SelectTrigger
+                                className={cn(
+                                  "h-8 w-20 text-xs",
+                                  !p.student.skill_level &&
+                                    "border-destructive/60 bg-destructive/10 text-destructive hover:bg-destructive/15 dark:bg-destructive/15",
+                                )}
+                              >
                                 {/* SelectValue shows the raw value, not the matching
                                     SelectItem's children, unless Select is given an
                                     `items` map — map it back to a label ourselves. */}
@@ -424,7 +430,12 @@ export function TournamentDetailView({
                               </SelectContent>
                             </Select>
                           ) : (
-                            <span className="text-xs text-muted-foreground h-8 flex items-center">
+                            <span
+                              className={cn(
+                                "text-xs h-8 flex items-center",
+                                p.student.skill_level ? "text-muted-foreground" : "text-destructive",
+                              )}
+                            >
                               {p.student.skill_level ?? "—"}
                             </span>
                           )}

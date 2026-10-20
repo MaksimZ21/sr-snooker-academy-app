@@ -55,6 +55,7 @@ type Tournament = {
   public_slug: string;
   handicap_points_per_rating_gap: number;
   type: "regular" | "multi_location";
+  registration_closed: boolean;
   created_at: string;
 };
 
@@ -232,6 +233,22 @@ export function TournamentDetailView({
     onError: () => toast.error("שגיאה בהסרה"),
   });
 
+  const registrationClosedMut = useMutation({
+    mutationFn: async (closed: boolean) => {
+      const r = await fetch(`/api/tournaments/${tournamentId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ registration_closed: closed }),
+      });
+      if (!r.ok) throw new Error("failed");
+    },
+    onSuccess: (_data, closed) => {
+      toast.success(closed ? "ההרשמה מה-CRM נסגרה לטורניר זה" : "ההרשמה מה-CRM נפתחה מחדש");
+      qc.invalidateQueries({ queryKey: ["tournament", tournamentId] });
+    },
+    onError: () => toast.error("שגיאה בעדכון ההרשמה"),
+  });
+
   if (isLoading || !data) {
     return (
       <div className="flex flex-col gap-4 p-4 md:p-6">
@@ -304,6 +321,25 @@ export function TournamentDetailView({
               <a href={tournament.rules_url} target="_blank" rel="noopener noreferrer" className="text-primary">
                 קישור לתקנון
               </a>
+            </div>
+          )}
+          {tournament.type === "regular" && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">הרשמה מה-CRM:</span>
+              <Badge variant={tournament.registration_closed ? "secondary" : "default"}>
+                {tournament.registration_closed ? "סגורה" : "פתוחה"}
+              </Badge>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={registrationClosedMut.isPending}
+                  onClick={() => registrationClosedMut.mutate(!tournament.registration_closed)}
+                >
+                  {tournament.registration_closed ? "פתח הרשמה" : "סגור הרשמה"}
+                </Button>
+              )}
             </div>
           )}
         </div>

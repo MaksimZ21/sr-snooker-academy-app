@@ -29,6 +29,7 @@ const UpdateSchema = z.object({
   rules_url: z.string().nullable().optional(),
   handicap_points_per_rating_gap: z.number().int().positive().optional(),
   completed: z.boolean().optional(),
+  registration_closed: z.boolean().optional(),
 });
 
 export async function PATCH(

@@ -14,6 +14,11 @@ export type Tournament = {
   public_slug: string;
   handicap_points_per_rating_gap: number;
   type: "regular" | "multi_location";
+  // Once true, addTournamentParticipantFromCrm refuses any new registration
+  // for this tournament (ticket purchase or appointment approval) — set by
+  // the manager/admin once the tournament is full/underway, independent of
+  // the global CRM pause.
+  registration_closed: boolean;
   // Set only for a tournament created from a CRM calendar event — that's
   // what makes it appear on the Schedule (see fetchTournamentsInRange). A
   // manually-created tournament has none of these four CRM fields set.
@@ -128,6 +133,7 @@ export async function updateTournament(
     rules_url?: string | null;
     handicap_points_per_rating_gap?: number;
     completed?: boolean;
+    registration_closed?: boolean;
   },
 ): Promise<void> {
   const { error } = await db.from("tournaments").update(input).eq("id", id);
@@ -423,7 +429,14 @@ async function drainPendingRegistrations(tournamentId: string, appointmentId: st
 export async function addTournamentParticipantFromCrm(
   tournamentId: string,
   input: { firstName: string; lastName: string; phone: string },
-): Promise<{ action: "added" | "already_registered" }> {
+): Promise<{ action: "added" | "already_registered" | "registration_closed" }> {
+  const { data: tournament } = await db
+    .from("tournaments")
+    .select("registration_closed")
+    .eq("id", tournamentId)
+    .maybeSingle();
+  if (tournament?.registration_closed) return { action: "registration_closed" };
+
   let studentId = input.phone ? await findStudentIdByPhone(input.phone) : null;
 
   if (studentId) {

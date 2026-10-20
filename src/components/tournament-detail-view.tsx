@@ -20,6 +20,16 @@ import { TournamentLocationsView } from "@/components/tournament-locations-view"
 import { TournamentKnockoutView } from "@/components/tournament-knockout-view";
 import { EditTournamentDialog } from "@/components/edit-tournament-dialog";
 import { SKILL_LEVELS } from "@/lib/sheets/schemas";
+import type { ReactNode } from "react";
+
+function FieldGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col items-start gap-0.5">
+      <span className="text-[10px] text-muted-foreground leading-none">{label}</span>
+      {children}
+    </div>
+  );
+}
 
 type TournamentParticipant = {
   id: string;
@@ -28,6 +38,7 @@ type TournamentParticipant = {
   local_name: string | null;
   paid: boolean;
   payment_method: "cash" | "credit" | null;
+  arrived: boolean;
   location_id: string | null;
   house_id: string | null;
   created_at: string;
@@ -161,6 +172,37 @@ export function TournamentDetailView({
     },
   });
 
+  const arrivedMut = useMutation({
+    mutationFn: async ({ participantId, arrived }: { participantId: string; arrived: boolean }) => {
+      const r = await fetch(`/api/tournaments/${tournamentId}/participants/${participantId}/arrived`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ arrived }),
+      });
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "failed");
+      }
+    },
+    onMutate: async ({ participantId, arrived }) => {
+      await qc.cancelQueries({ queryKey: ["tournament", tournamentId] });
+      const previous = qc.getQueryData<TournamentQueryData>(["tournament", tournamentId]);
+      qc.setQueryData<TournamentQueryData>(["tournament", tournamentId], (old) =>
+        old
+          ? {
+              ...old,
+              participants: old.participants.map((p) => (p.id === participantId ? { ...p, arrived } : p)),
+            }
+          : old,
+      );
+      return { previous };
+    },
+    onError: (e, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["tournament", tournamentId], ctx.previous);
+      toast.error(e instanceof Error && e.message ? e.message : "שגיאה בעדכון ההגעה");
+    },
+  });
+
   const assignLocationMut = useMutation({
     mutationFn: async ({ participantId, locationId }: { participantId: string; locationId: string | null }) => {
       const r = await fetch(`/api/tournaments/${tournamentId}/participants/${participantId}/location`, {
@@ -206,6 +248,8 @@ export function TournamentDetailView({
     isAdmin ||
     (tournament.type === "regular" &&
       tournament.manager_email?.trim().toLowerCase() === currentEmail.trim().toLowerCase());
+  const arrivedCount = participants.filter((p) => p.arrived).length;
+  const paidCount = participants.filter((p) => p.paid).length;
   const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/t/${tournament.public_slug}` : "";
   const subtitle = [
     tournament.type === "regular" ? `מנהל: ${tournament.manager_email}` : null,
@@ -231,6 +275,15 @@ export function TournamentDetailView({
         }
       />
       <div className="px-4 md:px-6 flex flex-col gap-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <StatPill label="משתתפים" value={String(participants.length)} />
+          {tournament.type === "regular" && (
+            <>
+              <StatPill label="הגיעו" value={`${arrivedCount}/${participants.length}`} />
+              <StatPill label="שילמו" value={`${paidCount}/${participants.length}`} />
+            </>
+          )}
+        </div>
         {tournament.type === "regular" && !tournament.manager_email && (
           <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-700 dark:text-amber-400">
             ⚠️ טרם הוגדר מאמן אחראי לטורניר זה
@@ -312,58 +365,78 @@ export function TournamentDetailView({
                         )
                       )}
                       {tournament.type === "regular" && isRealStudent && (
-                        canEdit ? (
-                          <Select
-                            value={p.student.skill_level ?? "none"}
-                            onValueChange={(v) => v && skillLevelMut.mutate({ participantId: p.id, skillLevel: v === "none" ? null : v })}
-                          >
-                            <SelectTrigger className="h-8 w-20 text-xs">
-                              {/* SelectValue shows the raw value, not the matching
-                                  SelectItem's children, unless Select is given an
-                                  `items` map — map it back to a label ourselves. */}
-                              <SelectValue placeholder="סיווג">
-                                {(v: string) => (v === "none" ? "ללא" : v)}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">ללא</SelectItem>
-                              {SKILL_LEVELS.map((l) => (
-                                <SelectItem key={l} value={l}>{l}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          p.student.skill_level && (
-                            <span className="text-xs text-muted-foreground">{p.student.skill_level}</span>
-                          )
-                        )
+                        <FieldGroup label="סיווג">
+                          {canEdit ? (
+                            <Select
+                              value={p.student.skill_level ?? "none"}
+                              onValueChange={(v) => v && skillLevelMut.mutate({ participantId: p.id, skillLevel: v === "none" ? null : v })}
+                            >
+                              <SelectTrigger className="h-8 w-20 text-xs">
+                                {/* SelectValue shows the raw value, not the matching
+                                    SelectItem's children, unless Select is given an
+                                    `items` map — map it back to a label ourselves. */}
+                                <SelectValue placeholder="סיווג">
+                                  {(v: string) => (v === "none" ? "ללא" : v)}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">ללא</SelectItem>
+                                {SKILL_LEVELS.map((l) => (
+                                  <SelectItem key={l} value={l}>{l}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-xs text-muted-foreground h-8 flex items-center">
+                              {p.student.skill_level ?? "—"}
+                            </span>
+                          )}
+                        </FieldGroup>
                       )}
                       {tournament.type === "regular" && (
-                        canEdit ? (
-                          <Select
-                            value={paymentValue}
-                            onValueChange={(v) => {
-                              if (!v) return;
-                              if (v === "unpaid") paidMut.mutate({ participantId: p.id, paid: false, paymentMethod: null });
-                              else paidMut.mutate({ participantId: p.id, paid: true, paymentMethod: v as "cash" | "credit" });
-                            }}
-                          >
-                            <SelectTrigger className="h-8 w-28 text-xs">
-                              <SelectValue>
-                                {(v: string) => (v === "unpaid" ? "לא שולם" : v === "credit" ? "אשראי" : "מזומן")}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="unpaid">לא שולם</SelectItem>
-                              <SelectItem value="cash">מזומן</SelectItem>
-                              <SelectItem value="credit">אשראי</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Badge variant={p.paid ? "default" : "secondary"}>
-                            {p.paid ? (p.payment_method === "credit" ? "שולם · אשראי" : "שולם · מזומן") : "לא שולם"}
-                          </Badge>
-                        )
+                        <FieldGroup label="הגעה">
+                          {canEdit ? (
+                            <button
+                              type="button"
+                              onClick={() => arrivedMut.mutate({ participantId: p.id, arrived: !p.arrived })}
+                            >
+                              <Badge variant={p.arrived ? "default" : "outline"} className="cursor-pointer">
+                                {p.arrived ? "הגיע" : "לא הגיע"}
+                              </Badge>
+                            </button>
+                          ) : (
+                            <Badge variant={p.arrived ? "default" : "outline"}>{p.arrived ? "הגיע" : "לא הגיע"}</Badge>
+                          )}
+                        </FieldGroup>
+                      )}
+                      {tournament.type === "regular" && (
+                        <FieldGroup label="תשלום">
+                          {canEdit ? (
+                            <Select
+                              value={paymentValue}
+                              onValueChange={(v) => {
+                                if (!v) return;
+                                if (v === "unpaid") paidMut.mutate({ participantId: p.id, paid: false, paymentMethod: null });
+                                else paidMut.mutate({ participantId: p.id, paid: true, paymentMethod: v as "cash" | "credit" });
+                              }}
+                            >
+                              <SelectTrigger className="h-8 w-28 text-xs">
+                                <SelectValue>
+                                  {(v: string) => (v === "unpaid" ? "לא שולם" : v === "credit" ? "אשראי" : "מזומן")}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="unpaid">לא שולם</SelectItem>
+                                <SelectItem value="cash">מזומן</SelectItem>
+                                <SelectItem value="credit">אשראי</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant={p.paid ? "default" : "secondary"}>
+                              {p.paid ? (p.payment_method === "credit" ? "שולם · אשראי" : "שולם · מזומן") : "לא שולם"}
+                            </Badge>
+                          )}
+                        </FieldGroup>
                       )}
                       {canEdit && (
                         <Button
@@ -409,6 +482,15 @@ export function TournamentDetailView({
           />
         )}
       </div>
+    </div>
+  );
+}
+
+function StatPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-card px-3 py-1.5 flex items-center gap-1.5">
+      <span className="text-sm font-semibold tabular-nums">{value}</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
     </div>
   );
 }

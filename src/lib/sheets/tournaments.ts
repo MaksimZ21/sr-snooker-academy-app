@@ -37,6 +37,8 @@ export type TournamentParticipant = {
   paid: boolean;
   // Only meaningful when paid is true; null otherwise.
   payment_method: "cash" | "credit" | null;
+  // Independent of `paid` — whether they actually showed up to play.
+  arrived: boolean;
   location_id: string | null;
   house_id: string | null;
   created_at: string;
@@ -209,6 +211,15 @@ export async function setParticipantPaid(
   const { error } = await db
     .from("tournament_participants")
     .update({ paid, payment_method: paid ? paymentMethod : null })
+    .eq("id", participantId)
+    .eq("tournament_id", tournamentId);
+  if (error) throw new Error(error.message);
+}
+
+export async function setParticipantArrived(tournamentId: string, participantId: string, arrived: boolean): Promise<void> {
+  const { error } = await db
+    .from("tournament_participants")
+    .update({ arrived })
     .eq("id", participantId)
     .eq("tournament_id", tournamentId);
   if (error) throw new Error(error.message);

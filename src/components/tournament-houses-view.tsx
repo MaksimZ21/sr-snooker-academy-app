@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { computeHouseStandings } from "@/lib/sheets/tournament-logic";
 
 type Participant = {
@@ -93,6 +100,22 @@ export function TournamentHousesView({
     onError: () => toast.error("שגיאה בשמירת התוצאה"),
   });
 
+  const moveMut = useMutation({
+    mutationFn: async ({ participantId, houseId }: { participantId: string; houseId: string }) => {
+      const r = await fetch(`/api/tournaments/${tournamentId}/houses/participants/${participantId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ houseId }),
+      });
+      if (!r.ok) throw new Error("failed");
+    },
+    onSuccess: () => {
+      toast.success("השחקן הועבר");
+      qc.invalidateQueries({ queryKey: ["tournament-houses", tournamentId] });
+    },
+    onError: () => toast.error("שגיאה בהעברה"),
+  });
+
   function handleDraw() {
     if (data?.hasAnyResult) {
       if (!window.confirm("כבר יש תוצאות בבתים הקיימים — הגרלה מחדש תמחק אותם. להמשיך?")) return;
@@ -171,6 +194,7 @@ export function TournamentHousesView({
                       <th className="text-center px-2 py-1.5 font-medium">פריימים לטובה</th>
                       <th className="text-center px-2 py-1.5 font-medium">פריימים לרעה</th>
                       <th className="text-center px-2 py-1.5 font-medium">הפרש</th>
+                      {canEdit && <th className="text-center px-2 py-1.5 font-medium">בית</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -187,6 +211,26 @@ export function TournamentHousesView({
                           {row.framesWon - row.framesLost > 0 ? "+" : ""}
                           {row.framesWon - row.framesLost}
                         </td>
+                        {canEdit && (
+                          <td className="px-2 py-1.5">
+                            <Select
+                              value={house.id}
+                              onValueChange={(v) => v && v !== house.id && moveMut.mutate({ participantId: row.participantId, houseId: v })}
+                              disabled={moveMut.isPending}
+                            >
+                              <SelectTrigger className="h-7 w-24 text-xs mx-auto">
+                                <SelectValue>
+                                  {(v: string) => houses.find((h) => h.id === v)?.label ?? v}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {houses.map((h) => (
+                                  <SelectItem key={h.id} value={h.id}>{h.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>

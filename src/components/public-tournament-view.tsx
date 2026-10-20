@@ -174,7 +174,7 @@ export function PublicTournamentView({
               <div ref={bracketRef} className="relative flex gap-10 min-w-max">
                 <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
                   {connectors.map((c) => (
-                    <path key={c.id} d={c.d} fill="none" stroke="hsl(var(--border))" strokeWidth={2} />
+                    <path key={c.id} d={c.d} fill="none" className="stroke-border" strokeWidth={2} />
                   ))}
                 </svg>
                 {Array.from({ length: totalRounds }, (_, i) => i + 1).map((round) => (

@@ -287,7 +287,7 @@ export function TournamentKnockoutView({
                   key={c.id}
                   d={c.d}
                   fill="none"
-                  stroke="hsl(var(--border))"
+                  className="stroke-border"
                   strokeWidth={2}
                 />
               ))}

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useLayoutEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Swords, CheckCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -168,10 +168,6 @@ export function TournamentKnockoutView({
     return p ? [p.student.first_name, p.student.last_name].filter(Boolean).join(" ") : "?";
   }
 
-  if (isLoading) {
-    return <Skeleton className="h-32 w-full rounded-2xl" />;
-  }
-
   const matches = data?.matches ?? [];
   const totalRounds = matches.length ? Math.max(...matches.map((m) => m.round)) : 0;
   const rounds = Array.from({ length: totalRounds }, (_, i) => i + 1).map((round) => ({
@@ -185,6 +181,49 @@ export function TournamentKnockoutView({
       .flatMap((m) => [m.participant_a_id, m.participant_b_id])
       .filter((id): id is string => id !== null),
   );
+
+  // Draws the actual connecting lines between a match and the one its
+  // winner feeds into. Measured from real rendered positions (not computed
+  // from a fixed card height/gap) so it stays correct regardless of how
+  // tall a card ends up — a name wrapping to two lines, the score-entry
+  // row appearing, etc. — without needing pixel-perfect CSS spacing math.
+  const bracketRef = useRef<HTMLDivElement>(null);
+  const matchNodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [connectors, setConnectors] = useState<{ id: string; d: string }[]>([]);
+
+  const recomputeConnectors = useCallback(() => {
+    const container = bracketRef.current;
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+    const next: { id: string; d: string }[] = [];
+    for (const m of matches) {
+      if (!m.next_match_id) continue;
+      const fromEl = matchNodeRefs.current.get(m.id);
+      const toEl = matchNodeRefs.current.get(m.next_match_id);
+      if (!fromEl || !toEl) continue;
+      const fromRect = fromEl.getBoundingClientRect();
+      const toRect = toEl.getBoundingClientRect();
+      // RTL layout: round 1 is rendered on the right, later rounds to its
+      // left — a match's own left edge faces the match it feeds into.
+      const x1 = fromRect.left - containerRect.left;
+      const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
+      const x2 = toRect.right - containerRect.left;
+      const y2 = toRect.top + toRect.height / 2 - containerRect.top;
+      const midX = (x1 + x2) / 2;
+      next.push({ id: m.id, d: `M ${x1} ${y1} H ${midX} V ${y2} H ${x2}` });
+    }
+    setConnectors(next);
+  }, [matches]);
+
+  useLayoutEffect(() => {
+    recomputeConnectors();
+    window.addEventListener("resize", recomputeConnectors);
+    return () => window.removeEventListener("resize", recomputeConnectors);
+  }, [recomputeConnectors]);
+
+  if (isLoading) {
+    return <Skeleton className="h-32 w-full rounded-2xl" />;
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -241,31 +280,51 @@ export function TournamentKnockoutView({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <div className="flex gap-4 min-w-max">
+          <div ref={bracketRef} className="relative flex gap-10 min-w-max">
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
+              {connectors.map((c) => (
+                <path
+                  key={c.id}
+                  d={c.d}
+                  fill="none"
+                  stroke="hsl(var(--border))"
+                  strokeWidth={2}
+                />
+              ))}
+            </svg>
             {rounds.map(({ round, label, matches: roundMatches }) => (
-              <div key={round} className="flex flex-col gap-2 w-56 shrink-0">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center">
+              <div key={round} className="relative flex flex-col w-56 shrink-0">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center pb-2">
                   {label}
                 </p>
-                {roundMatches.map((m) => {
-                  const nameA = participantName(m.participant_a_id);
-                  const nameB = participantName(m.participant_b_id);
-                  return (
-                    <KnockoutMatchCard
-                      key={`${m.id}:${m.participant_a_id ?? ""}:${m.participant_b_id ?? ""}:${m.frames_a ?? ""}:${m.frames_b ?? ""}`}
-                      match={m}
-                      round={round}
-                      nameA={nameA}
-                      nameB={nameB}
-                      canEdit={canEdit}
-                      participants={participants}
-                      assignedInRound1={assignedInRound1}
-                      onAssign={(side, participantId) => assignMut.mutate({ matchId: m.id, side, participantId })}
-                      onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
-                      saving={resultMut.isPending}
-                    />
-                  );
-                })}
+                <div className="flex-1 flex flex-col justify-around gap-6">
+                  {roundMatches.map((m) => {
+                    const nameA = participantName(m.participant_a_id);
+                    const nameB = participantName(m.participant_b_id);
+                    return (
+                      <div
+                        key={`${m.id}:${m.participant_a_id ?? ""}:${m.participant_b_id ?? ""}:${m.frames_a ?? ""}:${m.frames_b ?? ""}`}
+                        ref={(el) => {
+                          if (el) matchNodeRefs.current.set(m.id, el);
+                          else matchNodeRefs.current.delete(m.id);
+                        }}
+                      >
+                        <KnockoutMatchCard
+                          match={m}
+                          round={round}
+                          nameA={nameA}
+                          nameB={nameB}
+                          canEdit={canEdit}
+                          participants={participants}
+                          assignedInRound1={assignedInRound1}
+                          onAssign={(side, participantId) => assignMut.mutate({ matchId: m.id, side, participantId })}
+                          onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
+                          saving={resultMut.isPending}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ))}
           </div>

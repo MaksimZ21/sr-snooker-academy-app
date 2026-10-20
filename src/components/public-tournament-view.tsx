@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useLayoutEffect, useCallback } from "react";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -53,6 +53,44 @@ export function PublicTournamentView({
       h.memberIds.some((id) => (lookup(id)?.name ?? "").toLowerCase().includes(normalizedSearch)),
     );
   }
+
+  // Draws the lines connecting a match to the one its winner advances into,
+  // measured from real rendered positions (see the same approach in the
+  // admin's TournamentKnockoutView) rather than computed from a fixed card
+  // height, so it stays correct whatever a card's actual height ends up being.
+  const bracketRef = useRef<HTMLDivElement>(null);
+  const matchNodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [connectors, setConnectors] = useState<{ id: string; d: string }[]>([]);
+
+  const recomputeConnectors = useCallback(() => {
+    const container = bracketRef.current;
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+    const next: { id: string; d: string }[] = [];
+    for (const m of tournament.knockoutMatches) {
+      if (!m.next_match_id) continue;
+      const fromEl = matchNodeRefs.current.get(m.id);
+      const toEl = matchNodeRefs.current.get(m.next_match_id);
+      if (!fromEl || !toEl) continue;
+      const fromRect = fromEl.getBoundingClientRect();
+      const toRect = toEl.getBoundingClientRect();
+      // RTL layout: round 1 is rendered on the right, later rounds to its
+      // left — a match's own left edge faces the match it feeds into.
+      const x1 = fromRect.left - containerRect.left;
+      const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
+      const x2 = toRect.right - containerRect.left;
+      const y2 = toRect.top + toRect.height / 2 - containerRect.top;
+      const midX = (x1 + x2) / 2;
+      next.push({ id: m.id, d: `M ${x1} ${y1} H ${midX} V ${y2} H ${x2}` });
+    }
+    setConnectors(next);
+  }, [tournament.knockoutMatches]);
+
+  useLayoutEffect(() => {
+    recomputeConnectors();
+    window.addEventListener("resize", recomputeConnectors);
+    return () => window.removeEventListener("resize", recomputeConnectors);
+  }, [recomputeConnectors]);
 
   return (
     <div className="min-h-dvh bg-background" dir="rtl">
@@ -133,35 +171,49 @@ export function PublicTournamentView({
           <section className="flex flex-col gap-3">
             <h2 className="text-lg font-semibold">שלב הנוקאאוט</h2>
             <div className="overflow-x-auto">
-              <div className="flex gap-4 min-w-max">
+              <div ref={bracketRef} className="relative flex gap-10 min-w-max">
+                <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
+                  {connectors.map((c) => (
+                    <path key={c.id} d={c.d} fill="none" stroke="hsl(var(--border))" strokeWidth={2} />
+                  ))}
+                </svg>
                 {Array.from({ length: totalRounds }, (_, i) => i + 1).map((round) => (
-                  <div key={round} className="flex flex-col gap-2 w-56 shrink-0">
-                    <p className="text-xs font-semibold text-muted-foreground text-center">
+                  <div key={round} className="relative flex flex-col w-56 shrink-0">
+                    <p className="text-xs font-semibold text-muted-foreground text-center pb-2">
                       {knockoutRoundLabel(round, totalRounds)}
                     </p>
-                    {tournament.knockoutMatches
-                      .filter((m) => m.round === round)
-                      .sort((a, b) => a.slot - b.slot)
-                      .map((m) => {
-                        const pa = lookup(m.participant_a_id);
-                        const pb = lookup(m.participant_b_id);
-                        const played = m.frames_a !== null && m.frames_b !== null;
-                        return (
-                          <div key={m.id} className="rounded-xl border border-border/60 bg-card p-2.5 flex flex-col gap-1.5">
-                            {[
-                              { p: pa, score: m.frames_a },
-                              { p: pb, score: m.frames_b },
-                            ].map(({ p, score }, i) => (
-                              <div key={i} className="flex items-center justify-between gap-2 text-sm">
-                                <span className="flex-1 truncate">
-                                  {p?.name ?? "TBD"}{p?.skillLevel && <span className="text-muted-foreground"> ({p.skillLevel})</span>}
-                                </span>
-                                {played && <span className="font-medium tabular-nums">{score}</span>}
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })}
+                    <div className="flex-1 flex flex-col justify-around gap-6">
+                      {tournament.knockoutMatches
+                        .filter((m) => m.round === round)
+                        .sort((a, b) => a.slot - b.slot)
+                        .map((m) => {
+                          const pa = lookup(m.participant_a_id);
+                          const pb = lookup(m.participant_b_id);
+                          const played = m.frames_a !== null && m.frames_b !== null;
+                          return (
+                            <div
+                              key={m.id}
+                              ref={(el) => {
+                                if (el) matchNodeRefs.current.set(m.id, el);
+                                else matchNodeRefs.current.delete(m.id);
+                              }}
+                              className="rounded-xl border border-border/60 bg-card p-2.5 flex flex-col gap-1.5"
+                            >
+                              {[
+                                { p: pa, score: m.frames_a },
+                                { p: pb, score: m.frames_b },
+                              ].map(({ p, score }, i) => (
+                                <div key={i} className="flex items-center justify-between gap-2 text-sm">
+                                  <span className="flex-1 truncate">
+                                    {p?.name ?? "TBD"}{p?.skillLevel && <span className="text-muted-foreground"> ({p.skillLevel})</span>}
+                                  </span>
+                                  {played && <span className="font-medium tabular-nums">{score}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                    </div>
                   </div>
                 ))}
               </div>

@@ -1,12 +1,37 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { computeHouseStandings, knockoutRoundLabel } from "@/lib/sheets/tournament-logic";
 import type { PublicTournament, PublicParticipant } from "@/lib/sheets/tournaments-public";
 import type { HouseWithMatches } from "@/lib/sheets/tournament-houses";
 
-export function PublicTournamentView({ tournament }: { tournament: PublicTournament }) {
+// Polled instead of a one-time server fetch so a spectator watching results
+// come in sees them without manually refreshing the page. 15s keeps it
+// feeling close to live without hammering the server on a page anyone with
+// the link can open.
+const REFETCH_INTERVAL_MS = 15_000;
+
+export function PublicTournamentView({
+  slug,
+  initialTournament,
+}: {
+  slug: string;
+  initialTournament: PublicTournament;
+}) {
+  const { data } = useQuery({
+    queryKey: ["public-tournament", slug],
+    queryFn: async () => {
+      const r = await fetch(`/api/public/tournaments/${slug}`);
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as PublicTournament;
+    },
+    initialData: initialTournament,
+    refetchInterval: REFETCH_INTERVAL_MS,
+    refetchOnWindowFocus: true,
+  });
+  const tournament = data;
   const [search, setSearch] = useState("");
   const participantById = new Map(tournament.participants.map((p) => [p.id, p]));
   function lookup(id: string | null): PublicParticipant | null {

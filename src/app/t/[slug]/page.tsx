@@ -10,5 +10,5 @@ export default async function PublicTournamentPage({
   const { slug } = await params;
   const tournament = await fetchPublicTournament(slug);
   if (!tournament) notFound();
-  return <PublicTournamentView tournament={tournament} />;
+  return <PublicTournamentView slug={slug} initialTournament={tournament} />;
 }

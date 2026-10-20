@@ -20,6 +20,7 @@ import { TournamentLocationsView } from "@/components/tournament-locations-view"
 import { TournamentKnockoutView } from "@/components/tournament-knockout-view";
 import { EditTournamentDialog } from "@/components/edit-tournament-dialog";
 import { SKILL_LEVELS } from "@/lib/sheets/schemas";
+import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
 function FieldGroup({ label, children }: { label: string; children: ReactNode }) {
@@ -420,7 +421,13 @@ export function TournamentDetailView({
                                 else paidMut.mutate({ participantId: p.id, paid: true, paymentMethod: v as "cash" | "credit" });
                               }}
                             >
-                              <SelectTrigger className="h-8 w-28 text-xs">
+                              <SelectTrigger
+                                className={cn(
+                                  "h-8 w-28 text-xs",
+                                  p.paid &&
+                                    "border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-300",
+                                )}
+                              >
                                 <SelectValue>
                                   {(v: string) => (v === "unpaid" ? "לא שולם" : v === "credit" ? "אשראי" : "מזומן")}
                                 </SelectValue>

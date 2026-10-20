@@ -1,19 +1,13 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Shuffle, Trash2 } from "lucide-react";
+import { Shuffle, Trash2, ArrowLeftRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { computeHouseStandings } from "@/lib/sheets/tournament-logic";
 
 type Participant = {
@@ -49,6 +43,7 @@ export function TournamentHousesView({
 }) {
   const qc = useQueryClient();
   const [numHouses, setNumHouses] = useState("2");
+  const [movingParticipantId, setMovingParticipantId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["tournament-houses", tournamentId],
@@ -112,6 +107,7 @@ export function TournamentHousesView({
     onSuccess: () => {
       toast.success("השחקן הועבר");
       qc.invalidateQueries({ queryKey: ["tournament-houses", tournamentId] });
+      setMovingParticipantId(null);
     },
     onError: () => toast.error("שגיאה בהעברה"),
   });
@@ -194,7 +190,7 @@ export function TournamentHousesView({
                       <th className="text-center px-2 py-1.5 font-medium">פריימים לטובה</th>
                       <th className="text-center px-2 py-1.5 font-medium">פריימים לרעה</th>
                       <th className="text-center px-2 py-1.5 font-medium">הפרש</th>
-                      {canEdit && <th className="text-center px-2 py-1.5 font-medium">בית</th>}
+                      {canEdit && <th className="w-8" />}
                     </tr>
                   </thead>
                   <tbody>
@@ -213,22 +209,14 @@ export function TournamentHousesView({
                         </td>
                         {canEdit && (
                           <td className="px-2 py-1.5">
-                            <Select
-                              value={house.id}
-                              onValueChange={(v) => v && v !== house.id && moveMut.mutate({ participantId: row.participantId, houseId: v })}
-                              disabled={moveMut.isPending}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              onClick={() => setMovingParticipantId(row.participantId)}
                             >
-                              <SelectTrigger className="h-7 w-24 text-xs mx-auto">
-                                <SelectValue>
-                                  {(v: string) => houses.find((h) => h.id === v)?.label ?? v}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {houses.map((h) => (
-                                  <SelectItem key={h.id} value={h.id}>{h.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              <ArrowLeftRight size={14} />
+                            </Button>
                           </td>
                         )}
                       </tr>
@@ -258,6 +246,31 @@ export function TournamentHousesView({
           );
         })
       )}
+
+      <Dialog open={!!movingParticipantId} onOpenChange={(v) => !v && setMovingParticipantId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {movingParticipantId ? `העבר את ${participantName(movingParticipantId)} לבית` : "העבר לבית"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            {houses
+              .filter((h) => !h.memberIds.includes(movingParticipantId ?? ""))
+              .map((h) => (
+                <Button
+                  key={h.id}
+                  variant="outline"
+                  className="justify-start h-11"
+                  disabled={moveMut.isPending}
+                  onClick={() => movingParticipantId && moveMut.mutate({ participantId: movingParticipantId, houseId: h.id })}
+                >
+                  {h.label}
+                </Button>
+              ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

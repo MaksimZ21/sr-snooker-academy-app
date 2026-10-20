@@ -33,6 +33,14 @@ export async function hasAnyKnockoutResult(tournamentId: string): Promise<boolea
   return (data ?? []).length > 0;
 }
 
+// Used standalone (the "אפס בראקט" button — back to no bracket at all) and
+// as the first step of createKnockoutBracket (what makes rebuilding safe to
+// call again).
+export async function deleteKnockoutBracket(tournamentId: string): Promise<void> {
+  const { error } = await db.from("tournament_knockout_matches").delete().eq("tournament_id", tournamentId);
+  if (error) throw new Error(error.message);
+}
+
 // Builds the whole bracket empty (no participants assigned yet) — the
 // manager fills round-1 slots afterward via assignParticipantToSlot. Safe
 // to call again: it deletes the tournament's existing bracket first, so
@@ -46,11 +54,7 @@ export async function createKnockoutBracket(tournamentId: string, bracketSize: n
     throw new Error("bracket size must be 4, 8, 16, or 32");
   }
 
-  const { error: deleteError } = await db
-    .from("tournament_knockout_matches")
-    .delete()
-    .eq("tournament_id", tournamentId);
-  if (deleteError) throw new Error(deleteError.message);
+  await deleteKnockoutBracket(tournamentId);
 
   const totalRounds = knockoutRoundCount(bracketSize);
   let nextRoundSlotToId: Record<number, string> = {};

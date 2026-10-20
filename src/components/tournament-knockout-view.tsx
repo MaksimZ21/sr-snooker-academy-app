@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Swords, CheckCheck } from "lucide-react";
+import { Swords, CheckCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,8 @@ type KnockoutMatch = {
 
 const BRACKET_SIZES = [4, 8, 16, 32];
 
+type KnockoutQueryData = { matches: KnockoutMatch[]; hasAnyResult: boolean };
+
 export function TournamentKnockoutView({
   tournamentId,
   participants,
@@ -50,7 +52,7 @@ export function TournamentKnockoutView({
     queryFn: async () => {
       const r = await fetch(`/api/tournaments/${tournamentId}/knockout`);
       if (!r.ok) throw new Error("fetch failed");
-      return (await r.json()) as { matches: KnockoutMatch[]; hasAnyResult: boolean };
+      return (await r.json()) as KnockoutQueryData;
     },
   });
 
@@ -85,8 +87,36 @@ export function TournamentKnockoutView({
         throw new Error(body?.error ?? "failed");
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tournament-knockout", tournamentId] }),
-    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בשיבוץ"),
+    // Optimistic — otherwise the picked name only appears after the full
+    // round trip, which felt like a multi-second delay before the slot
+    // reflected the pick.
+    onMutate: async ({ matchId, side, participantId }) => {
+      await qc.cancelQueries({ queryKey: ["tournament-knockout", tournamentId] });
+      const previous = qc.getQueryData<KnockoutQueryData>(["tournament-knockout", tournamentId]);
+      const column = side === "a" ? "participant_a_id" : "participant_b_id";
+      qc.setQueryData<KnockoutQueryData>(["tournament-knockout", tournamentId], (old) =>
+        old
+          ? { ...old, matches: old.matches.map((m) => (m.id === matchId ? { ...m, [column]: participantId } : m)) }
+          : old,
+      );
+      return { previous };
+    },
+    onError: (e, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["tournament-knockout", tournamentId], ctx.previous);
+      toast.error(e instanceof Error ? e.message : "שגיאה בשיבוץ");
+    },
+  });
+
+  const deleteBracketMut = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/tournaments/${tournamentId}/knockout`, { method: "DELETE" });
+      if (!r.ok) throw new Error("failed");
+    },
+    onSuccess: () => {
+      toast.success("הבראקט אופס");
+      qc.invalidateQueries({ queryKey: ["tournament-knockout", tournamentId] });
+    },
+    onError: () => toast.error("שגיאה באיפוס הבראקט"),
   });
 
   const finalizeByesMut = useMutation({
@@ -122,6 +152,14 @@ export function TournamentKnockoutView({
       if (!window.confirm("כבר יש תוצאות בבראקט הקיים — יצירה מחדש תמחק אותן. להמשיך?")) return;
     }
     createMut.mutate();
+  }
+
+  function handleReset() {
+    const warning = data?.hasAnyResult
+      ? "כבר יש תוצאות בבראקט הקיים — האיפוס ימחק גם אותן. להמשיך?"
+      : "לאפס את הבראקט הקיים?";
+    if (!window.confirm(warning)) return;
+    deleteBracketMut.mutate();
   }
 
   function participantName(id: string | null) {
@@ -172,16 +210,27 @@ export function TournamentKnockoutView({
             </Button>
           </div>
           {matches.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="self-start"
-              onClick={() => finalizeByesMut.mutate()}
-              disabled={finalizeByesMut.isPending}
-            >
-              <CheckCheck size={14} className="ml-1.5" />
-              {finalizeByesMut.isPending ? "מסיים..." : "סיים שיבוץ"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => finalizeByesMut.mutate()}
+                disabled={finalizeByesMut.isPending}
+              >
+                <CheckCheck size={14} className="ml-1.5" />
+                {finalizeByesMut.isPending ? "מסיים..." : "סיים שיבוץ"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={handleReset}
+                disabled={deleteBracketMut.isPending}
+              >
+                <Trash2 size={14} className="ml-1.5" />
+                אפס בראקט
+              </Button>
+            </div>
           )}
         </div>
       )}
@@ -283,7 +332,18 @@ function KnockoutMatchCard({
                 value={participantId ?? "__none__"}
                 onValueChange={(v) => onAssign(side, !v || v === "__none__" ? null : v)}
               >
-                <SelectTrigger className="h-7 flex-1 text-xs"><SelectValue placeholder="בחר משתתף..." /></SelectTrigger>
+                <SelectTrigger className="h-7 flex-1 text-xs">
+                  {/* SelectValue shows the raw value, not the matching
+                      SelectItem's children, unless Select is given an
+                      `items` map — map it back to a name ourselves. */}
+                  <SelectValue placeholder="בחר משתתף...">
+                    {(v: string) => {
+                      if (v === "__none__") return "— ריק —";
+                      const p = participants.find((x) => x.id === v);
+                      return p ? [p.student.first_name, p.student.last_name].filter(Boolean).join(" ") : v;
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— ריק —</SelectItem>
                   {participants

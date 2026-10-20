@@ -418,37 +418,29 @@ function KnockoutMatchCard({
               <span className="flex-1 truncate">{name ?? "TBD"}</span>
             )}
             {played && <span className="font-medium tabular-nums">{score}</span>}
+            {canEnterResult && (
+              <Input
+                type="number"
+                min={0}
+                value={side === "a" ? framesA : framesB}
+                onChange={(e) => (side === "a" ? setFramesA : setFramesB)(e.target.value)}
+                className="h-7 w-12 text-center px-1 text-xs shrink-0"
+              />
+            )}
           </div>
         );
       })}
 
       {canEnterResult && (
-        <div className="flex items-center gap-1.5 pt-1 border-t border-border/40 mt-0.5">
-          <Input
-            type="number"
-            min={0}
-            value={framesA}
-            onChange={(e) => setFramesA(e.target.value)}
-            className="h-7 w-12 text-center px-1 text-xs"
-          />
-          <span className="text-muted-foreground text-xs">-</span>
-          <Input
-            type="number"
-            min={0}
-            value={framesB}
-            onChange={(e) => setFramesB(e.target.value)}
-            className="h-7 w-12 text-center px-1 text-xs"
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 flex-1 px-2 text-xs"
-            disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
-            onClick={save}
-          >
-            שמור
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 w-full px-2 text-xs mt-0.5"
+          disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
+          onClick={save}
+        >
+          שמור
+        </Button>
       )}
     </div>
   );

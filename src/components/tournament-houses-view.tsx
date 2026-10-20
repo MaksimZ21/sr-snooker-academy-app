@@ -7,13 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { computeHouseStandings } from "@/lib/sheets/tournament-logic";
 
 type Participant = {
@@ -98,22 +91,6 @@ export function TournamentHousesView({
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tournament-houses", tournamentId] }),
     onError: () => toast.error("שגיאה בשמירת התוצאה"),
-  });
-
-  const moveMut = useMutation({
-    mutationFn: async ({ participantId, houseId }: { participantId: string; houseId: string }) => {
-      const r = await fetch(`/api/tournaments/${tournamentId}/houses/participants/${participantId}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ houseId }),
-      });
-      if (!r.ok) throw new Error("failed");
-    },
-    onSuccess: () => {
-      toast.success("השחקן הועבר");
-      qc.invalidateQueries({ queryKey: ["tournament-houses", tournamentId] });
-    },
-    onError: () => toast.error("שגיאה בהעברה"),
   });
 
   function handleDraw() {
@@ -202,21 +179,6 @@ export function TournamentHousesView({
                         <td className="px-4 py-1.5">{i + 1}</td>
                         <td className="px-2 py-1.5">
                           {participantName(row.participantId)}
-                          {canEdit && (
-                            <Select
-                              value={house.id}
-                              onValueChange={(v) => v && moveMut.mutate({ participantId: row.participantId, houseId: v })}
-                            >
-                              <SelectTrigger className="h-6 w-24 text-[10px] mr-2 inline-flex">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {houses.map((h) => (
-                                  <SelectItem key={h.id} value={h.id}>{h.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
                         </td>
                         <td className="text-center px-2 py-1.5">{row.wins}</td>
                         <td className="text-center px-2 py-1.5">{row.framesWon}</td>

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Shuffle, Trash2, ArrowLeftRight } from "lucide-react";
+import { Shuffle, Trash2, ArrowLeftRight, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,16 @@ export function TournamentHousesView({
   const qc = useQueryClient();
   const [numHouses, setNumHouses] = useState("2");
   const [movingParticipantId, setMovingParticipantId] = useState<string | null>(null);
+  const [collapsedHouseIds, setCollapsedHouseIds] = useState<Set<string>>(new Set());
+
+  function toggleCollapsed(houseId: string) {
+    setCollapsedHouseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(houseId)) next.delete(houseId);
+      else next.add(houseId);
+      return next;
+    });
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ["tournament-houses", tournamentId],
@@ -180,10 +190,24 @@ export function TournamentHousesView({
       ) : (
         houses.map((house) => {
           const standings = computeHouseStandings(house.memberIds, house.matches);
+          const collapsed = collapsedHouseIds.has(house.id);
           return (
             <div key={house.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-              <p className="text-sm font-semibold px-4 pt-3 pb-2">{house.label}</p>
+              <button
+                type="button"
+                onClick={() => toggleCollapsed(house.id)}
+                className="w-full flex items-center justify-between px-4 pt-3 pb-2 text-right"
+              >
+                <span className="text-sm font-semibold">{house.label}</span>
+                {collapsed ? (
+                  <ChevronDown size={16} className="text-muted-foreground" />
+                ) : (
+                  <ChevronUp size={16} className="text-muted-foreground" />
+                )}
+              </button>
 
+              {!collapsed && (
+              <>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -249,6 +273,8 @@ export function TournamentHousesView({
                   );
                 })}
               </div>
+              </>
+              )}
             </div>
           );
         })

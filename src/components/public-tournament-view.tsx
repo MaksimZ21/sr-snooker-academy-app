@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { computeHouseStandings, knockoutRoundLabel, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
+import { computeHouseStandings, knockoutRoundLabel } from "@/lib/sheets/tournament-logic";
 import type { PublicTournament, PublicParticipant } from "@/lib/sheets/tournaments-public";
 import type { HouseWithMatches } from "@/lib/sheets/tournament-houses";
 
@@ -86,12 +86,7 @@ export function PublicTournamentView({ tournament }: { tournament: PublicTournam
                         <h3 className="text-sm font-semibold text-muted-foreground">{location.label}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {locationHouses.map((house) => (
-                            <HouseCard
-                              key={house.id}
-                              house={house}
-                              lookup={lookup}
-                              handicapPointsPerRatingGap={tournament.handicapPointsPerRatingGap}
-                            />
+                            <HouseCard key={house.id} house={house} lookup={lookup} />
                           ))}
                         </div>
                       </div>
@@ -102,12 +97,7 @@ export function PublicTournamentView({ tournament }: { tournament: PublicTournam
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {tournament.houses.map((house) => (
-                  <HouseCard
-                    key={house.id}
-                    house={house}
-                    lookup={lookup}
-                    handicapPointsPerRatingGap={tournament.handicapPointsPerRatingGap}
-                  />
+                  <HouseCard key={house.id} house={house} lookup={lookup} />
                 ))}
               </div>
             )}
@@ -131,10 +121,6 @@ export function PublicTournamentView({ tournament }: { tournament: PublicTournam
                         const pa = lookup(m.participant_a_id);
                         const pb = lookup(m.participant_b_id);
                         const played = m.frames_a !== null && m.frames_b !== null;
-                        const handicap =
-                          pa && pb
-                            ? formatHandicapLabel(pa.name, pa.rating, pb.name, pb.rating, tournament.handicapPointsPerRatingGap)
-                            : "";
                         return (
                           <div key={m.id} className="rounded-xl border border-border/60 bg-card p-2.5 flex flex-col gap-1.5">
                             {[
@@ -143,14 +129,17 @@ export function PublicTournamentView({ tournament }: { tournament: PublicTournam
                             ].map(({ p, score }, i) => (
                               <div key={i} className="flex items-center justify-between gap-2 text-sm">
                                 {p?.publicSlug ? (
-                                  <a href={`/p/${p.publicSlug}`} className="flex-1 truncate text-primary underline">{p.name}</a>
+                                  <a href={`/p/${p.publicSlug}`} className="flex-1 truncate text-primary underline">
+                                    {p.name}{p.skillLevel && <span className="text-muted-foreground"> ({p.skillLevel})</span>}
+                                  </a>
                                 ) : (
-                                  <span className="flex-1 truncate">{p?.name ?? "TBD"}</span>
+                                  <span className="flex-1 truncate">
+                                    {p?.name ?? "TBD"}{p?.skillLevel && <span className="text-muted-foreground"> ({p.skillLevel})</span>}
+                                  </span>
                                 )}
                                 {played && <span className="font-medium tabular-nums">{score}</span>}
                               </div>
                             ))}
-                            {handicap && !played && <p className="text-[10px] text-muted-foreground pt-0.5">{handicap}</p>}
                           </div>
                         );
                       })}
@@ -176,11 +165,9 @@ export function PublicTournamentView({ tournament }: { tournament: PublicTournam
 function HouseCard({
   house,
   lookup,
-  handicapPointsPerRatingGap,
 }: {
   house: HouseWithMatches;
   lookup: (id: string | null) => PublicParticipant | null;
-  handicapPointsPerRatingGap: number;
 }) {
   const standings = computeHouseStandings(house.memberIds, house.matches);
   return (
@@ -214,6 +201,7 @@ function HouseCard({
                     ) : (
                       p?.name ?? "?"
                     )}
+                    {p?.skillLevel && <span className="text-muted-foreground text-xs"> ({p.skillLevel})</span>}
                   </td>
                   <td className="text-center px-2 py-1.5 tabular-nums">{row.wins}</td>
                   <td className="text-center px-2 py-1.5 tabular-nums">{row.framesWon}</td>
@@ -234,10 +222,6 @@ function HouseCard({
           const nameA = lookup(m.participant_a_id);
           const nameB = lookup(m.participant_b_id);
           const played = m.frames_a !== null && m.frames_b !== null;
-          const handicap =
-            nameA && nameB
-              ? formatHandicapLabel(nameA.name, nameA.rating, nameB.name, nameB.rating, handicapPointsPerRatingGap)
-              : "";
           return (
             <div key={m.id} className="flex flex-col gap-1">
               <div className="flex items-center gap-2 text-sm">
@@ -248,7 +232,6 @@ function HouseCard({
                   <span className="text-muted-foreground text-xs">טרם שוחק</span>
                 )}
               </div>
-              {handicap && !played && <p className="text-[11px] text-muted-foreground">{handicap}</p>}
             </div>
           );
         })}

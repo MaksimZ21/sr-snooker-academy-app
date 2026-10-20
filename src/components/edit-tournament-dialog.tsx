@@ -29,7 +29,6 @@ type EditableTournament = {
   name: string;
   manager_email: string | null;
   rules_url: string | null;
-  handicap_points_per_rating_gap: number;
   type: "regular" | "multi_location";
 };
 
@@ -44,7 +43,6 @@ export function EditTournamentDialog({ tournament }: { tournament: EditableTourn
   const [name, setName] = useState(tournament.name);
   const [managerEmail, setManagerEmail] = useState(tournament.manager_email ?? "");
   const [rulesUrl, setRulesUrl] = useState(tournament.rules_url ?? "");
-  const [handicapGap, setHandicapGap] = useState(String(tournament.handicap_points_per_rating_gap));
 
   const { data: coachData } = useQuery({
     queryKey: ["coaches"],
@@ -65,7 +63,6 @@ export function EditTournamentDialog({ tournament }: { tournament: EditableTourn
           rules_url: rulesUrl.trim() || null,
           ...(tournament.type === "regular" && {
             manager_email: managerEmail,
-            handicap_points_per_rating_gap: Number(handicapGap) || undefined,
           }),
         }),
       });
@@ -115,12 +112,6 @@ export function EditTournamentDialog({ tournament }: { tournament: EditableTourn
             <Label className="text-xs text-muted-foreground mb-1 block">קישור לתקנון (אופציונלי)</Label>
             <Input value={rulesUrl} onChange={(e) => setRulesUrl(e.target.value)} dir="ltr" placeholder="https://..." />
           </div>
-          {tournament.type === "regular" && (
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">מקדם פור</Label>
-              <Input type="number" value={handicapGap} onChange={(e) => setHandicapGap(e.target.value)} />
-            </div>
-          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)} disabled={saveMut.isPending}>

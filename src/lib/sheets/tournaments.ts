@@ -35,13 +35,15 @@ export type TournamentParticipant = {
   student_id: string | null;
   local_name: string | null;
   paid: boolean;
+  // Only meaningful when paid is true; null otherwise.
+  payment_method: "cash" | "credit" | null;
   location_id: string | null;
   house_id: string | null;
   created_at: string;
 };
 
 export type TournamentParticipantWithStudent = TournamentParticipant & {
-  student: { id: string; first_name: string; last_name: string; phone: string; rating: number };
+  student: { id: string; first_name: string; last_name: string; phone: string; rating: number; skill_level: string | null };
 };
 
 export type TournamentDetail = {
@@ -72,8 +74,8 @@ export async function fetchTournamentDetail(id: string): Promise<TournamentDetai
   const participants = (participantRows ?? []) as TournamentParticipant[];
   const studentIds = participants.map((p) => p.student_id).filter((id): id is string => id !== null);
   const { data: studentRows } = studentIds.length
-    ? await db.from("students").select("id, first_name, last_name, phone, rating").in("id", studentIds)
-    : { data: [] as { id: string; first_name: string; last_name: string; phone: string; rating: number }[] };
+    ? await db.from("students").select("id, first_name, last_name, phone, rating, skill_level").in("id", studentIds)
+    : { data: [] as { id: string; first_name: string; last_name: string; phone: string; rating: number; skill_level: string | null }[] };
   const studentsById = new Map((studentRows ?? []).map((s) => [s.id as string, s]));
 
   return {
@@ -84,8 +86,8 @@ export async function fetchTournamentDetail(id: string): Promise<TournamentDetai
       // with — that's a different case from "(נמחק)", which means a real
       // student record existed and later got deleted.
       student: p.student_id
-        ? (studentsById.get(p.student_id) ?? { id: p.student_id, first_name: "(נמחק)", last_name: "", phone: "", rating: 1000 })
-        : { id: "", first_name: p.local_name ?? "?", last_name: "", phone: "", rating: 1000 },
+        ? (studentsById.get(p.student_id) ?? { id: p.student_id, first_name: "(נמחק)", last_name: "", phone: "", rating: 1000, skill_level: null })
+        : { id: "", first_name: p.local_name ?? "?", last_name: "", phone: "", rating: 1000, skill_level: null },
     })),
   };
 }
@@ -198,12 +200,39 @@ export async function addTournamentParticipant(
   return data as TournamentParticipant;
 }
 
-export async function setParticipantPaid(tournamentId: string, participantId: string, paid: boolean): Promise<void> {
+export async function setParticipantPaid(
+  tournamentId: string,
+  participantId: string,
+  paid: boolean,
+  paymentMethod: "cash" | "credit" | null,
+): Promise<void> {
   const { error } = await db
     .from("tournament_participants")
-    .update({ paid })
+    .update({ paid, payment_method: paid ? paymentMethod : null })
     .eq("id", participantId)
     .eq("tournament_id", tournamentId);
+  if (error) throw new Error(error.message);
+}
+
+// The classification letter lives on the student record (shared across
+// every tournament that student plays in), not on the participant row —
+// so this updates `students` directly, scoped through the participant to
+// confirm it actually belongs to this tournament. A multi-location
+// participant has no student_id and can't be classified this way.
+export async function updateParticipantSkillLevel(
+  tournamentId: string,
+  participantId: string,
+  skillLevel: string | null,
+): Promise<void> {
+  const { data } = await db
+    .from("tournament_participants")
+    .select("student_id")
+    .eq("id", participantId)
+    .eq("tournament_id", tournamentId)
+    .maybeSingle();
+  const studentId = (data as { student_id: string | null } | null)?.student_id;
+  if (!studentId) throw new Error("participant has no linked student");
+  const { error } = await db.from("students").update({ skill_level: skillLevel }).eq("id", studentId);
   if (error) throw new Error(error.message);
 }
 

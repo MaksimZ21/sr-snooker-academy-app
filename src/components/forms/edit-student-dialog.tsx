@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import type { Student } from "@/lib/sheets/schemas";
+import { SKILL_LEVELS } from "@/lib/sheets/schemas";
 import type { College } from "@/lib/sheets/colleges";
 
 export function EditStudentDialog({
@@ -36,6 +37,7 @@ export function EditStudentDialog({
   const [birthDate, setBirthDate] = useState(student.birth_date ?? "");
   const [lastPaymentDate, setLastPaymentDate] = useState(student.last_payment_date ?? "");
   const [active, setActive] = useState(student.active);
+  const [skillLevel, setSkillLevel] = useState(student.skill_level ?? "__none__");
   const qc = useQueryClient();
 
   const collegesQ = useQuery({
@@ -60,6 +62,7 @@ export function EditStudentDialog({
       setBirthDate(student.birth_date ?? "");
       setLastPaymentDate(student.last_payment_date ?? "");
       setActive(student.active);
+      setSkillLevel(student.skill_level ?? "__none__");
     }
   }, [open, student]);
 
@@ -79,6 +82,7 @@ export function EditStudentDialog({
           birth_date: birthDate || null,
           last_payment_date: lastPaymentDate || null,
           active,
+          skill_level: skillLevel === "__none__" ? null : skillLevel,
         }),
       });
       if (!r.ok) throw new Error("failed");
@@ -141,6 +145,20 @@ export function EditStudentDialog({
           <div>
             <Label>תאריך תשלום אחרון</Label>
             <Input type="date" value={lastPaymentDate} onChange={(e) => setLastPaymentDate(e.target.value)} />
+          </div>
+          <div>
+            <Label>סיווג</Label>
+            <Select value={skillLevel} onValueChange={(v) => setSkillLevel(v ?? "__none__")}>
+              <SelectTrigger>
+                <SelectValue placeholder="בחר סיווג..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">ללא סיווג</SelectItem>
+                {SKILL_LEVELS.map((l) => (
+                  <SelectItem key={l} value={l}>{l}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label>הערות כלליות</Label>

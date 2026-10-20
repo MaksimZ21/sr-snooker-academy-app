@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import type { College } from "@/lib/sheets/colleges";
+import { SKILL_LEVELS } from "@/lib/sheets/schemas";
 
 export function AddStudentDialog() {
   const [open, setOpen] = useState(false);
@@ -29,6 +30,7 @@ export function AddStudentDialog() {
   const [notes, setNotes] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [lastPaymentDate, setLastPaymentDate] = useState("");
+  const [skillLevel, setSkillLevel] = useState("__none__");
   const qc = useQueryClient();
 
   const collegesQ = useQuery({
@@ -51,6 +53,7 @@ export function AddStudentDialog() {
     setNotes("");
     setBirthDate("");
     setLastPaymentDate("");
+    setSkillLevel("__none__");
   };
 
   const mut = useMutation({
@@ -68,6 +71,7 @@ export function AddStudentDialog() {
           general_notes: notes,
           birth_date: birthDate || null,
           last_payment_date: lastPaymentDate || null,
+          skill_level: skillLevel === "__none__" ? null : skillLevel,
         }),
       });
       if (!r.ok) throw new Error("failed");
@@ -136,6 +140,20 @@ export function AddStudentDialog() {
           <div>
             <Label>תאריך תשלום אחרון</Label>
             <Input type="date" value={lastPaymentDate} onChange={(e) => setLastPaymentDate(e.target.value)} />
+          </div>
+          <div>
+            <Label>סיווג</Label>
+            <Select value={skillLevel} onValueChange={(v) => setSkillLevel(v ?? "__none__")}>
+              <SelectTrigger>
+                <SelectValue placeholder="בחר סיווג..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">ללא סיווג</SelectItem>
+                {SKILL_LEVELS.map((l) => (
+                  <SelectItem key={l} value={l}>{l}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label>הערות כלליות</Label>

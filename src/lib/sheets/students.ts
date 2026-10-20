@@ -57,6 +57,7 @@ export async function appendStudent(input: {
   is_tournament_only?: boolean;
   rating?: number;
   public_slug?: string | null;
+  skill_level?: string | null;
 }) {
   const { data } = await db.from("students").select("id");
   const nums = (data ?? [])
@@ -79,6 +80,7 @@ export async function appendStudent(input: {
     is_tournament_only: input.is_tournament_only ?? false,
     rating: input.rating ?? 1000,
     public_slug: input.public_slug ?? null,
+    skill_level: input.skill_level ?? null,
   });
   revalidateTag("students", { expire: 0 });
   return id;
@@ -139,6 +141,7 @@ export async function updateStudent(
     last_payment_date?: string | null;
     active?: boolean;
     rating?: number;
+    skill_level?: string | null;
   },
 ): Promise<void> {
   await db.from("students").update(input).eq("id", id);

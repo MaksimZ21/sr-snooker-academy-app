@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchTournamentDetail, setParticipantPaid, removeTournamentParticipant, isTournamentManager } from "@/lib/sheets/tournaments";
 
-const PatchSchema = z.object({ paid: z.boolean() });
+const PatchSchema = z.object({ paid: z.boolean(), payment_method: z.enum(["cash", "credit"]).nullable() });
 
 export async function PATCH(
   req: Request,
@@ -17,11 +17,12 @@ export async function PATCH(
     if (!isTournamentManager(detail.tournament, user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    const { paid } = PatchSchema.parse(await req.json());
-    await setParticipantPaid(id, participantId, paid);
+    const { paid, payment_method } = PatchSchema.parse(await req.json());
+    await setParticipantPaid(id, participantId, paid, payment_method);
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;
+    if (e instanceof Error) return NextResponse.json({ error: e.message }, { status: 400 });
     return NextResponse.json({ error: "internal error" }, { status: 500 });
   }
 }

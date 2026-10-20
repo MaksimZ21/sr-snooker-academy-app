@@ -14,11 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { computeHouseStandings, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
+import { computeHouseStandings } from "@/lib/sheets/tournament-logic";
 
 type Participant = {
   id: string;
-  student: { first_name: string; last_name: string; rating: number };
+  student: { first_name: string; last_name: string };
 };
 
 type HouseMatch = {
@@ -41,12 +41,10 @@ type HouseWithMatches = {
 export function TournamentHousesView({
   tournamentId,
   participants,
-  handicapPointsPerRatingGap,
   canEdit,
 }: {
   tournamentId: string;
   participants: Participant[];
-  handicapPointsPerRatingGap: number;
   canEdit: boolean;
 }) {
   const qc = useQueryClient();
@@ -116,10 +114,6 @@ export function TournamentHousesView({
   function participantName(id: string) {
     const p = participants.find((x) => x.id === id);
     return p ? [p.student.first_name, p.student.last_name].filter(Boolean).join(" ") : "?";
-  }
-
-  function participantRating(id: string) {
-    return participants.find((x) => x.id === id)?.student.rating ?? 1000;
   }
 
   if (isLoading) {
@@ -210,19 +204,11 @@ export function TournamentHousesView({
                 {house.matches.map((m) => {
                   const nameA = participantName(m.participant_a_id);
                   const nameB = participantName(m.participant_b_id);
-                  const handicap = formatHandicapLabel(
-                    nameA,
-                    participantRating(m.participant_a_id),
-                    nameB,
-                    participantRating(m.participant_b_id),
-                    handicapPointsPerRatingGap,
-                  );
                   return (
                     <HouseMatchRow
                       key={`${m.id}:${m.frames_a ?? ""}:${m.frames_b ?? ""}`}
                       nameA={nameA}
                       nameB={nameB}
-                      handicap={handicap}
                       match={m}
                       canEdit={canEdit}
                       onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
@@ -242,7 +228,6 @@ export function TournamentHousesView({
 function HouseMatchRow({
   nameA,
   nameB,
-  handicap,
   match,
   canEdit,
   onSave,
@@ -250,7 +235,6 @@ function HouseMatchRow({
 }: {
   nameA: string;
   nameB: string;
-  handicap: string;
   match: HouseMatch;
   canEdit: boolean;
   onSave: (framesA: number, framesB: number) => void;
@@ -312,7 +296,6 @@ function HouseMatchRow({
           <span className="text-muted-foreground text-xs">טרם שוחק</span>
         )}
       </div>
-      {handicap && <p className="text-[11px] text-muted-foreground">{handicap}</p>}
     </div>
   );
 }

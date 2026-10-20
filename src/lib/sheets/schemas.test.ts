@@ -32,6 +32,7 @@ describe("parseRows + Student", () => {
         is_tournament_only: false,
         rating: 1000,
         public_slug: null,
+        skill_level: null,
       },
     ]);
   });

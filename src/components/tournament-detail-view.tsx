@@ -19,6 +19,7 @@ import { TournamentHousesView } from "@/components/tournament-houses-view";
 import { TournamentLocationsView } from "@/components/tournament-locations-view";
 import { TournamentKnockoutView } from "@/components/tournament-knockout-view";
 import { EditTournamentDialog } from "@/components/edit-tournament-dialog";
+import { SKILL_LEVELS } from "@/lib/sheets/schemas";
 
 type TournamentParticipant = {
   id: string;
@@ -26,10 +27,11 @@ type TournamentParticipant = {
   student_id: string | null;
   local_name: string | null;
   paid: boolean;
+  payment_method: "cash" | "credit" | null;
   location_id: string | null;
   house_id: string | null;
   created_at: string;
-  student: { id: string; first_name: string; last_name: string; phone: string; rating: number };
+  student: { id: string; first_name: string; last_name: string; phone: string; rating: number; skill_level: string | null };
 };
 
 type Tournament = {
@@ -79,16 +81,43 @@ export function TournamentDetailView({
   });
 
   const paidMut = useMutation({
-    mutationFn: async ({ participantId, paid }: { participantId: string; paid: boolean }) => {
+    mutationFn: async ({
+      participantId,
+      paid,
+      paymentMethod,
+    }: {
+      participantId: string;
+      paid: boolean;
+      paymentMethod: "cash" | "credit" | null;
+    }) => {
       const r = await fetch(`/api/tournaments/${tournamentId}/participants/${participantId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ paid }),
+        body: JSON.stringify({ paid, payment_method: paymentMethod }),
       });
-      if (!r.ok) throw new Error("failed");
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "failed");
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tournament", tournamentId] }),
-    onError: () => toast.error("שגיאה בעדכון"),
+    onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה בעדכון התשלום"),
+  });
+
+  const skillLevelMut = useMutation({
+    mutationFn: async ({ participantId, skillLevel }: { participantId: string; skillLevel: string | null }) => {
+      const r = await fetch(`/api/tournaments/${tournamentId}/participants/${participantId}/skill-level`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ skillLevel }),
+      });
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "failed");
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tournament", tournamentId] }),
+    onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה בעדכון הסיווג"),
   });
 
   const assignLocationMut = useMutation({
@@ -182,12 +211,6 @@ export function TournamentDetailView({
               </a>
             </div>
           )}
-          {tournament.type === "regular" && (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">מקדם פור:</span>
-              <span>{tournament.handicap_points_per_rating_gap}</span>
-            </div>
-          )}
         </div>
 
         {canEdit && (
@@ -205,70 +228,110 @@ export function TournamentDetailView({
             <div className="py-8 text-center text-sm text-muted-foreground">אין משתתפים עדיין</div>
           ) : (
             <div className="divide-y divide-border/40">
-              {participants.map((p) => (
-                <div key={p.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
-                    </p>
-                    {tournament.type === "regular" && (
-                      <p className="text-xs text-muted-foreground">
-                        {p.student.phone || "—"} · דירוג {p.student.rating}
+              {participants.map((p) => {
+                const paymentValue = p.paid ? (p.payment_method ?? "cash") : "unpaid";
+                const isRealStudent = p.student.id !== "";
+                return (
+                  <div key={p.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
                       </p>
-                    )}
+                      {tournament.type === "regular" && (
+                        <p className="text-xs text-muted-foreground">{p.student.phone || "—"}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {tournament.type === "multi_location" && (
+                        !canEdit || p.house_id ? (
+                          <span
+                            className="text-xs text-muted-foreground"
+                            title={p.house_id ? "יש להסיר מהבית לפני שינוי מיקום" : undefined}
+                          >
+                            {locations.find((l) => l.id === p.location_id)?.label ?? "ללא מיקום"}
+                          </span>
+                        ) : (
+                          <Select
+                            value={p.location_id ?? "none"}
+                            onValueChange={(v) => v && assignLocationMut.mutate({ participantId: p.id, locationId: v === "none" ? null : v })}
+                            disabled={assignLocationMut.isPending}
+                          >
+                            <SelectTrigger className="h-8 w-32 text-xs">
+                              <SelectValue placeholder="ללא מיקום" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">ללא מיקום</SelectItem>
+                              {locations.map((l) => (
+                                <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )
+                      )}
+                      {tournament.type === "regular" && isRealStudent && (
+                        canEdit ? (
+                          <Select
+                            value={p.student.skill_level ?? "none"}
+                            onValueChange={(v) => v && skillLevelMut.mutate({ participantId: p.id, skillLevel: v === "none" ? null : v })}
+                            disabled={skillLevelMut.isPending}
+                          >
+                            <SelectTrigger className="h-8 w-20 text-xs">
+                              <SelectValue placeholder="סיווג" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">ללא</SelectItem>
+                              {SKILL_LEVELS.map((l) => (
+                                <SelectItem key={l} value={l}>{l}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          p.student.skill_level && (
+                            <span className="text-xs text-muted-foreground">{p.student.skill_level}</span>
+                          )
+                        )
+                      )}
+                      {tournament.type === "regular" && (
+                        canEdit ? (
+                          <Select
+                            value={paymentValue}
+                            onValueChange={(v) => {
+                              if (!v) return;
+                              if (v === "unpaid") paidMut.mutate({ participantId: p.id, paid: false, paymentMethod: null });
+                              else paidMut.mutate({ participantId: p.id, paid: true, paymentMethod: v as "cash" | "credit" });
+                            }}
+                            disabled={paidMut.isPending}
+                          >
+                            <SelectTrigger className="h-8 w-28 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unpaid">לא שולם</SelectItem>
+                              <SelectItem value="cash">מזומן</SelectItem>
+                              <SelectItem value="credit">אשראי</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant={p.paid ? "default" : "secondary"}>
+                            {p.paid ? (p.payment_method === "credit" ? "שולם · אשראי" : "שולם · מזומן") : "לא שולם"}
+                          </Badge>
+                        )
+                      )}
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeMut.mutate(p.id)}
+                          disabled={removeMut.isPending}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  {tournament.type === "multi_location" && (
-                    !canEdit || p.house_id ? (
-                      <span
-                        className="text-xs text-muted-foreground"
-                        title={p.house_id ? "יש להסיר מהבית לפני שינוי מיקום" : undefined}
-                      >
-                        {locations.find((l) => l.id === p.location_id)?.label ?? "ללא מיקום"}
-                      </span>
-                    ) : (
-                      <Select
-                        value={p.location_id ?? "none"}
-                        onValueChange={(v) => v && assignLocationMut.mutate({ participantId: p.id, locationId: v === "none" ? null : v })}
-                        disabled={assignLocationMut.isPending}
-                      >
-                        <SelectTrigger className="h-8 w-32 text-xs">
-                          <SelectValue placeholder="ללא מיקום" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">ללא מיקום</SelectItem>
-                          {locations.map((l) => (
-                            <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )
-                  )}
-                  {tournament.type === "regular" && (canEdit ? (
-                    <button
-                      type="button"
-                      onClick={() => paidMut.mutate({ participantId: p.id, paid: !p.paid })}
-                      disabled={paidMut.isPending}
-                    >
-                      <Badge variant={p.paid ? "default" : "secondary"} className="cursor-pointer">
-                        {p.paid ? "שולם" : "לא שולם"}
-                      </Badge>
-                    </button>
-                  ) : (
-                    <Badge variant={p.paid ? "default" : "secondary"}>{p.paid ? "שולם" : "לא שולם"}</Badge>
-                  ))}
-                  {canEdit && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => removeMut.mutate(p.id)}
-                      disabled={removeMut.isPending}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -277,7 +340,6 @@ export function TournamentDetailView({
           <TournamentHousesView
             tournamentId={tournamentId}
             participants={participants}
-            handicapPointsPerRatingGap={tournament.handicap_points_per_rating_gap}
             canEdit={canEdit}
           />
         )}
@@ -295,7 +357,6 @@ export function TournamentDetailView({
           <TournamentKnockoutView
             tournamentId={tournamentId}
             participants={participants}
-            handicapPointsPerRatingGap={tournament.handicap_points_per_rating_gap}
             canEdit={canEdit}
           />
         )}

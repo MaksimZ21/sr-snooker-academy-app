@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { deleteStudent, updateStudent } from "@/lib/sheets/students";
+import { SKILL_LEVELS } from "@/lib/sheets/schemas";
 
 const PatchBody = z.object({
   first_name: z.string().optional(),
@@ -14,6 +15,7 @@ const PatchBody = z.object({
   birth_date: z.string().nullable().optional(),
   last_payment_date: z.string().nullable().optional(),
   active: z.boolean().optional(),
+  skill_level: z.enum(SKILL_LEVELS).nullable().optional(),
 });
 
 export async function PATCH(

@@ -24,7 +24,7 @@ import { fetchTournamentLocations, type TournamentLocation } from "./tournament-
 export type PublicParticipant = {
   id: string;
   name: string;
-  rating: number;
+  skillLevel: string | null;
   publicSlug: string | null;
 };
 
@@ -32,7 +32,6 @@ export type PublicTournament = {
   name: string;
   rulesUrl: string | null;
   completed: boolean;
-  handicapPointsPerRatingGap: number;
   participants: PublicParticipant[];
   houses: HouseWithMatches[];
   knockoutMatches: KnockoutMatch[];
@@ -47,7 +46,7 @@ export type PublicTournament = {
 export async function fetchPublicTournament(slug: string): Promise<PublicTournament | null> {
   const { data: tournament } = await db
     .from("tournaments")
-    .select("id, name, rules_url, completed, handicap_points_per_rating_gap, type")
+    .select("id, name, rules_url, completed, type")
     .eq("public_slug", slug)
     .maybeSingle();
   if (!tournament) return null;
@@ -62,25 +61,21 @@ export async function fetchPublicTournament(slug: string): Promise<PublicTournam
 
   const studentIds = rows.map((r) => r.student_id).filter((id): id is string => id !== null);
   const { data: studentRows } = studentIds.length
-    ? await db.from("students").select("id, first_name, last_name, rating, public_slug").in("id", studentIds)
-    : { data: [] as { id: string; first_name: string; last_name: string; rating: number; public_slug: string | null }[] };
+    ? await db.from("students").select("id, first_name, last_name, skill_level, public_slug").in("id", studentIds)
+    : { data: [] as { id: string; first_name: string; last_name: string; skill_level: string | null; public_slug: string | null }[] };
   const studentsById = new Map((studentRows ?? []).map((s) => [s.id as string, s]));
 
-  // A local (multi-location) participant has no student row and no real
-  // rating. The dummy 1000 below isn't ignored, but it's harmless: every
-  // local participant in the same tournament gets the identical dummy
-  // value, so the handicap gap between any two of them is always zero —
-  // and formatHandicapLabel already renders nothing for a zero gap. No
-  // handicap line ever appears for a multi-location tournament's matches.
+  // A local (multi-location) participant has no student row and no
+  // classification — it's a plain name local to this tournament.
   const participants: PublicParticipant[] = rows.map((r) => {
     if (!r.student_id) {
-      return { id: r.id, name: r.local_name ?? "?", rating: 1000, publicSlug: null };
+      return { id: r.id, name: r.local_name ?? "?", skillLevel: null, publicSlug: null };
     }
     const s = studentsById.get(r.student_id);
     return {
       id: r.id,
       name: s ? [s.first_name, s.last_name].filter(Boolean).join(" ") : "?",
-      rating: (s?.rating as number) ?? 1000,
+      skillLevel: (s?.skill_level as string | null) ?? null,
       publicSlug: (s?.public_slug as string) ?? null,
     };
   });
@@ -95,7 +90,6 @@ export async function fetchPublicTournament(slug: string): Promise<PublicTournam
     name: tournament.name as string,
     rulesUrl: (tournament.rules_url as string | null) ?? null,
     completed: tournament.completed as boolean,
-    handicapPointsPerRatingGap: tournament.handicap_points_per_rating_gap as number,
     participants,
     houses,
     knockoutMatches,

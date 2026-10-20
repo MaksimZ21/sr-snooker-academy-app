@@ -36,7 +36,6 @@ export default function AdminTournamentsPage() {
   const [name, setName] = useState("");
   const [managerEmail, setManagerEmail] = useState("");
   const [rulesUrl, setRulesUrl] = useState("");
-  const [handicapGap, setHandicapGap] = useState("20");
   const [type, setType] = useState<"regular" | "multi_location">("regular");
 
   const { data, isLoading } = useQuery({
@@ -65,7 +64,6 @@ export default function AdminTournamentsPage() {
           name: name.trim(),
           manager_email: type === "multi_location" ? undefined : managerEmail,
           rules_url: rulesUrl.trim() || undefined,
-          handicap_points_per_rating_gap: type === "multi_location" ? undefined : Number(handicapGap) || undefined,
           type,
         }),
       });
@@ -79,7 +77,6 @@ export default function AdminTournamentsPage() {
       setName("");
       setManagerEmail("");
       setRulesUrl("");
-      setHandicapGap("20");
       setType("regular");
       router.push(`/admin/tournaments/${tournament.id}`);
     },
@@ -142,12 +139,6 @@ export default function AdminTournamentsPage() {
                   <Label className="text-xs text-muted-foreground mb-1 block">קישור לתקנון (אופציונלי)</Label>
                   <Input value={rulesUrl} onChange={(e) => setRulesUrl(e.target.value)} dir="ltr" placeholder="https://..." />
                 </div>
-                {type === "regular" && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">מקדם פור (ברירת מחדל 20)</Label>
-                    <Input type="number" value={handicapGap} onChange={(e) => setHandicapGap(e.target.value)} />
-                  </div>
-                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)} disabled={createMut.isPending}>

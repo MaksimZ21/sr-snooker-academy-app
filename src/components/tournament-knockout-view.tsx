@@ -13,11 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { knockoutRoundLabel, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
+import { knockoutRoundLabel } from "@/lib/sheets/tournament-logic";
 
 type Participant = {
   id: string;
-  student: { first_name: string; last_name: string; rating: number };
+  student: { first_name: string; last_name: string };
 };
 
 type KnockoutMatch = {
@@ -36,12 +36,10 @@ const BRACKET_SIZES = [4, 8, 16, 32];
 export function TournamentKnockoutView({
   tournamentId,
   participants,
-  handicapPointsPerRatingGap,
   canEdit,
 }: {
   tournamentId: string;
   participants: Participant[];
-  handicapPointsPerRatingGap: number;
   canEdit: boolean;
 }) {
   const qc = useQueryClient();
@@ -132,10 +130,6 @@ export function TournamentKnockoutView({
     return p ? [p.student.first_name, p.student.last_name].filter(Boolean).join(" ") : "?";
   }
 
-  function participantRating(id: string | null) {
-    return participants.find((x) => x.id === id)?.student.rating ?? 1000;
-  }
-
   if (isLoading) {
     return <Skeleton className="h-32 w-full rounded-2xl" />;
   }
@@ -207,16 +201,6 @@ export function TournamentKnockoutView({
                 {roundMatches.map((m) => {
                   const nameA = participantName(m.participant_a_id);
                   const nameB = participantName(m.participant_b_id);
-                  const handicap =
-                    nameA && nameB
-                      ? formatHandicapLabel(
-                          nameA,
-                          participantRating(m.participant_a_id),
-                          nameB,
-                          participantRating(m.participant_b_id),
-                          handicapPointsPerRatingGap,
-                        )
-                      : "";
                   return (
                     <KnockoutMatchCard
                       key={`${m.id}:${m.participant_a_id ?? ""}:${m.participant_b_id ?? ""}:${m.frames_a ?? ""}:${m.frames_b ?? ""}`}
@@ -224,7 +208,6 @@ export function TournamentKnockoutView({
                       round={round}
                       nameA={nameA}
                       nameB={nameB}
-                      handicap={handicap}
                       canEdit={canEdit}
                       participants={participants}
                       assignedInRound1={assignedInRound1}
@@ -248,7 +231,6 @@ function KnockoutMatchCard({
   round,
   nameA,
   nameB,
-  handicap,
   canEdit,
   participants,
   assignedInRound1,
@@ -260,7 +242,6 @@ function KnockoutMatchCard({
   round: number;
   nameA: string | null;
   nameB: string | null;
-  handicap: string;
   canEdit: boolean;
   participants: Participant[];
   assignedInRound1: Set<string>;
@@ -350,8 +331,6 @@ function KnockoutMatchCard({
           </Button>
         </div>
       )}
-
-      {handicap && !played && <p className="text-[10px] text-muted-foreground pt-0.5">{handicap}</p>}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   shuffle,
-  assignToHouses,
+  assignToHousesByRating,
   generateRoundRobinPairs,
   computeHouseStandings,
   computeEloUpdate,
@@ -26,19 +26,27 @@ describe("shuffle", () => {
   });
 });
 
-describe("assignToHouses", () => {
-  it("splits participants into houses with the remainder in the first houses", () => {
-    const ids = Array.from({ length: 14 }, (_, i) => `p${i}`);
-    const houses = assignToHouses(ids, 4);
+describe("assignToHousesByRating", () => {
+  it("every participant appears in exactly one house, sizes balanced within 1", () => {
+    const participants = Array.from({ length: 14 }, (_, i) => ({ id: `p${i}`, rating: 1000 - i * 10 }));
+    const houses = assignToHousesByRating(participants, 4);
     expect(houses).toHaveLength(4);
+    expect(houses.flat().sort()).toEqual(participants.map((p) => p.id).sort());
     expect(houses.map((h) => h.length).sort((a, b) => b - a)).toEqual([4, 4, 3, 3]);
-    expect(houses.flat().sort()).toEqual([...ids].sort());
   });
 
-  it("handles an exact division with no remainder", () => {
-    const ids = Array.from({ length: 12 }, (_, i) => `p${i}`);
-    const houses = assignToHouses(ids, 4);
-    expect(houses.map((h) => h.length)).toEqual([3, 3, 3, 3]);
+  it("spreads each rating tier across every house instead of clustering strong players together", () => {
+    const participants = [
+      { id: "p1", rating: 1000 }, { id: "p2", rating: 900 }, { id: "p3", rating: 800 }, { id: "p4", rating: 700 },
+      { id: "p5", rating: 600 }, { id: "p6", rating: 500 }, { id: "p7", rating: 400 }, { id: "p8", rating: 300 },
+    ];
+    const houses = assignToHousesByRating(participants, 4);
+    const topBand = new Set(["p1", "p2", "p3", "p4"]);
+    const bottomBand = new Set(["p5", "p6", "p7", "p8"]);
+    for (const house of houses) {
+      expect(house.filter((id) => topBand.has(id))).toHaveLength(1);
+      expect(house.filter((id) => bottomBand.has(id))).toHaveLength(1);
+    }
   });
 });
 

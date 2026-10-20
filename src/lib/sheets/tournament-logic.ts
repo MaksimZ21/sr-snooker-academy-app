@@ -9,10 +9,27 @@ export function shuffle<T>(arr: T[]): T[] {
   return result;
 }
 
-export function assignToHouses(participantIds: string[], numHouses: number): string[][] {
-  const shuffled = shuffle(participantIds);
+export type RatedParticipant = { id: string; rating: number };
+
+// Balances houses by strength instead of pure chance: sort by rating into
+// "bands" the size of numHouses (strongest band first), shuffle within each
+// band (so it's still a real draw, not the same groups every time for the
+// same ratings), then snake the band across the houses (forward on even
+// bands, reversed on odd ones) so no house systematically lands next to a
+// house in rating order — every house ends up with one participant from
+// every tier instead of one house getting all the strongest players.
+export function assignToHousesByRating(participants: RatedParticipant[], numHouses: number): string[][] {
+  const sorted = [...participants].sort((a, b) => b.rating - a.rating);
   const houses: string[][] = Array.from({ length: numHouses }, () => []);
-  shuffled.forEach((id, i) => houses[i % numHouses].push(id));
+  for (let bandStart = 0; bandStart < sorted.length; bandStart += numHouses) {
+    const band = shuffle(sorted.slice(bandStart, bandStart + numHouses));
+    const bandIndex = bandStart / numHouses;
+    const reversed = bandIndex % 2 === 1;
+    band.forEach((p, i) => {
+      const houseIndex = reversed ? numHouses - 1 - i : i;
+      houses[houseIndex].push(p.id);
+    });
+  }
   return houses;
 }
 

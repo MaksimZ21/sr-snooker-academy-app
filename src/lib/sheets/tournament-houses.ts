@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/client";
 import {
-  assignToHouses,
+  assignToHousesByRating,
   generateRoundRobinPairs,
   computeEloUpdate,
 } from "./tournament-logic";
@@ -58,12 +58,26 @@ export async function runHouseDraw(tournamentId: string, numHouses: number): Pro
 
   const { data: participantRows } = await db
     .from("tournament_participants")
-    .select("id")
+    .select("id, student_id")
     .eq("tournament_id", tournamentId);
-  const participantIds = (participantRows ?? []).map((p) => p.id as string);
-  if (participantIds.length === 0) throw new Error("no participants to draw");
+  const participants = (participantRows ?? []) as { id: string; student_id: string | null }[];
+  if (participants.length === 0) throw new Error("no participants to draw");
   if (numHouses < 1) throw new Error("numHouses must be at least 1");
-  if (numHouses > participantIds.length) throw new Error("numHouses cannot exceed participant count");
+  if (numHouses > participants.length) throw new Error("numHouses cannot exceed participant count");
+
+  // Balance houses by rating (see assignToHousesByRating) — a participant
+  // with no student row (shouldn't happen for a regular tournament, but
+  // guards against it anyway) falls back to the same 1000 default used
+  // everywhere else a rating is missing.
+  const studentIds = participants.map((p) => p.student_id).filter((id): id is string => id !== null);
+  const { data: studentRows } = studentIds.length
+    ? await db.from("students").select("id, rating").in("id", studentIds)
+    : { data: [] as { id: string; rating: number }[] };
+  const ratingByStudentId = new Map((studentRows ?? []).map((s) => [s.id as string, s.rating as number]));
+  const ratedParticipants = participants.map((p) => ({
+    id: p.id,
+    rating: p.student_id ? ratingByStudentId.get(p.student_id) ?? 1000 : 1000,
+  }));
 
   // Deleting existing houses cascades their tournament_house_matches and
   // (via ON DELETE SET NULL on tournament_participants.house_id) frees up
@@ -72,7 +86,7 @@ export async function runHouseDraw(tournamentId: string, numHouses: number): Pro
   const { error: deleteError } = await db.from("tournament_houses").delete().eq("tournament_id", tournamentId);
   if (deleteError) throw new Error(deleteError.message);
 
-  const groups = assignToHouses(participantIds, numHouses);
+  const groups = assignToHousesByRating(ratedParticipants, numHouses);
 
   for (let i = 0; i < groups.length; i++) {
     const { data: house, error: houseError } = await db

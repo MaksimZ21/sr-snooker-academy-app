@@ -49,6 +49,16 @@ export async function hasAnyHouseResult(tournamentId: string): Promise<boolean> 
   return (played ?? []).length > 0;
 }
 
+// Deleting existing houses cascades their tournament_house_matches and
+// (via ON DELETE SET NULL on tournament_participants.house_id) frees up
+// every participant who was in one of them. Used both standalone (the
+// "מחק הגרלה" button — back to no draw at all, no results) and as the
+// first step of runHouseDraw (what makes re-drawing safe to call again).
+export async function deleteHouseDraw(tournamentId: string): Promise<void> {
+  const { error } = await db.from("tournament_houses").delete().eq("tournament_id", tournamentId);
+  if (error) throw new Error(error.message);
+}
+
 export async function runHouseDraw(tournamentId: string, numHouses: number): Promise<void> {
   const { data: tournament } = await db.from("tournaments").select("id, type").eq("id", tournamentId).maybeSingle();
   if (!tournament) throw new Error("tournament not found");
@@ -79,12 +89,7 @@ export async function runHouseDraw(tournamentId: string, numHouses: number): Pro
     rating: p.student_id ? ratingByStudentId.get(p.student_id) ?? 1000 : 1000,
   }));
 
-  // Deleting existing houses cascades their tournament_house_matches and
-  // (via ON DELETE SET NULL on tournament_participants.house_id) frees up
-  // every participant who was in one of them — this is what makes calling
-  // this same function again a safe "re-draw", not just an initial draw.
-  const { error: deleteError } = await db.from("tournament_houses").delete().eq("tournament_id", tournamentId);
-  if (deleteError) throw new Error(deleteError.message);
+  await deleteHouseDraw(tournamentId);
 
   const groups = assignToHousesByRating(ratedParticipants, numHouses);
 

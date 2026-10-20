@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Shuffle } from "lucide-react";
+import { Shuffle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,6 +75,18 @@ export function TournamentHousesView({
     onError: () => toast.error("שגיאה בהגרלה"),
   });
 
+  const deleteDrawMut = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/tournaments/${tournamentId}/houses`, { method: "DELETE" });
+      if (!r.ok) throw new Error("failed");
+    },
+    onSuccess: () => {
+      toast.success("ההגרלה נמחקה");
+      qc.invalidateQueries({ queryKey: ["tournament-houses", tournamentId] });
+    },
+    onError: () => toast.error("שגיאה במחיקת ההגרלה"),
+  });
+
   const resultMut = useMutation({
     mutationFn: async ({ matchId, framesA, framesB }: { matchId: string; framesA: number; framesB: number }) => {
       const r = await fetch(`/api/tournaments/${tournamentId}/houses/matches/${matchId}`, {
@@ -111,6 +123,14 @@ export function TournamentHousesView({
     drawMut.mutate();
   }
 
+  function handleDeleteDraw() {
+    const warning = data?.hasAnyResult
+      ? "כבר יש תוצאות בבתים הקיימים — המחיקה תמחק גם אותן. להמשיך?"
+      : "למחוק את ההגרלה הקיימת?";
+    if (!window.confirm(warning)) return;
+    deleteDrawMut.mutate();
+  }
+
   function participantName(id: string) {
     const p = participants.find((x) => x.id === id);
     return p ? [p.student.first_name, p.student.last_name].filter(Boolean).join(" ") : "?";
@@ -138,6 +158,17 @@ export function TournamentHousesView({
               <Shuffle size={14} className="ml-1.5" />
               {drawMut.isPending ? "מגריל..." : houses.length === 0 ? "בצע הגרלה" : "הגרל מחדש"}
             </Button>
+            {houses.length > 0 && (
+              <Button
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                onClick={handleDeleteDraw}
+                disabled={deleteDrawMut.isPending}
+              >
+                <Trash2 size={14} className="ml-1.5" />
+                מחק הגרלה
+              </Button>
+            )}
           </div>
         </div>
       )}

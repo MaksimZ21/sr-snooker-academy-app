@@ -359,6 +359,7 @@ function KnockoutMatchCard({
 }) {
   const [framesA, setFramesA] = useState(match.frames_a?.toString() ?? "");
   const [framesB, setFramesB] = useState(match.frames_b?.toString() ?? "");
+  const [manual, setManual] = useState(false);
   const played = match.frames_a !== null && match.frames_b !== null;
 
   function save() {
@@ -418,7 +419,32 @@ function KnockoutMatchCard({
               <span className="flex-1 truncate">{name ?? "TBD"}</span>
             )}
             {played && <span className="font-medium tabular-nums">{score}</span>}
-            {canEnterResult && (
+            {canEnterResult && !manual && (
+              // One-click common best-of-3 results instead of typing into
+              // two boxes and pressing save — "תוצאה אחרת" below still
+              // covers anything else.
+              <div className="flex gap-1 shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-xs"
+                  disabled={saving}
+                  onClick={() => onSave(side === "a" ? 2 : 0, side === "a" ? 0 : 2)}
+                >
+                  2-0
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-xs"
+                  disabled={saving}
+                  onClick={() => onSave(side === "a" ? 2 : 1, side === "a" ? 1 : 2)}
+                >
+                  2-1
+                </Button>
+              </div>
+            )}
+            {canEnterResult && manual && (
               <Input
                 type="number"
                 min={0}
@@ -431,16 +457,35 @@ function KnockoutMatchCard({
         );
       })}
 
-      {canEnterResult && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 w-full px-2 text-xs mt-0.5"
-          disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
-          onClick={save}
+      {canEnterResult && !manual && (
+        <button
+          type="button"
+          className="text-[11px] text-muted-foreground underline self-start"
+          onClick={() => setManual(true)}
         >
-          שמור
-        </Button>
+          תוצאה אחרת
+        </button>
+      )}
+
+      {canEnterResult && manual && (
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 flex-1 px-2 text-xs"
+            disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
+            onClick={save}
+          >
+            שמור
+          </Button>
+          <button
+            type="button"
+            className="text-[11px] text-muted-foreground underline shrink-0"
+            onClick={() => setManual(false)}
+          >
+            ביטול
+          </button>
+        </div>
       )}
     </div>
   );

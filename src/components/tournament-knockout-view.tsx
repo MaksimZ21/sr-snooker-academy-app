@@ -359,21 +359,17 @@ function KnockoutMatchCard({
 }) {
   const [framesA, setFramesA] = useState(match.frames_a?.toString() ?? "");
   const [framesB, setFramesB] = useState(match.frames_b?.toString() ?? "");
-  const [manual, setManual] = useState(false);
   const played = match.frames_a !== null && match.frames_b !== null;
 
-  function save() {
+  // Fires on blur instead of a save button — silently does nothing while a
+  // field is still empty/invalid (normal mid-typing state, not an error),
+  // so tabbing from the first box to the second doesn't spam a toast.
+  function trySave() {
     const a = framesA.trim();
     const b = framesB.trim();
     const na = Number(a);
     const nb = Number(b);
-    // Number("") and Number(" ") both coerce to 0 — trim + explicit
-    // emptiness + Number.isInteger together are required to reject a
-    // whitespace-only input instead of silently recording a 0 result.
-    if (a === "" || b === "" || !Number.isInteger(na) || !Number.isInteger(nb) || na < 0 || nb < 0) {
-      toast.error("יש להזין תוצאה תקינה");
-      return;
-    }
+    if (a === "" || b === "" || !Number.isInteger(na) || !Number.isInteger(nb) || na < 0 || nb < 0) return;
     onSave(na, nb);
   }
   const canAssign = canEdit && round === 1 && !played;
@@ -419,74 +415,20 @@ function KnockoutMatchCard({
               <span className="flex-1 truncate">{name ?? "TBD"}</span>
             )}
             {played && <span className="font-medium tabular-nums">{score}</span>}
-            {canEnterResult && !manual && (
-              // One-click common best-of-3 results instead of typing into
-              // two boxes and pressing save — "תוצאה אחרת" below still
-              // covers anything else.
-              <div className="flex gap-1 shrink-0">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2 text-xs"
-                  disabled={saving}
-                  onClick={() => onSave(side === "a" ? 2 : 0, side === "a" ? 0 : 2)}
-                >
-                  2-0
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2 text-xs"
-                  disabled={saving}
-                  onClick={() => onSave(side === "a" ? 2 : 1, side === "a" ? 1 : 2)}
-                >
-                  2-1
-                </Button>
-              </div>
-            )}
-            {canEnterResult && manual && (
+            {canEnterResult && (
               <Input
                 type="number"
                 min={0}
                 value={side === "a" ? framesA : framesB}
                 onChange={(e) => (side === "a" ? setFramesA : setFramesB)(e.target.value)}
+                onBlur={trySave}
                 className="h-7 w-12 text-center px-1 text-xs shrink-0"
+                disabled={saving}
               />
             )}
           </div>
         );
       })}
-
-      {canEnterResult && !manual && (
-        <button
-          type="button"
-          className="text-[11px] text-muted-foreground underline self-start"
-          onClick={() => setManual(true)}
-        >
-          תוצאה אחרת
-        </button>
-      )}
-
-      {canEnterResult && manual && (
-        <div className="flex items-center gap-1.5">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 flex-1 px-2 text-xs"
-            disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
-            onClick={save}
-          >
-            שמור
-          </Button>
-          <button
-            type="button"
-            className="text-[11px] text-muted-foreground underline shrink-0"
-            onClick={() => setManual(false)}
-          >
-            ביטול
-          </button>
-        </div>
-      )}
     </div>
   );
 }

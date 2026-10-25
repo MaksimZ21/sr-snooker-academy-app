@@ -329,25 +329,21 @@ function HouseMatchRow({
 }) {
   const [framesA, setFramesA] = useState(match.frames_a?.toString() ?? "");
   const [framesB, setFramesB] = useState(match.frames_b?.toString() ?? "");
-  const [manual, setManual] = useState(false);
   const played = match.frames_a !== null && match.frames_b !== null;
   // The parent keys this component by match id + frames, so a saved result
   // remounts it fresh — this lazy initializer correctly starts collapsed
   // (clean result view) for an already-played match and open for a new one.
   const [editing, setEditing] = useState(!played);
 
-  function save() {
+  // Fires on blur instead of a save button — silently does nothing while a
+  // field is still empty/invalid (normal mid-typing state, not an error),
+  // so tabbing from the first box to the second doesn't spam a toast.
+  function trySave() {
     const a = framesA.trim();
     const b = framesB.trim();
     const na = Number(a);
     const nb = Number(b);
-    // Number("") and Number(" ") both coerce to 0 — trim + explicit
-    // emptiness + Number.isInteger together are required to reject a
-    // whitespace-only input instead of silently recording a 0 result.
-    if (a === "" || b === "" || !Number.isInteger(na) || !Number.isInteger(nb) || na < 0 || nb < 0) {
-      toast.error("יש להזין תוצאה תקינה");
-      return;
-    }
+    if (a === "" || b === "" || !Number.isInteger(na) || !Number.isInteger(nb) || na < 0 || nb < 0) return;
     onSave(na, nb);
   }
 
@@ -387,71 +383,35 @@ function HouseMatchRow({
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2 text-sm">
         <span className="flex-1">{nameA} נגד {nameB}</span>
-      </div>
-
-      {!manual && (
-        <div className="flex flex-col gap-1">
-          {/* One-click common best-of-3 results instead of typing into two
-              boxes every time — "תוצאה אחרת" below still covers anything
-              else. */}
-          <div className="flex items-center gap-1.5">
-            <span className="flex-1 truncate text-xs text-muted-foreground">{nameA}</span>
-            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" disabled={saving} onClick={() => onSave(2, 0)}>2-0</Button>
-            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" disabled={saving} onClick={() => onSave(2, 1)}>2-1</Button>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="flex-1 truncate text-xs text-muted-foreground">{nameB}</span>
-            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" disabled={saving} onClick={() => onSave(1, 2)}>2-1</Button>
-            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" disabled={saving} onClick={() => onSave(0, 2)}>2-0</Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <button type="button" className="text-[11px] text-muted-foreground underline" onClick={() => setManual(true)}>
-              תוצאה אחרת
-            </button>
-            {played && (
-              <button type="button" className="text-[11px] text-muted-foreground underline" onClick={() => setEditing(false)}>
-                ביטול
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {manual && (
-        <div className="flex items-center gap-1.5">
-          <Input
-            type="number"
-            min={0}
-            value={framesA}
-            onChange={(e) => setFramesA(e.target.value)}
-            className="h-7 w-14 text-center px-1"
-          />
-          <span className="text-muted-foreground">-</span>
-          <Input
-            type="number"
-            min={0}
-            value={framesB}
-            onChange={(e) => setFramesB(e.target.value)}
-            className="h-7 w-14 text-center px-1"
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
-            onClick={save}
-          >
-            שמור
-          </Button>
+        <Input
+          type="number"
+          min={0}
+          value={framesA}
+          onChange={(e) => setFramesA(e.target.value)}
+          onBlur={trySave}
+          className="h-7 w-14 text-center px-1"
+          disabled={saving}
+        />
+        <span className="text-muted-foreground">-</span>
+        <Input
+          type="number"
+          min={0}
+          value={framesB}
+          onChange={(e) => setFramesB(e.target.value)}
+          onBlur={trySave}
+          className="h-7 w-14 text-center px-1"
+          disabled={saving}
+        />
+        {played && (
           <button
             type="button"
-            className="text-[11px] text-muted-foreground underline"
-            onClick={() => setManual(false)}
+            className="text-[11px] text-muted-foreground underline shrink-0"
+            onClick={() => setEditing(false)}
           >
             ביטול
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

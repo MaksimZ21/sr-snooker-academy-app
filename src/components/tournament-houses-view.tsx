@@ -325,6 +325,7 @@ function HouseMatchRow({
 }) {
   const [framesA, setFramesA] = useState(match.frames_a?.toString() ?? "");
   const [framesB, setFramesB] = useState(match.frames_b?.toString() ?? "");
+  const [manual, setManual] = useState(false);
   const played = match.frames_a !== null && match.frames_b !== null;
 
   function save() {
@@ -346,39 +347,79 @@ function HouseMatchRow({
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2 text-sm">
         <span className="flex-1">{nameA} נגד {nameB}</span>
-        {canEdit ? (
-          <>
-            <Input
-              type="number"
-              min={0}
-              value={framesA}
-              onChange={(e) => setFramesA(e.target.value)}
-              className="h-7 w-14 text-center px-1"
-            />
-            <span className="text-muted-foreground">-</span>
-            <Input
-              type="number"
-              min={0}
-              value={framesB}
-              onChange={(e) => setFramesB(e.target.value)}
-              className="h-7 w-14 text-center px-1"
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs"
-              disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
-              onClick={save}
-            >
-              שמור
-            </Button>
-          </>
-        ) : played ? (
-          <span className="font-medium">{match.frames_a} - {match.frames_b}</span>
-        ) : (
-          <span className="text-muted-foreground text-xs">טרם שוחק</span>
+        {!canEdit && (
+          played ? (
+            <span className="font-medium">{match.frames_a} - {match.frames_b}</span>
+          ) : (
+            <span className="text-muted-foreground text-xs">טרם שוחק</span>
+          )
+        )}
+        {canEdit && played && (
+          <span className="text-xs text-muted-foreground">{match.frames_a} - {match.frames_b}</span>
         )}
       </div>
+
+      {canEdit && !manual && (
+        <div className="flex flex-col gap-1">
+          {/* One-click common best-of-3 results instead of typing into two
+              boxes every time — "תוצאה אחרת" below still covers anything
+              else. Still available after a result is already saved, to
+              correct it the same way it was entered. */}
+          <div className="flex items-center gap-1.5">
+            <span className="flex-1 truncate text-xs text-muted-foreground">{nameA}</span>
+            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" disabled={saving} onClick={() => onSave(2, 0)}>2-0</Button>
+            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" disabled={saving} onClick={() => onSave(2, 1)}>2-1</Button>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="flex-1 truncate text-xs text-muted-foreground">{nameB}</span>
+            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" disabled={saving} onClick={() => onSave(1, 2)}>2-1</Button>
+            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" disabled={saving} onClick={() => onSave(0, 2)}>2-0</Button>
+          </div>
+          <button
+            type="button"
+            className="text-[11px] text-muted-foreground underline self-start"
+            onClick={() => setManual(true)}
+          >
+            תוצאה אחרת
+          </button>
+        </div>
+      )}
+
+      {canEdit && manual && (
+        <div className="flex items-center gap-1.5">
+          <Input
+            type="number"
+            min={0}
+            value={framesA}
+            onChange={(e) => setFramesA(e.target.value)}
+            className="h-7 w-14 text-center px-1"
+          />
+          <span className="text-muted-foreground">-</span>
+          <Input
+            type="number"
+            min={0}
+            value={framesB}
+            onChange={(e) => setFramesB(e.target.value)}
+            className="h-7 w-14 text-center px-1"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs"
+            disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
+            onClick={save}
+          >
+            שמור
+          </Button>
+          <button
+            type="button"
+            className="text-[11px] text-muted-foreground underline"
+            onClick={() => setManual(false)}
+          >
+            ביטול
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { normalizePhoneLocal } from "@/lib/phone";
 
 export async function updateCoach(input: {
   email: string;
@@ -9,7 +10,7 @@ export async function updateCoach(input: {
 }): Promise<void> {
   const { error } = await db
     .from("coaches")
-    .update({ name: input.name, phone: input.phone ?? "" })
+    .update({ name: input.name, phone: input.phone ? normalizePhoneLocal(input.phone) : "" })
     .eq("email", input.email.trim().toLowerCase());
   if (error) throw new Error(`db_update_failed: ${error.message}`);
   revalidateTag("coaches", { expire: 0 });
@@ -31,7 +32,7 @@ export async function appendCoach(input: {
 }) {
   const email = input.email.trim().toLowerCase();
   const { error: upsertError } = await db.from("coaches").upsert(
-    { email, name: input.name, phone: input.phone ?? "", active: true },
+    { email, name: input.name, phone: input.phone ? normalizePhoneLocal(input.phone) : "", active: true },
     { onConflict: "email" },
   );
   if (upsertError) throw new Error(`db_upsert_failed: ${upsertError.message}`);

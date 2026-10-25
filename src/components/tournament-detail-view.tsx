@@ -228,7 +228,15 @@ export function TournamentDetailView({
     },
     onSuccess: () => {
       toast.success("משתתף הוסר");
+      // Removing a participant cascades into their house matches (deleted)
+      // and knockout slots (cleared) server-side — but those live in their
+      // own separate queries, never invalidated here before, so they kept
+      // showing the stale match data referencing the now-gone participant
+      // id against the freshly-updated (smaller) participants list, which
+      // showed up as "?" everywhere that stale reference still appeared.
       qc.invalidateQueries({ queryKey: ["tournament", tournamentId] });
+      qc.invalidateQueries({ queryKey: ["tournament-houses", tournamentId] });
+      qc.invalidateQueries({ queryKey: ["tournament-knockout", tournamentId] });
     },
     onError: () => toast.error("שגיאה בהסרה"),
   });

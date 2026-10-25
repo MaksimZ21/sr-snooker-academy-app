@@ -72,13 +72,16 @@ export function TournamentHousesView({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ numHouses: Number(numHouses) }),
       });
-      if (!r.ok) throw new Error("failed");
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "failed");
+      }
     },
     onSuccess: () => {
       toast.success("ההגרלה בוצעה");
       qc.invalidateQueries({ queryKey: ["tournament-houses", tournamentId] });
     },
-    onError: () => toast.error("שגיאה בהגרלה"),
+    onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה בהגרלה"),
   });
 
   const deleteDrawMut = useMutation({

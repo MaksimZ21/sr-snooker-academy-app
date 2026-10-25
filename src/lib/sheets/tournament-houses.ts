@@ -26,7 +26,14 @@ export async function fetchTournamentHouses(tournamentId: string): Promise<House
   if (!houseRows.length) return [];
 
   const houseIds = houseRows.map((h) => h.id);
-  const { data: matches } = await db.from("tournament_house_matches").select("*").in("house_id", houseIds);
+  // Explicit order — without it Postgres gives no row-order guarantee at
+  // all, so the match list could visibly reshuffle itself after any edit
+  // (e.g. entering a result) with nothing in the data actually changing.
+  const { data: matches } = await db
+    .from("tournament_house_matches")
+    .select("*")
+    .in("house_id", houseIds)
+    .order("slot");
   const { data: members } = await db.from("tournament_participants").select("id, house_id").in("house_id", houseIds);
 
   return houseRows.map((h) => ({
@@ -111,12 +118,13 @@ export async function runHouseDraw(tournamentId: string, numHouses: number): Pro
       if (assignError) throw new Error(assignError.message);
     }
 
-    const pairs = generateRoundRobinPairs(memberIds).map(([a, b]) => ({
+    const pairs = generateRoundRobinPairs(memberIds).map(([a, b], slot) => ({
       house_id: houseId,
       participant_a_id: a,
       participant_b_id: b,
       frames_a: null,
       frames_b: null,
+      slot,
     }));
     if (pairs.length) {
       const { error: matchError } = await db.from("tournament_house_matches").insert(pairs);

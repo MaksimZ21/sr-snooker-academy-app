@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { computeHouseStandings } from "@/lib/sheets/tournament-logic";
+import { cn } from "@/lib/utils";
 
 type Participant = {
   id: string;
@@ -327,6 +328,10 @@ function HouseMatchRow({
   const [framesB, setFramesB] = useState(match.frames_b?.toString() ?? "");
   const [manual, setManual] = useState(false);
   const played = match.frames_a !== null && match.frames_b !== null;
+  // The parent keys this component by match id + frames, so a saved result
+  // remounts it fresh — this lazy initializer correctly starts collapsed
+  // (clean result view) for an already-played match and open for a new one.
+  const [editing, setEditing] = useState(!played);
 
   function save() {
     const a = framesA.trim();
@@ -343,28 +348,49 @@ function HouseMatchRow({
     onSave(na, nb);
   }
 
+  if (!canEdit) {
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        <span className="flex-1">{nameA} נגד {nameB}</span>
+        {played ? (
+          <span className="font-medium">{match.frames_a} - {match.frames_b}</span>
+        ) : (
+          <span className="text-muted-foreground text-xs">טרם שוחק</span>
+        )}
+      </div>
+    );
+  }
+
+  if (played && !editing) {
+    return (
+      <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-1.5 text-sm">
+        <span className="truncate">
+          <span className={cn(match.frames_a! > match.frames_b! && "font-semibold")}>{nameA}</span>
+          <span className="mx-1.5 font-semibold tabular-nums">{match.frames_a} - {match.frames_b}</span>
+          <span className={cn(match.frames_b! > match.frames_a! && "font-semibold")}>{nameB}</span>
+        </span>
+        <button
+          type="button"
+          className="text-xs text-muted-foreground underline shrink-0"
+          onClick={() => setEditing(true)}
+        >
+          עריכה
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2 text-sm">
         <span className="flex-1">{nameA} נגד {nameB}</span>
-        {!canEdit && (
-          played ? (
-            <span className="font-medium">{match.frames_a} - {match.frames_b}</span>
-          ) : (
-            <span className="text-muted-foreground text-xs">טרם שוחק</span>
-          )
-        )}
-        {canEdit && played && (
-          <span className="text-xs text-muted-foreground">{match.frames_a} - {match.frames_b}</span>
-        )}
       </div>
 
-      {canEdit && !manual && (
+      {!manual && (
         <div className="flex flex-col gap-1">
           {/* One-click common best-of-3 results instead of typing into two
               boxes every time — "תוצאה אחרת" below still covers anything
-              else. Still available after a result is already saved, to
-              correct it the same way it was entered. */}
+              else. */}
           <div className="flex items-center gap-1.5">
             <span className="flex-1 truncate text-xs text-muted-foreground">{nameA}</span>
             <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" disabled={saving} onClick={() => onSave(2, 0)}>2-0</Button>
@@ -375,17 +401,20 @@ function HouseMatchRow({
             <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" disabled={saving} onClick={() => onSave(1, 2)}>2-1</Button>
             <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" disabled={saving} onClick={() => onSave(0, 2)}>2-0</Button>
           </div>
-          <button
-            type="button"
-            className="text-[11px] text-muted-foreground underline self-start"
-            onClick={() => setManual(true)}
-          >
-            תוצאה אחרת
-          </button>
+          <div className="flex items-center gap-2">
+            <button type="button" className="text-[11px] text-muted-foreground underline" onClick={() => setManual(true)}>
+              תוצאה אחרת
+            </button>
+            {played && (
+              <button type="button" className="text-[11px] text-muted-foreground underline" onClick={() => setEditing(false)}>
+                ביטול
+              </button>
+            )}
+          </div>
         </div>
       )}
 
-      {canEdit && manual && (
+      {manual && (
         <div className="flex items-center gap-1.5">
           <Input
             type="number"

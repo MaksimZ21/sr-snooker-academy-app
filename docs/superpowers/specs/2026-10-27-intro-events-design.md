@@ -54,7 +54,7 @@ Both fields start `null` and are filled in by an admin by hand, per participant,
 
 In `handleEventCreated`, alongside the existing `meeting_type === "טורניר"` branch, add:
 
-- `meeting_type === "אירוע היכרות"` → calls a new `upsertIntroEventFromCrm` instead of `upsertSessionFromCrm`. **This exact string needs confirmation from the CRM side before implementation** — the tournament branch depends on an exact match (`"טורניר"`) and this must too.
+- `meeting_type === "אירוע הכירות"` → calls a new `upsertIntroEventFromCrm` instead of `upsertSessionFromCrm`. Confirmed exact string from the CRM — note the spelling (`הכירות`, not `היכרות`); the tournament branch depends on an exact match (`"טורניר"`) and this must too, so the literal CRM spelling is what the code checks against, typo or not.
 - Everything else unchanged.
 
 `upsertIntroEventFromCrm(input: { crm_event_id, crm_appointment_id?, name?, event_date, start_time, crm_event_type? })` follows `upsertTournamentFromCrm`'s structure: resolve-existing-by-CRM-id, insert-or-update, race fallback on `23505`, then drain any pending registrations parked for this `appointment_id`.

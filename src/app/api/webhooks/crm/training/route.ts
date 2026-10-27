@@ -8,6 +8,11 @@ import {
   addTournamentParticipantFromCrm,
   queuePendingRegistration,
 } from "@/lib/sheets/tournaments";
+import {
+  upsertIntroEventFromCrm,
+  fetchIntroEventByCrmAppointmentId,
+  addIntroEventParticipantFromCrm,
+} from "@/lib/sheets/intro-events";
 import { db } from "@/lib/db/client";
 import type { Student } from "@/lib/sheets/schemas";
 import { logWebhook } from "@/lib/sheets/webhook-log";
@@ -16,6 +21,10 @@ import { getCrmPaused } from "@/lib/sheets/settings";
 // The CRM's exact signal that a calendar event is a tournament, not a
 // training session — see docs/superpowers/specs/2026-09-18-crm-tournament-events-design.md.
 const TOURNAMENT_MEETING_TYPE = "טורניר";
+
+// The CRM's exact signal (its own spelling) that a calendar event is an
+// intro event — see docs/superpowers/specs/2026-10-27-intro-events-design.md.
+const INTRO_EVENT_MEETING_TYPE = "אירוע הכירות";
 
 function normalizePhone(raw: string): { local: string; intl: string } {
   const d = raw.replace(/\D/g, "");
@@ -87,6 +96,19 @@ async function handleEventCreated(raw: Record<string, unknown>) {
     return NextResponse.json(result, { status: 200 });
   }
 
+  if (meeting_type === INTRO_EVENT_MEETING_TYPE) {
+    const result = await upsertIntroEventFromCrm({
+      crm_event_id: event_id,
+      crm_appointment_id: appointment_id,
+      name: meeting_title || meeting_type,
+      event_date: time.date,
+      start_time: time.startTime,
+      crm_event_type: "event_created",
+    });
+    void logWebhook({ route: "training", event_type: "event_created", params: raw, status: "ok", result });
+    return NextResponse.json(result, { status: 200 });
+  }
+
   const result = await upsertSessionFromCrm({
     crm_event_id: event_id,
     crm_appointment_id: appointment_id,
@@ -112,23 +134,36 @@ async function handleAppointmentApproved(raw: Record<string, unknown>) {
   const session = await fetchSessionByCrmAppointmentId(appointment_id);
   if (!session) {
     // Not a session — maybe this appointment_id belongs to a tournament
-    // instead (someone bought a ticket to it through the CRM).
+    // or an intro event instead (someone registered for it through the
+    // CRM).
     const tournament = await fetchTournamentByCrmAppointmentId(appointment_id);
-    if (!tournament) {
-      // The tournament event may simply not have arrived yet — park the
-      // registration and attach it when the tournament is created.
-      await queuePendingRegistration(appointment_id, { firstName: first_name, lastName: last_name, phone });
-      void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "ok", result: { reason: "queued until tournament exists", appointment_id } });
-      return NextResponse.json({ ok: true, queued: true, appointment_id });
+    if (tournament) {
+      const result = await addTournamentParticipantFromCrm(tournament.id, {
+        firstName: first_name,
+        lastName: last_name,
+        phone,
+      });
+      void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "ok", result: { tournament_id: tournament.id, ...result } });
+      return NextResponse.json({ ok: true, tournament_id: tournament.id, ...result });
     }
 
-    const result = await addTournamentParticipantFromCrm(tournament.id, {
-      firstName: first_name,
-      lastName: last_name,
-      phone,
-    });
-    void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "ok", result: { tournament_id: tournament.id, ...result } });
-    return NextResponse.json({ ok: true, tournament_id: tournament.id, ...result });
+    const introEvent = await fetchIntroEventByCrmAppointmentId(appointment_id);
+    if (introEvent) {
+      const result = await addIntroEventParticipantFromCrm(introEvent.id, {
+        firstName: first_name,
+        lastName: last_name,
+        phone,
+      });
+      void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "ok", result: { intro_event_id: introEvent.id, ...result } });
+      return NextResponse.json({ ok: true, intro_event_id: introEvent.id, ...result });
+    }
+
+    // Neither exists yet — the event may simply not have arrived yet.
+    // Park the registration and attach it when the tournament or intro
+    // event is created.
+    await queuePendingRegistration(appointment_id, { firstName: first_name, lastName: last_name, phone });
+    void logWebhook({ route: "training", event_type: "appointment_approved", params: raw, status: "ok", result: { reason: "queued until tournament or intro event exists", appointment_id } });
+    return NextResponse.json({ ok: true, queued: true, appointment_id });
   }
 
   const student = phone ? await findStudentByPhone(phone) : null;

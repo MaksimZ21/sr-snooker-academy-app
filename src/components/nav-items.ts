@@ -31,6 +31,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/groups", label: "קבוצות", icon: "UsersRound" },
   { href: "/admin/tournaments", label: "טורנירים", icon: "Trophy" },
   { href: "/admin/leagues", label: "ליגות", icon: "Shield" },
+  { href: "/admin/intro-events", label: "אירועי היכרות", icon: "UserPlus" },
   { href: "/admin/players", label: "שחקנים", icon: "Award" },
   { href: "/admin/messages", label: "פניות", icon: "MessageSquare" },
   { href: "/admin/whatsapp", label: "WhatsApp", icon: "MessageCircle" },

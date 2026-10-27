@@ -1,23 +1,14 @@
 import { db } from "@/lib/db/client";
 
-export const INTRO_EXPERIENCE_LEVELS = ["none", "hobbyist", "regular"] as const;
-export type IntroExperienceLevel = (typeof INTRO_EXPERIENCE_LEVELS)[number];
-export const INTRO_EXPERIENCE_LEVEL_LABEL: Record<IntroExperienceLevel, string> = {
-  none: "ללא ניסיון בכלל",
-  hobbyist: "שחקן חובבן",
-  regular: "שחקן קבוע",
-};
-
-export const INTRO_GOALS = ["cue_control", "technique", "angles", "beat_friend", "advance", "basics"] as const;
-export type IntroGoal = (typeof INTRO_GOALS)[number];
-export const INTRO_GOAL_LABEL: Record<IntroGoal, string> = {
-  cue_control: "שליטה בלבן",
-  technique: "טכניקה",
-  angles: "זוויות",
-  beat_friend: "לנצח חבר/ים",
-  advance: "להתקדם מקצועית",
-  basics: "בסיס של הבסיס",
-};
+export {
+  INTRO_EXPERIENCE_LEVELS,
+  INTRO_EXPERIENCE_LEVEL_LABEL,
+  INTRO_GOALS,
+  INTRO_GOAL_LABEL,
+  type IntroExperienceLevel,
+  type IntroGoal,
+} from "./intro-event-fields";
+import type { IntroExperienceLevel, IntroGoal } from "./intro-event-fields";
 
 export type IntroEvent = {
   id: string;

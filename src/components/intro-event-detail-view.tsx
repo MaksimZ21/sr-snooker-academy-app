@@ -21,7 +21,7 @@ import {
   INTRO_GOAL_LABEL,
   type IntroExperienceLevel,
   type IntroGoal,
-} from "@/lib/sheets/intro-events";
+} from "@/lib/sheets/intro-event-fields";
 
 type Coach = { email: string; name: string; active: boolean };
 

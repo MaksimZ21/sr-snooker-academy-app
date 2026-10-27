@@ -7,9 +7,11 @@ import { addDays, format, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { SessionCard } from "./session-card";
 import { TournamentScheduleCard } from "./tournament-schedule-card";
+import { IntroEventScheduleCard } from "./intro-event-schedule-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Session } from "@/lib/sheets/schemas";
 import type { Tournament } from "@/lib/sheets/tournaments";
+import type { IntroEvent } from "@/lib/sheets/intro-events";
 import { cn } from "@/lib/utils";
 
 const SHORT_DAY_LABELS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
@@ -65,6 +67,21 @@ export function WeeklyGrid({
     refetchInterval: basePath === "admin" ? 30_000 : 60_000,
   });
 
+  // Every intro event has an event_date (CRM-only creation) — same
+  // no-coach-filtering shape as the tournaments query above.
+  const { data: introEventsData } = useQuery({
+    queryKey: ["intro-events:week", startIso, endIso],
+    queryFn: async () => {
+      const url = new URL("/api/intro-events/week", window.location.origin);
+      url.searchParams.set("start", startIso);
+      url.searchParams.set("end", endIso);
+      const r = await fetch(url);
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as { events: IntroEvent[] };
+    },
+    refetchInterval: basePath === "admin" ? 30_000 : 60_000,
+  });
+
   const days = Array.from({ length: 7 }, (_, i) =>
     format(addDays(parseISO(startIso), i), "yyyy-MM-dd"),
   );
@@ -75,6 +92,7 @@ export function WeeklyGrid({
   function renderDay(iso: string) {
     const ses = (data?.sessions ?? []).filter((s) => s.date === iso);
     const tournamentsToday = (tournamentsData?.tournaments ?? []).filter((t) => t.event_date === iso);
+    const introEventsToday = (introEventsData?.events ?? []).filter((e) => e.event_date === iso);
     const isToday = iso === today;
     return (
       <div
@@ -99,11 +117,14 @@ export function WeeklyGrid({
           </>
         ) : (
           <>
-            {ses.length === 0 && tournamentsToday.length === 0 && (
+            {ses.length === 0 && tournamentsToday.length === 0 && introEventsToday.length === 0 && (
               <div className="text-xs text-muted-foreground/50 text-center py-2">—</div>
             )}
             {tournamentsToday.map((t) => (
               <TournamentScheduleCard key={t.id} tournament={t} basePath={basePath} />
+            ))}
+            {introEventsToday.map((e) => (
+              <IntroEventScheduleCard key={e.id} event={e} basePath={basePath} />
             ))}
             {ses.map((s) => (
               <SessionCard key={s.id} session={s} basePath={basePath} />

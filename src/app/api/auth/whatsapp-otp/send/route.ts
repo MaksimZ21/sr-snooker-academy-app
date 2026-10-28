@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createHmac, randomInt } from "crypto";
 import { db } from "@/lib/db/client";
-import { sendWhatsAppMessage } from "@/lib/whatsapp/greenapi";
+import { sendWhatsAppOtpTemplate } from "@/lib/whatsapp/meta-cloud";
 
 function normalizePhone(raw: string) {
   const d = raw.replace(/\D/g, "");
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     const expiresAt = Date.now() + 10 * 60 * 1000;
     const token = signOtp(local, code, expiresAt);
 
-    await sendWhatsAppMessage(local, `קוד הכניסה שלך לאקדמיית סנוקר: *${code}*\nתקף ל-10 דקות.`);
+    await sendWhatsAppOtpTemplate(local, code);
 
     return NextResponse.json({ ok: true, token });
   } catch (e) {

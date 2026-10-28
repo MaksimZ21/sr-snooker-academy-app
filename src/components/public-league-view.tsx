@@ -2,12 +2,23 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { computeHouseStandings, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
 import type { PublicLeague, PublicLeagueParticipant } from "@/lib/sheets/leagues-public";
+import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
+import { shortDate } from "@/lib/sheets/league-schedule-parse";
 
 export function PublicLeagueView({ league }: { league: PublicLeague }) {
   const participantById = new Map(league.participants.map((p) => [p.id, p]));
   function lookup(id: string | null): PublicLeagueParticipant | null {
     return id ? participantById.get(id) ?? null : null;
   }
+
+  // Everything scheduled from the start of this week (Sunday) onward —
+  // last week's results already show in the standings below.
+  const { startIso } = weekRangeFor(todayIsoTel());
+  const districtLabel = new Map(league.districts.map((d) => [d.id, d.label]));
+  const scheduled = league.districts
+    .flatMap((d) => d.matches)
+    .filter((m) => m.scheduled_date !== null && m.scheduled_date >= startIso);
+  const scheduleDays = [...new Set(scheduled.map((m) => m.scheduled_date as string))].sort();
 
   return (
     <div className="min-h-dvh bg-background" dir="rtl">
@@ -26,6 +37,40 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
       </div>
 
       <div className="px-4 py-6 flex flex-col gap-8 max-w-4xl mx-auto">
+        {scheduleDays.length > 0 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-base font-semibold">לוז</h2>
+            <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40">
+              {scheduleDays.map((day) => (
+                <div key={day} className="px-4 py-3 flex flex-col gap-2">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {dayLabelHe(day)} · {shortDate(day)}
+                  </p>
+                  {scheduled
+                    .filter((m) => m.scheduled_date === day)
+                    .map((m) => {
+                      const played = m.frames_a !== null && m.frames_b !== null;
+                      return (
+                        <div key={m.id} className="flex items-center gap-2 text-sm">
+                          <span className="flex-1 min-w-0 truncate">
+                            {lookup(m.participant_a_id)?.name ?? "?"} נגד {lookup(m.participant_b_id)?.name ?? "?"}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground shrink-0">
+                            {districtLabel.get(m.district_id)}
+                          </span>
+                          {played ? (
+                            <span className="font-medium tabular-nums shrink-0">{m.frames_a} - {m.frames_b}</span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs shrink-0">טרם שוחק</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
         {league.districts.length > 0 ? (
           <section className="flex flex-col gap-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

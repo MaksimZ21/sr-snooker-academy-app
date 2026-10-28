@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { computeHouseStandings, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
+import { dayLabelHe } from "@/lib/date";
+import { shortDate } from "@/lib/sheets/league-schedule-parse";
 
 type Participant = {
   id: string;
@@ -21,6 +23,7 @@ type DistrictMatch = {
   participant_b_id: string;
   frames_a: number | null;
   frames_b: number | null;
+  scheduled_date: string | null;
 };
 
 type DistrictWithMatches = {
@@ -98,6 +101,22 @@ export function LeagueDistrictsView({
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["league-districts", leagueId] }),
     onError: () => toast.error("שגיאה בשמירת התוצאה"),
+  });
+
+  const scheduleMut = useMutation({
+    mutationFn: async ({ matchId, date }: { matchId: string; date: string | null }) => {
+      const r = await fetch(`/api/leagues/${leagueId}/schedule`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ assignments: [{ matchId, date }] }),
+      });
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "שגיאה בשיבוץ");
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["league-districts", leagueId] }),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בשיבוץ"),
   });
 
   function participantName(id: string) {
@@ -225,6 +244,7 @@ export function LeagueDistrictsView({
                               canEdit={canEdit}
                               onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
                               saving={resultMut.isPending}
+                              onSchedule={(date) => scheduleMut.mutate({ matchId: m.id, date })}
                             />
                           );
                         })}
@@ -248,6 +268,7 @@ function MatchRow({
   canEdit,
   onSave,
   saving,
+  onSchedule,
 }: {
   nameA: string;
   nameB: string;
@@ -256,6 +277,7 @@ function MatchRow({
   canEdit: boolean;
   onSave: (framesA: number, framesB: number) => void;
   saving: boolean;
+  onSchedule: (date: string | null) => void;
 }) {
   const [framesA, setFramesA] = useState(match.frames_a?.toString() ?? "");
   const [framesB, setFramesB] = useState(match.frames_b?.toString() ?? "");
@@ -302,6 +324,23 @@ function MatchRow({
         )}
       </div>
       {handicap && !played && <p className="text-[11px] text-muted-foreground">{handicap}</p>}
+      {canEdit && !played ? (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>יום משחק:</span>
+          <Input
+            type="date"
+            value={match.scheduled_date ?? ""}
+            onChange={(e) => onSchedule(e.target.value || null)}
+            className="h-7 w-40 text-xs"
+          />
+        </div>
+      ) : (
+        match.scheduled_date && (
+          <p className="text-[11px] text-muted-foreground">
+            {dayLabelHe(match.scheduled_date)} {shortDate(match.scheduled_date)}
+          </p>
+        )
+      )}
     </div>
   );
 }

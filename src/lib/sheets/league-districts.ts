@@ -11,6 +11,7 @@ export type LeagueMatch = {
   participant_b_id: string;
   frames_a: number | null;
   frames_b: number | null;
+  scheduled_date: string | null;
 };
 
 export type DistrictWithMatches = LeagueDistrict & { matches: LeagueMatch[]; memberIds: string[] };
@@ -184,4 +185,34 @@ export async function enterLeagueMatchResult(
   if (ratingAError) throw new Error(ratingAError.message);
   const { error: ratingBError } = await db.from("students").update({ rating: newRatingB }).eq("id", sb.id);
   if (ratingBError) throw new Error(ratingBError.message);
+}
+
+// Sets (or clears, with date: null) the play date of league matches.
+// Everything is validated before anything is written, so a bad id in a
+// pasted batch doesn't leave half the week scheduled.
+export async function scheduleLeagueMatches(
+  leagueId: string,
+  assignments: { matchId: string; date: string | null }[],
+): Promise<void> {
+  if (assignments.length === 0) return;
+
+  const { data: districtRows } = await db.from("league_districts").select("id").eq("league_id", leagueId);
+  const districtIds = new Set((districtRows ?? []).map((d) => d.id as string));
+
+  const { data: matchRows } = await db
+    .from("league_matches")
+    .select("id, district_id, frames_a")
+    .in("id", assignments.map((a) => a.matchId));
+  const matchesById = new Map((matchRows ?? []).map((m) => [m.id as string, m]));
+
+  for (const a of assignments) {
+    const m = matchesById.get(a.matchId);
+    if (!m || !districtIds.has(m.district_id as string)) throw new Error("match not found");
+    if (m.frames_a !== null) throw new Error("cannot reschedule a match that was already played");
+  }
+
+  for (const a of assignments) {
+    const { error } = await db.from("league_matches").update({ scheduled_date: a.date }).eq("id", a.matchId);
+    if (error) throw new Error(error.message);
+  }
 }

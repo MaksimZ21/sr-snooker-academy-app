@@ -1,4 +1,5 @@
 import { db } from "@/lib/db/client";
+import { fetchSessionPricingRules, resolveSessionPricing } from "./session-pricing";
 
 export {
   INTRO_EXPERIENCE_LEVELS,
@@ -22,6 +23,37 @@ export type IntroEvent = {
   created_at: string;
 };
 
+// What every read path returns: the row plus display-only derived fields.
+// end_time is start + 90 min (the CRM sends no duration — same default
+// upsertSessionFromCrm gives CRM sessions). price_nis comes from the
+// admin's session pricing rules, matched on the event name plus the type
+// itself, so a rule labelled "אירוע היכרות" always applies even when the
+// CRM title spells it differently (e.g. "הכרות").
+export type IntroEventView = IntroEvent & {
+  end_time: string;
+  price_nis: number | null;
+  participant_count: number;
+};
+
+function addMinutes(time: string, minutes: number): string {
+  const [h, m] = time.split(":").map(Number);
+  if (isNaN(h) || isNaN(m)) return "";
+  const total = h * 60 + m + minutes;
+  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+type IntroEventRowWithCount = IntroEvent & { intro_event_participants?: { count: number }[] };
+
+async function toViews(rows: IntroEventRowWithCount[]): Promise<IntroEventView[]> {
+  const rules = await fetchSessionPricingRules();
+  return rows.map(({ intro_event_participants, ...event }) => ({
+    ...event,
+    end_time: addMinutes(event.start_time, 90),
+    price_nis: resolveSessionPricing(`${event.name} אירוע היכרות`, rules)?.price_nis ?? null,
+    participant_count: intro_event_participants?.[0]?.count ?? 0,
+  }));
+}
+
 export type IntroEventParticipant = {
   id: string;
   intro_event_id: string;
@@ -36,7 +68,7 @@ export type IntroEventParticipantWithStudent = IntroEventParticipant & {
 };
 
 export type IntroEventDetail = {
-  event: IntroEvent;
+  event: IntroEventView;
   participants: IntroEventParticipantWithStudent[];
 };
 
@@ -49,14 +81,22 @@ export function canManageIntroEvents(user: { role: string }): boolean {
   return user.role === "admin";
 }
 
-export async function fetchIntroEvents(): Promise<IntroEvent[]> {
-  const { data } = await db.from("intro_events").select("*").order("event_date", { ascending: false });
-  return (data ?? []) as IntroEvent[];
+export async function fetchIntroEvents(): Promise<IntroEventView[]> {
+  const { data } = await db
+    .from("intro_events")
+    .select("*, intro_event_participants(count)")
+    .order("event_date", { ascending: false });
+  return toViews((data ?? []) as IntroEventRowWithCount[]);
 }
 
 export async function fetchIntroEventDetail(id: string): Promise<IntroEventDetail | null> {
-  const { data: event } = await db.from("intro_events").select("*").eq("id", id).maybeSingle();
-  if (!event) return null;
+  const { data: eventRow } = await db
+    .from("intro_events")
+    .select("*, intro_event_participants(count)")
+    .eq("id", id)
+    .maybeSingle();
+  if (!eventRow) return null;
+  const [event] = await toViews([eventRow as IntroEventRowWithCount]);
 
   const { data: participantRows } = await db
     .from("intro_event_participants")
@@ -72,7 +112,7 @@ export async function fetchIntroEventDetail(id: string): Promise<IntroEventDetai
   const studentsById = new Map((studentRows ?? []).map((s) => [s.id as string, s]));
 
   return {
-    event: event as IntroEvent,
+    event,
     participants: participants.map((p) => ({
       ...p,
       student: studentsById.get(p.student_id) ?? { id: p.student_id, first_name: "(נמחק)", last_name: "", phone: "" },
@@ -145,13 +185,13 @@ export async function fetchIntroEventByCrmAppointmentId(appointmentId: string): 
 // exactly what makes one show up on the Schedule for both
 // /admin/schedule and /coach/schedule (no coach-based filtering, same as
 // fetchTournamentsInRange).
-export async function fetchIntroEventsInRange(startIso: string, endIso: string): Promise<IntroEvent[]> {
+export async function fetchIntroEventsInRange(startIso: string, endIso: string): Promise<IntroEventView[]> {
   const { data } = await db
     .from("intro_events")
-    .select("*")
+    .select("*, intro_event_participants(count)")
     .gte("event_date", startIso)
     .lte("event_date", endIso);
-  return (data ?? []) as IntroEvent[];
+  return toViews((data ?? []) as IntroEventRowWithCount[]);
 }
 
 // A calendar event whose meeting_type marks it as an intro event becomes

@@ -11,7 +11,7 @@ import { IntroEventScheduleCard } from "./intro-event-schedule-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Session } from "@/lib/sheets/schemas";
 import type { Tournament } from "@/lib/sheets/tournaments";
-import type { IntroEvent } from "@/lib/sheets/intro-events";
+import type { IntroEventView } from "@/lib/sheets/intro-events";
 import { cn } from "@/lib/utils";
 
 const SHORT_DAY_LABELS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
@@ -77,7 +77,7 @@ export function WeeklyGrid({
       url.searchParams.set("end", endIso);
       const r = await fetch(url);
       if (!r.ok) throw new Error("fetch failed");
-      return (await r.json()) as { events: IntroEvent[] };
+      return (await r.json()) as { events: IntroEventView[] };
     },
     refetchInterval: basePath === "admin" ? 30_000 : 60_000,
   });

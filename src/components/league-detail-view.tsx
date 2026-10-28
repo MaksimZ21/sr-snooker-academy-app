@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { LeagueParticipantPicker } from "@/components/league-participant-picker";
 import { LeagueDistrictsView } from "@/components/league-districts-view";
+import { LeagueScheduleView } from "@/components/league-schedule-view";
 
 type LeagueParticipant = {
   id: string;
@@ -188,6 +189,13 @@ export function LeagueDetailView({
             </div>
           )}
         </div>
+
+        <LeagueScheduleView
+          leagueId={leagueId}
+          leagueName={league.name}
+          participants={participants}
+          canEdit={canEdit}
+        />
 
         <LeagueDistrictsView
           leagueId={leagueId}

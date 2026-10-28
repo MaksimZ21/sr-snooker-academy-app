@@ -93,6 +93,12 @@ export function WeeklyGrid({
     const ses = (data?.sessions ?? []).filter((s) => s.date === iso);
     const tournamentsToday = (tournamentsData?.tournaments ?? []).filter((t) => t.event_date === iso);
     const introEventsToday = (introEventsData?.events ?? []).filter((e) => e.event_date === iso);
+    // Sessions and intro events interleaved by start time ("HH:MM" sorts
+    // correctly as a string). Tournaments have no time, so they stay on top.
+    const timed = [
+      ...ses.map((s) => ({ start: s.start_time, card: <SessionCard key={s.id} session={s} basePath={basePath} /> })),
+      ...introEventsToday.map((e) => ({ start: e.start_time, card: <IntroEventScheduleCard key={e.id} event={e} basePath={basePath} /> })),
+    ].sort((a, b) => a.start.localeCompare(b.start));
     const isToday = iso === today;
     return (
       <div
@@ -117,18 +123,13 @@ export function WeeklyGrid({
           </>
         ) : (
           <>
-            {ses.length === 0 && tournamentsToday.length === 0 && introEventsToday.length === 0 && (
+            {timed.length === 0 && tournamentsToday.length === 0 && (
               <div className="text-xs text-muted-foreground/50 text-center py-2">—</div>
             )}
             {tournamentsToday.map((t) => (
               <TournamentScheduleCard key={t.id} tournament={t} basePath={basePath} />
             ))}
-            {introEventsToday.map((e) => (
-              <IntroEventScheduleCard key={e.id} event={e} basePath={basePath} />
-            ))}
-            {ses.map((s) => (
-              <SessionCard key={s.id} session={s} basePath={basePath} />
-            ))}
+            {timed.map((item) => item.card)}
           </>
         )}
       </div>

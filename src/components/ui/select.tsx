@@ -6,7 +6,41 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
-const Select = SelectPrimitive.Root
+// Base UI's Select.Value shows the raw selected value (an id, an email, an
+// enum key) unless the root is given an `items` value→label map. Rather than
+// requiring every call site to build one, collect it from the SelectItem
+// elements written inside this Select. Items rendered through some other
+// component aren't visible here; those call sites can still pass `items` or
+// give SelectValue a children function, both of which take precedence.
+function collectItemLabels(node: React.ReactNode, out: Record<string, React.ReactNode>) {
+  React.Children.forEach(node, (child) => {
+    if (!React.isValidElement(child)) return
+    const props = child.props as { value?: unknown; children?: React.ReactNode }
+    if (child.type === SelectItem) {
+      if (typeof props.value === "string") out[props.value] = props.children
+      return
+    }
+    if (props.children) collectItemLabels(props.children, out)
+  })
+}
+
+function Select<Value, Multiple extends boolean | undefined = false>({
+  items,
+  children,
+  ...props
+}: SelectPrimitive.Root.Props<Value, Multiple>) {
+  let resolvedItems = items
+  if (!resolvedItems) {
+    const labels: Record<string, React.ReactNode> = {}
+    collectItemLabels(children, labels)
+    if (Object.keys(labels).length > 0) resolvedItems = labels
+  }
+  return (
+    <SelectPrimitive.Root items={resolvedItems} {...props}>
+      {children}
+    </SelectPrimitive.Root>
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (

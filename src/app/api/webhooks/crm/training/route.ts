@@ -22,9 +22,15 @@ import { getCrmPaused } from "@/lib/sheets/settings";
 // training session — see docs/superpowers/specs/2026-09-18-crm-tournament-events-design.md.
 const TOURNAMENT_MEETING_TYPE = "טורניר";
 
-// The CRM's exact signal (its own spelling) that a calendar event is an
-// intro event — see docs/superpowers/specs/2026-10-27-intro-events-design.md.
-const INTRO_EVENT_MEETING_TYPE = "אירוע הכירות";
+// The CRM's signal that a calendar event is an intro event — see
+// docs/superpowers/specs/2026-10-27-intro-events-design.md. Compared with
+// yuds stripped and whitespace collapsed: the CRM actually sends
+// "אירוע היכרות", but הכירות / הכרות are common spellings of the same word,
+// and a mismatch silently turns the event into a plain group session.
+function isIntroEventMeetingType(meetingType: string): boolean {
+  const normalize = (s: string) => s.replace(/י/g, "").replace(/\s+/g, " ").trim();
+  return normalize(meetingType) === normalize("אירוע היכרות");
+}
 
 function normalizePhone(raw: string): { local: string; intl: string } {
   const d = raw.replace(/\D/g, "");
@@ -96,7 +102,7 @@ async function handleEventCreated(raw: Record<string, unknown>) {
     return NextResponse.json(result, { status: 200 });
   }
 
-  if (meeting_type === INTRO_EVENT_MEETING_TYPE) {
+  if (isIntroEventMeetingType(meeting_type)) {
     const result = await upsertIntroEventFromCrm({
       crm_event_id: event_id,
       crm_appointment_id: appointment_id,

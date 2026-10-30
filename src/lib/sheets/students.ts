@@ -1,6 +1,6 @@
 import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
-import { ensureStudentInCollegeGroup, assignStudentToExistingGroup } from "./groups";
+import { ensureStudentInCollegeGroup, assignStudentToExistingGroup, toConstructForm } from "./groups";
 import type { Student } from "./schemas";
 
 export type CrmStudent = {
@@ -71,7 +71,7 @@ export async function appendStudent(input: {
     last_name: input.last_name ?? "",
     phone: input.phone ?? "",
     email: input.email ?? "",
-    college_name: input.college_name ?? "",
+    college_name: toConstructForm(input.college_name ?? ""),
     subscription_type: input.subscription_type ?? "",
     general_notes: input.general_notes ?? "",
     birth_date: input.birth_date ?? null,
@@ -144,7 +144,10 @@ export async function updateStudent(
     skill_level?: string | null;
   },
 ): Promise<void> {
-  await db.from("students").update(input).eq("id", id);
+  await db
+    .from("students")
+    .update(input.college_name === undefined ? input : { ...input, college_name: toConstructForm(input.college_name) })
+    .eq("id", id);
   revalidateTag("students", { expire: 0 });
 }
 
@@ -167,7 +170,7 @@ export async function upsertStudentFromCrm(input: CrmStudent) {
       first_name: input.first_name,
       last_name: input.last_name,
       phone: input.phone ?? "",
-      college_name: input.college_name ?? "",
+      college_name: toConstructForm(input.college_name ?? ""),
       subscription_type: input.subscription_type ?? "",
       ...(input.birth_date !== undefined && { birth_date: input.birth_date }),
     }).eq("id", existing.id);

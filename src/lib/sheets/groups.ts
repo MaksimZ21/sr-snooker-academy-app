@@ -38,7 +38,7 @@ export async function appendGroup(
     id,
     name,
     student_ids: studentIds,
-    college_name: collegeName ?? "",
+    college_name: toConstructForm(collegeName ?? ""),
     coach_email: coachEmail ?? "",
     start_time: startTime ?? "",
   });
@@ -66,7 +66,7 @@ export async function updateGroup(
   await db.from("groups").update({
     name,
     student_ids: studentIds,
-    college_name: collegeName ?? "",
+    college_name: toConstructForm(collegeName ?? ""),
     coach_email: coachEmail ?? "",
     start_time: startTime ?? "",
   }).eq("id", id);
@@ -117,8 +117,13 @@ function collegeNameVariants(name: string): string[] {
 // and the CRM's raw text ("מכללה <location>") isn't the convention this
 // app's groups are named with. Normalize to the construct form so a new
 // college's group doesn't need a manual rename every time.
-function toConstructForm(name: string): string {
-  return name.startsWith("מכללה ") ? "מכללת " + name.slice("מכללה ".length) : name;
+// "מכללה אשדוד" → "מכללת אשדוד": the CRM sends the standalone form, but a
+// college name followed by its place takes the construct form. Applied
+// wherever a college name is stored (students, groups) so the same college
+// never shows up as two different spellings.
+export function toConstructForm(name: string): string {
+  const trimmed = name.trim();
+  return trimmed.startsWith("מכללה ") ? "מכללת " + trimmed.slice("מכללה ".length) : trimmed;
 }
 
 export async function ensureStudentInCollegeGroup(

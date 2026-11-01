@@ -23,9 +23,10 @@ export const fetchAttendanceForStudent = unstable_cache(
 );
 
 export async function upsertAttendance(row: Attendance): Promise<void> {
-  await db
+  const { error } = await db
     .from("attendance")
     .upsert(row, { onConflict: "session_id,student_id" });
+  if (error) throw new Error(error.message);
   revalidateTag("attendance:all", { expire: 0 });
   revalidateTag(`attendance:${row.session_id}`, { expire: 0 });
 }

@@ -78,7 +78,7 @@ export type Session = z.infer<typeof SessionRow>;
 export const AttendanceRow = z.object({
   session_id: z.string(),
   student_id: z.string(),
-  status: z.enum(["present", "absent", "late", "confirmed"]),
+  status: z.enum(["present", "absent", "late", "confirmed", "declined"]),
   marked_by: z.string().min(1),
   marked_at: z.string(),
 });

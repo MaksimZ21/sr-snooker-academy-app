@@ -25,7 +25,8 @@ export async function GET(req: Request) {
   }
 
   const { event_id, name, status } = parsed.data;
-  const attendanceStatus = (status === "confirmed" || status === "present") ? "present" : "absent";
+  const attendanceStatus =
+    status === "confirmed" || status === "present" ? "present" : status === "declined" ? "declined" : "absent";
 
   const { data: sessionData } = await db
     .from("sessions")

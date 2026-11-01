@@ -9,20 +9,24 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trainingTypeBadge } from "@/lib/training-type";
-import type { Session } from "@/lib/sheets/schemas";
+import type { Attendance, Session } from "@/lib/sheets/schemas";
 
-type Row = { session: Session; attendance_status: "present" | "absent" | "late" };
+type Row = { session: Session; attendance_status: Attendance["status"] };
 
 const STATUS_LABEL: Record<string, string> = {
   present: "נוכח",
   absent: "לא נוכח",
   late: "איחור",
+  confirmed: "אישר הגעה",
+  declined: "דחה הגעה",
 };
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   present: "default",
   absent: "destructive",
   late: "secondary",
+  confirmed: "outline",
+  declined: "destructive",
 };
 
 function formatDate(iso: string) {

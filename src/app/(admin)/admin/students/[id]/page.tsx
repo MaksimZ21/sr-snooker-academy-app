@@ -41,6 +41,7 @@ const ATTENDANCE_STATUS_LABEL: Record<string, string> = {
   absent: "לא נוכח",
   late: "איחור",
   confirmed: "אושר",
+  declined: "דחה הגעה",
 };
 
 const ATTENDANCE_STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -48,6 +49,7 @@ const ATTENDANCE_STATUS_VARIANT: Record<string, "default" | "secondary" | "destr
   absent: "destructive",
   late: "secondary",
   confirmed: "outline",
+  declined: "destructive",
 };
 
 function formatSessionDate(iso: string) {

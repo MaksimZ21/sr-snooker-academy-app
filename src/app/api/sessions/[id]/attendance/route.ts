@@ -6,8 +6,12 @@ import { z } from "zod";
 
 const Body = z.object({
   student_id: z.string().min(1),
-  status: z.enum(["present", "absent", "late"]),
+  status: z.enum(["present", "absent", "late", "confirmed", "declined"]),
 });
+
+// confirmed/declined are the student's own RSVP (normally set by the CRM);
+// only an admin may override them by hand.
+const ADMIN_ONLY_STATUSES = new Set(["confirmed", "declined"]);
 
 export async function POST(
   req: Request,
@@ -22,6 +26,9 @@ export async function POST(
       return new NextResponse("Forbidden", { status: 403 });
     }
     const body = Body.parse(await req.json());
+    if (ADMIN_ONLY_STATUSES.has(body.status) && user.role !== "admin") {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
     if (!session.student_ids.includes(body.student_id)) {
       return new NextResponse("student not in session", { status: 400 });
     }

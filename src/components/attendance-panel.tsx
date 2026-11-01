@@ -44,6 +44,22 @@ const STATUSES = [
 ] as const;
 
 const CONFIRMED_ROW_CLASS = "border-blue-400/60 bg-blue-50/60 dark:bg-blue-950/20";
+const DECLINED_ROW_CLASS = "border-red-400/60 bg-red-50/60 dark:bg-red-950/20";
+
+// The student's own RSVP — normally set by the CRM. Only an admin gets
+// buttons to set it by hand (the API enforces the same rule).
+const RSVP_STATUSES = [
+  {
+    key: "confirmed" as const,
+    label: "אישר הגעה",
+    activeClass: "bg-blue-500 hover:bg-blue-600 text-white border-blue-500",
+  },
+  {
+    key: "declined" as const,
+    label: "דחה הגעה",
+    activeClass: "bg-red-600 hover:bg-red-700 text-white border-red-600",
+  },
+] as const;
 
 type SessionDetailData = {
   attendance: Attendance[];
@@ -120,11 +136,13 @@ export function AttendancePanel({
   students,
   attendance,
   readOnly,
+  isAdmin = false,
 }: {
   sessionId: string;
   students: Student[];
   attendance: Attendance[];
   readOnly: boolean;
+  isAdmin?: boolean;
 }) {
   const [openNoteId, setOpenNoteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -181,7 +199,12 @@ export function AttendancePanel({
   }
 
   async function saveAll() {
-    const toSave = students.filter((s) => local[s.id] !== undefined);
+    // Only what actually changed: resending an untouched CRM status
+    // (confirmed/declined) would be rejected for a coach.
+    const toSave = students.filter((s) => {
+      const server = attendance.find((a) => a.student_id === s.id)?.status;
+      return local[s.id] !== undefined && local[s.id] !== server;
+    });
     if (toSave.length === 0) return;
     setSaving(true);
     try {
@@ -209,6 +232,7 @@ export function AttendancePanel({
       {students.map((s) => {
         const cur = local[s.id];
         const isConfirmed = cur === "confirmed";
+        const isDeclined = cur === "declined";
         const curConfig = STATUSES.find((st) => st.key === cur);
         const serverStatus = attendance.find((a) => a.student_id === s.id)?.status;
         const dirty = cur !== serverStatus;
@@ -217,7 +241,13 @@ export function AttendancePanel({
             key={s.id}
             className={cn(
               "flex flex-col border-2 rounded-xl p-3.5 transition-all duration-200",
-              curConfig ? curConfig.rowClass : isConfirmed ? CONFIRMED_ROW_CLASS : "border-border",
+              curConfig
+                ? curConfig.rowClass
+                : isConfirmed
+                  ? CONFIRMED_ROW_CLASS
+                  : isDeclined
+                    ? DECLINED_ROW_CLASS
+                    : "border-border",
               dirty && !curConfig && "border-dashed",
             )}
           >
@@ -238,9 +268,14 @@ export function AttendancePanel({
                       אישר הגעה
                     </Badge>
                   )}
+                  {isDeclined && (
+                    <Badge variant="outline" className="text-xs border-red-400 text-red-600 dark:text-red-400 shrink-0">
+                      דחה הגעה
+                    </Badge>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                 {STATUSES.map((st) => (
                   <Button
                     key={st.key}
@@ -256,6 +291,23 @@ export function AttendancePanel({
                     {st.label}
                   </Button>
                 ))}
+                {isAdmin && !readOnly && (
+                  <>
+                    <span className="w-px h-5 bg-border mx-0.5" aria-hidden />
+                    {RSVP_STATUSES.map((st) => (
+                      <Button
+                        key={st.key}
+                        size="sm"
+                        variant="outline"
+                        disabled={saving}
+                        onClick={() => toggle(s.id, st.key)}
+                        className={cn("text-xs h-8 px-3 transition-all", cur === st.key && st.activeClass)}
+                      >
+                        {st.label}
+                      </Button>
+                    ))}
+                  </>
+                )}
                 <Button
                   size="icon"
                   variant="ghost"

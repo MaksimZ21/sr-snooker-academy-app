@@ -233,6 +233,7 @@ export function SessionDetail({
               students={students}
               attendance={attendance}
               readOnly={!canEditAttendance}
+              isAdmin={isAdmin}
             />
           </TabsContent>
           <TabsContent value="notes">

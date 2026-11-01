@@ -213,7 +213,7 @@ async function handleAppointmentRejected(raw: Record<string, unknown>) {
   await upsertAttendance({
     session_id: session.id,
     student_id: student.id,
-    status: "absent",
+    status: "declined",
     marked_by: "crm",
     marked_at: new Date().toISOString(),
   });

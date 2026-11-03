@@ -22,7 +22,10 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
     .filter((m) => m.scheduled_date !== null && m.scheduled_date >= startIso);
   const scheduleDays = [...new Set(scheduled.map((m) => m.scheduled_date as string))].sort();
 
-  const breakRows = computeBreakTable(league.breaks);
+  const breakRows = computeBreakTable(
+    [...league.participants].sort((a, b) => a.name.localeCompare(b.name, "he")).map((p) => p.id),
+    league.breaks,
+  );
   const districtOfParticipant = new Map(
     league.districts.flatMap((d) => d.memberIds.map((id) => [id, d.label] as const)),
   );
@@ -158,7 +161,7 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
           <p className="text-center text-sm text-muted-foreground py-10">הליגה טרם החלה</p>
         )}
 
-        {breakRows.length > 0 && (
+        {league.participants.length > 0 && (
           <section className="flex flex-col gap-3">
             <h2 className="text-base font-semibold">טבלת ברייקים</h2>
             <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">

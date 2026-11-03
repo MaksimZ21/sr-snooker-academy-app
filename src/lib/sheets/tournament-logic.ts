@@ -132,22 +132,25 @@ export function computeLeagueStandings(
   });
 }
 
-// League high-breaks table: one row per player who has a break, their
-// breaks highest first, rows ordered by best break, then number of breaks.
+// League high-breaks table: a row for every player (in the order given),
+// their breaks highest first. Rows with breaks come first, ordered by best
+// break then number of breaks; players without breaks keep the given order.
 export type BreakTableRow = { participantId: string; breaks: { id: string; value: number }[] };
 
 export function computeBreakTable(
+  participantIds: string[],
   breaks: { id: string; participant_id: string; value: number }[],
 ): BreakTableRow[] {
-  const byPlayer = new Map<string, { id: string; value: number }[]>();
-  for (const b of breaks) {
-    const list = byPlayer.get(b.participant_id) ?? [];
-    list.push({ id: b.id, value: b.value });
-    byPlayer.set(b.participant_id, list);
-  }
-  return [...byPlayer.entries()]
-    .map(([participantId, list]) => ({ participantId, breaks: list.sort((x, y) => y.value - x.value) }))
-    .sort((x, y) => y.breaks[0].value - x.breaks[0].value || y.breaks.length - x.breaks.length);
+  const rows = participantIds.map((participantId) => ({
+    participantId,
+    breaks: breaks
+      .filter((b) => b.participant_id === participantId)
+      .map((b) => ({ id: b.id, value: b.value }))
+      .sort((x, y) => y.value - x.value),
+  }));
+  const best = (r: BreakTableRow) => r.breaks[0]?.value ?? 0;
+  // Array.sort is stable, so players without breaks stay in the given order.
+  return rows.sort((x, y) => best(y) - best(x) || y.breaks.length - x.breaks.length);
 }
 
 export function computeEloUpdate(

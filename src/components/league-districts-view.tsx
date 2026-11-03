@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { computeLeagueStandings, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
 import { LeagueStandingsTable } from "@/components/league-standings-table";
+import { DistrictSwitcher } from "@/components/district-switcher";
 import { dayLabelHe } from "@/lib/date";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 
@@ -159,12 +160,16 @@ export function LeagueDistrictsView({
           עדיין אין מחוזות
         </div>
       ) : (
-        districts.map((district) => {
+        <DistrictSwitcher
+          items={districts.map((district) => {
           const standings = computeLeagueStandings(district.memberIds, district.matches);
           const hasFixtures = district.matches.length > 0;
           const hasResults = district.matches.some((m) => m.frames_a !== null);
           const rounds = [...new Set(district.matches.map((m) => m.round))].sort((a, b) => a - b);
-          return (
+          return {
+            id: district.id,
+            label: district.label,
+            content: (
             <div key={district.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
               <div className="flex items-center justify-between px-4 pt-3 pb-2">
                 <div>
@@ -226,8 +231,10 @@ export function LeagueDistrictsView({
                 </div>
               )}
             </div>
-          );
-        })
+            ),
+          };
+        })}
+        />
       )}
     </div>
   );

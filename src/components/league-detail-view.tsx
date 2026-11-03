@@ -16,6 +16,7 @@ import {
 import { LeagueParticipantPicker } from "@/components/league-participant-picker";
 import { LeagueDistrictsView } from "@/components/league-districts-view";
 import { LeagueScheduleView } from "@/components/league-schedule-view";
+import { LeagueBreaksView } from "@/components/league-breaks-view";
 
 type LeagueParticipant = {
   id: string;
@@ -201,6 +202,13 @@ export function LeagueDetailView({
           leagueId={leagueId}
           participants={participants}
           handicapPointsPerRatingGap={league.handicap_points_per_rating_gap}
+          canEdit={canEdit}
+        />
+
+        <LeagueBreaksView
+          leagueId={leagueId}
+          participants={participants}
+          districts={districts}
           canEdit={canEdit}
         />
       </div>

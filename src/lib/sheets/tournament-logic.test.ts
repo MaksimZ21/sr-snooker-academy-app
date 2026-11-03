@@ -15,6 +15,7 @@ import {
   generateLeagueRounds,
   computeLeaguePlacement,
   computeLeagueStandings,
+  computeBreakTable,
 } from "./tournament-logic";
 
 describe("shuffle", () => {
@@ -388,5 +389,24 @@ describe("computeLeaguePlacement", () => {
       label: "צפון",
     };
     expect(computeLeaguePlacement("p9", district)).toBeNull();
+  });
+});
+
+describe("computeBreakTable", () => {
+  it("groups breaks per player, highest first, ordered by best break then count", () => {
+    const rows = computeBreakTable([
+      { id: "b1", participant_id: "a", value: 38 },
+      { id: "b2", participant_id: "b", value: 52 },
+      { id: "b3", participant_id: "a", value: 52 },
+      { id: "b4", participant_id: "a", value: 45 },
+      { id: "b5", participant_id: "c", value: 30 },
+    ]);
+    expect(rows.map((r) => r.participantId)).toEqual(["a", "b", "c"]);
+    expect(rows[0].breaks.map((b) => b.value)).toEqual([52, 45, 38]);
+    expect(rows[1].breaks).toEqual([{ id: "b2", value: 52 }]);
+  });
+
+  it("returns nothing when there are no breaks", () => {
+    expect(computeBreakTable([])).toEqual([]);
   });
 });

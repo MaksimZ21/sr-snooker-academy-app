@@ -30,7 +30,10 @@ export type PublicLeague = {
   handicapPointsPerRatingGap: number;
   participants: PublicLeagueParticipant[];
   districts: DistrictWithMatches[];
+  breaks: PublicLeagueBreak[];
 };
+
+export type PublicLeagueBreak = { id: string; participant_id: string; value: number };
 
 export async function fetchPublicLeague(slug: string): Promise<PublicLeague | null> {
   const { data: league } = await db
@@ -66,11 +69,17 @@ export async function fetchPublicLeague(slug: string): Promise<PublicLeague | nu
 
   const districts = await fetchLeagueDistricts(leagueId);
 
+  const { data: breakRows } = await db
+    .from("league_breaks")
+    .select("id, participant_id, value")
+    .eq("league_id", leagueId);
+
   return {
     name: league.name as string,
     completed: league.completed as boolean,
     handicapPointsPerRatingGap: league.handicap_points_per_rating_gap as number,
     participants,
     districts,
+    breaks: (breakRows ?? []) as PublicLeagueBreak[],
   };
 }

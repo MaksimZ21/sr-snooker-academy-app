@@ -4,12 +4,12 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { fetchLeagueDetail, canManageLeagues } from "@/lib/sheets/leagues";
 import { enterLeagueMatchResult } from "@/lib/sheets/league-districts";
 
-const ResultSchema = z
-  .object({
-    framesA: z.number().int().nonnegative(),
-    framesB: z.number().int().nonnegative(),
-  })
-  .refine((v) => v.framesA !== v.framesB, { message: "a match cannot end in a tie" });
+// Equal frames is a draw (a point each) — allowed in a league, unlike a
+// tournament match.
+const ResultSchema = z.object({
+  framesA: z.number().int().nonnegative(),
+  framesB: z.number().int().nonnegative(),
+});
 
 export async function PATCH(
   req: Request,

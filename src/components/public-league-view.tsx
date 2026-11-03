@@ -1,6 +1,6 @@
 import Image from "next/image";
-import { cn } from "@/lib/utils";
-import { computeHouseStandings, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
+import { computeLeagueStandings, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
+import { LeagueStandingsTable } from "@/components/league-standings-table";
 import type { PublicLeague, PublicLeagueParticipant } from "@/lib/sheets/leagues-public";
 import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
@@ -73,55 +73,25 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
         )}
         {league.districts.length > 0 ? (
           <section className="flex flex-col gap-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {league.districts.map((district) => {
-                const standings = computeHouseStandings(district.memberIds, district.matches);
+                const standings = computeLeagueStandings(district.memberIds, district.matches);
                 const rounds = [...new Set(district.matches.map((m) => m.round))].sort((a, b) => a - b);
                 return (
                   <div key={district.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
                     <p className="text-sm font-semibold px-4 pt-3 pb-2">{district.label}</p>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-xs text-muted-foreground border-b border-border/40">
-                            <th className="text-right px-4 py-1.5 font-medium">מקום</th>
-                            <th className="text-right px-2 py-1.5 font-medium">שם</th>
-                            <th className="text-center px-2 py-1.5 font-medium">נצחונות</th>
-                            <th className="text-center px-2 py-1.5 font-medium">פריימים לטובה</th>
-                            <th className="text-center px-2 py-1.5 font-medium">פריימים לרעה</th>
-                            <th className="text-center px-2 py-1.5 font-medium">הפרש</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {standings.map((row, i) => {
-                            const p = lookup(row.participantId);
-                            const leading = i === 0;
-                            return (
-                              <tr
-                                key={row.participantId}
-                                className={cn("border-b border-border/20 last:border-b-0", leading && "bg-primary/5")}
-                              >
-                                <td className={cn("px-4 py-1.5", leading && "font-semibold text-primary")}>{i + 1}</td>
-                                <td className={cn("px-2 py-1.5 max-w-[9rem] truncate", leading && "font-semibold")}>
-                                  {p?.publicSlug ? (
-                                    <a href={`/p/${p.publicSlug}`} className="text-primary underline">{p.name}</a>
-                                  ) : (
-                                    p?.name ?? "?"
-                                  )}
-                                </td>
-                                <td className="text-center px-2 py-1.5 tabular-nums">{row.wins}</td>
-                                <td className="text-center px-2 py-1.5 tabular-nums">{row.framesWon}</td>
-                                <td className="text-center px-2 py-1.5 tabular-nums">{row.framesLost}</td>
-                                <td className="text-center px-2 py-1.5 tabular-nums">
-                                  {row.framesWon - row.framesLost > 0 ? "+" : ""}
-                                  {row.framesWon - row.framesLost}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                    <LeagueStandingsTable
+                      rows={standings}
+                      highlightLeader
+                      renderName={(id) => {
+                        const p = lookup(id);
+                        return p?.publicSlug ? (
+                          <a href={`/p/${p.publicSlug}`} className="text-primary underline">{p.name}</a>
+                        ) : (
+                          p?.name ?? "?"
+                        );
+                      }}
+                    />
 
                     {rounds.length > 0 && (
                       <div className="flex flex-col gap-3 px-4 py-3 border-t border-border/40">

@@ -73,15 +73,74 @@ export function computeHouseStandings(
   });
 }
 
+// League standings: 2 points a win, 1 each for a draw (equal frames —
+// possible in a league, unlike a tournament). Ranked by points, then frame
+// difference, then frames won.
+export type LeagueStandingRow = {
+  participantId: string;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  framesFor: number;
+  framesAgainst: number;
+  points: number;
+};
+
+export function computeLeagueStandings(
+  participantIds: string[],
+  matches: { participant_a_id: string; participant_b_id: string; frames_a: number | null; frames_b: number | null }[],
+): LeagueStandingRow[] {
+  const rows = new Map<string, LeagueStandingRow>(
+    participantIds.map((id) => [
+      id,
+      { participantId: id, played: 0, wins: 0, draws: 0, losses: 0, framesFor: 0, framesAgainst: 0, points: 0 },
+    ]),
+  );
+  for (const m of matches) {
+    if (m.frames_a === null || m.frames_b === null) continue;
+    const a = rows.get(m.participant_a_id);
+    const b = rows.get(m.participant_b_id);
+    if (!a || !b) continue;
+    a.played += 1;
+    b.played += 1;
+    a.framesFor += m.frames_a;
+    a.framesAgainst += m.frames_b;
+    b.framesFor += m.frames_b;
+    b.framesAgainst += m.frames_a;
+    if (m.frames_a > m.frames_b) {
+      a.wins += 1;
+      b.losses += 1;
+      a.points += 2;
+    } else if (m.frames_b > m.frames_a) {
+      b.wins += 1;
+      a.losses += 1;
+      b.points += 2;
+    } else {
+      a.draws += 1;
+      b.draws += 1;
+      a.points += 1;
+      b.points += 1;
+    }
+  }
+  return [...rows.values()].sort((x, y) => {
+    if (y.points !== x.points) return y.points - x.points;
+    const xDiff = x.framesFor - x.framesAgainst;
+    const yDiff = y.framesFor - y.framesAgainst;
+    if (yDiff !== xDiff) return yDiff - xDiff;
+    return y.framesFor - x.framesFor;
+  });
+}
+
 export function computeEloUpdate(
   ratingA: number,
   ratingB: number,
-  aWon: boolean,
+  aWon: boolean | "draw",
 ): { newRatingA: number; newRatingB: number } {
   const expectedA = 1 / (1 + 10 ** ((ratingB - ratingA) / 400));
   const expectedB = 1 - expectedA;
-  const scoreA = aWon ? 1 : 0;
-  const scoreB = aWon ? 0 : 1;
+  const scoreA = aWon === "draw" ? 0.5 : aWon ? 1 : 0;
+  const scoreB = 1 - scoreA;
   return {
     newRatingA: Math.round(ratingA + ELO_K * (scoreA - expectedA)),
     newRatingB: Math.round(ratingB + ELO_K * (scoreB - expectedB)),
@@ -203,7 +262,7 @@ type PlacementDistrict = {
 export function computeLeaguePlacement(participantId: string, district: PlacementDistrict): string | null {
   const anyPlayed = district.matches.some((m) => m.frames_a !== null && m.frames_b !== null);
   if (!anyPlayed) return null;
-  const standings = computeHouseStandings(district.memberIds, district.matches);
+  const standings = computeLeagueStandings(district.memberIds, district.matches);
   const idx = standings.findIndex((s) => s.participantId === participantId);
   return idx === -1 ? null : `מקום ${idx + 1} ב${district.label}`;
 }

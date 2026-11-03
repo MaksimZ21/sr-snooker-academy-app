@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { computeHouseStandings, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
+import { computeLeagueStandings, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
+import { LeagueStandingsTable } from "@/components/league-standings-table";
 import { dayLabelHe } from "@/lib/date";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 
@@ -159,7 +160,7 @@ export function LeagueDistrictsView({
         </div>
       ) : (
         districts.map((district) => {
-          const standings = computeHouseStandings(district.memberIds, district.matches);
+          const standings = computeLeagueStandings(district.memberIds, district.matches);
           const hasFixtures = district.matches.length > 0;
           const hasResults = district.matches.some((m) => m.frames_a !== null);
           const rounds = [...new Set(district.matches.map((m) => m.round))].sort((a, b) => a - b);
@@ -187,35 +188,7 @@ export function LeagueDistrictsView({
                 )}
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-xs text-muted-foreground border-b border-border/40">
-                      <th className="text-right px-4 py-1.5 font-medium">מקום</th>
-                      <th className="text-right px-2 py-1.5 font-medium">שם</th>
-                      <th className="text-center px-2 py-1.5 font-medium">נצחונות</th>
-                      <th className="text-center px-2 py-1.5 font-medium">פריימים לטובה</th>
-                      <th className="text-center px-2 py-1.5 font-medium">פריימים לרעה</th>
-                      <th className="text-center px-2 py-1.5 font-medium">הפרש</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {standings.map((row, i) => (
-                      <tr key={row.participantId} className="border-b border-border/20 last:border-b-0">
-                        <td className="px-4 py-1.5">{i + 1}</td>
-                        <td className="px-2 py-1.5">{participantName(row.participantId)}</td>
-                        <td className="text-center px-2 py-1.5">{row.wins}</td>
-                        <td className="text-center px-2 py-1.5">{row.framesWon}</td>
-                        <td className="text-center px-2 py-1.5">{row.framesLost}</td>
-                        <td className="text-center px-2 py-1.5">
-                          {row.framesWon - row.framesLost > 0 ? "+" : ""}
-                          {row.framesWon - row.framesLost}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <LeagueStandingsTable rows={standings} renderName={participantName} />
 
               {hasFixtures && (
                 <div className="flex flex-col gap-3 px-4 py-3 border-t border-border/40">

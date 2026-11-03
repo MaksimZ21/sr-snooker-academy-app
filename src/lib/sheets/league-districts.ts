@@ -180,7 +180,11 @@ export async function enterLeagueMatchResult(
   // players' ratings are RIGHT NOW — matching the exact same forward-only,
   // no-retroactive-recalculation rule already established for tournament
   // house/knockout results.
-  const { newRatingA, newRatingB } = computeEloUpdate(sa.rating as number, sb.rating as number, framesA > framesB);
+  const { newRatingA, newRatingB } = computeEloUpdate(
+    sa.rating as number,
+    sb.rating as number,
+    framesA === framesB ? "draw" : framesA > framesB,
+  );
   const { error: ratingAError } = await db.from("students").update({ rating: newRatingA }).eq("id", sa.id);
   if (ratingAError) throw new Error(ratingAError.message);
   const { error: ratingBError } = await db.from("students").update({ rating: newRatingB }).eq("id", sb.id);

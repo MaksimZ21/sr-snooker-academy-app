@@ -14,6 +14,7 @@ import {
   computeTournamentPlacement,
   generateLeagueRounds,
   computeLeaguePlacement,
+  computeLeagueStandings,
 } from "./tournament-logic";
 
 describe("shuffle", () => {
@@ -99,6 +100,40 @@ describe("computeEloUpdate", () => {
     const evenWin = computeEloUpdate(1000, 1000, true);
     const underdogWin = computeEloUpdate(800, 1200, true);
     expect(underdogWin.newRatingA - 800).toBeGreaterThan(evenWin.newRatingA - 1000);
+  });
+
+  it("a draw between equals changes nothing; a draw against a stronger player gains rating", () => {
+    expect(computeEloUpdate(1000, 1000, "draw")).toEqual({ newRatingA: 1000, newRatingB: 1000 });
+    const underdogDraw = computeEloUpdate(800, 1200, "draw");
+    expect(underdogDraw.newRatingA).toBeGreaterThan(800);
+    expect(underdogDraw.newRatingB).toBeLessThan(1200);
+  });
+});
+
+describe("computeLeagueStandings", () => {
+  it("counts played/wins/draws/losses, frames and 2-1-0 points", () => {
+    const rows = computeLeagueStandings(["a", "b", "c"], [
+      { participant_a_id: "a", participant_b_id: "b", frames_a: 2, frames_b: 1 },
+      { participant_a_id: "a", participant_b_id: "c", frames_a: 1, frames_b: 1 },
+      { participant_a_id: "b", participant_b_id: "c", frames_a: null, frames_b: null },
+    ]);
+    const a = rows.find((r) => r.participantId === "a")!;
+    expect(a).toEqual({ participantId: "a", played: 2, wins: 1, draws: 1, losses: 0, framesFor: 3, framesAgainst: 2, points: 3 });
+    const b = rows.find((r) => r.participantId === "b")!;
+    expect(b).toMatchObject({ played: 1, wins: 0, draws: 0, losses: 1, framesFor: 1, framesAgainst: 2, points: 0 });
+    const c = rows.find((r) => r.participantId === "c")!;
+    expect(c).toMatchObject({ played: 1, draws: 1, points: 1 });
+  });
+
+  it("ranks by points, then frame difference, then frames won", () => {
+    const rows = computeLeagueStandings(["a", "b", "c", "d"], [
+      // a: one win 2-1 (2 pts, diff +1)
+      { participant_a_id: "a", participant_b_id: "d", frames_a: 2, frames_b: 1 },
+      // b: two draws (2 pts, diff 0)
+      { participant_a_id: "b", participant_b_id: "c", frames_a: 1, frames_b: 1 },
+      { participant_a_id: "b", participant_b_id: "d", frames_a: 2, frames_b: 2 },
+    ]);
+    expect(rows.map((r) => r.participantId)).toEqual(["a", "b", "c", "d"]);
   });
 });
 
@@ -333,7 +368,7 @@ describe("computeLeaguePlacement", () => {
       ],
       label: "צפון",
     };
-    // Standings by wins: p3 (2), p1 (1), p2 (0) — p1 is 2nd place.
+    // Standings by points: p3 (4), p1 (2), p2 (0) — p1 is 2nd place.
     expect(computeLeaguePlacement("p1", district)).toBe("מקום 2 בצפון");
   });
 

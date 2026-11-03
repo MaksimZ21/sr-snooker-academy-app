@@ -227,10 +227,6 @@ function ScheduleRow({
     const nb = Number(b);
     if (a === "" || b === "" || !Number.isInteger(na) || !Number.isInteger(nb) || na < 0 || nb < 0) return;
     if (played && na === match.frames_a && nb === match.frames_b) return;
-    if (na === nb) {
-      toast.error("משחק לא יכול להסתיים בתיקו");
-      return;
-    }
     onSave(na, nb);
   }
 

@@ -143,13 +143,15 @@ export async function updateTournament(
 export type StudentSearchResult = { id: string; first_name: string; last_name: string; phone: string };
 
 export async function searchStudents(query: string): Promise<StudentSearchResult[]> {
-  const q = query.trim().replace(/,/g, " ");
-  if (!q) return [];
-  const { data } = await db
-    .from("students")
-    .select("id, first_name, last_name, phone")
-    .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,phone.ilike.%${q}%`)
-    .limit(15);
+  // Every word must match somewhere, so a full name finds a player whose
+  // first and last name are stored in separate fields.
+  const words = query.replace(/[,()]/g, " ").split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+  let request = db.from("students").select("id, first_name, last_name, phone");
+  for (const word of words) {
+    request = request.or(`first_name.ilike.%${word}%,last_name.ilike.%${word}%,phone.ilike.%${word}%`);
+  }
+  const { data } = await request.limit(15);
   return (data ?? []) as StudentSearchResult[];
 }
 
@@ -382,18 +384,6 @@ export async function queuePendingRegistration(
   if (error) throw new Error(error.message);
 }
 
-async function findStudentIdByPhone(phone: string): Promise<string | null> {
-  const digits = phone.replace(/\D/g, "");
-  if (!digits) return null;
-  const core = digits.startsWith("972") ? digits.slice(3) : digits.startsWith("0") ? digits.slice(1) : digits;
-  const { data } = await db
-    .from("students")
-    .select("id")
-    .or(`phone.eq.0${core},phone.eq.972${core}`)
-    .maybeSingle();
-  return (data?.id as string) ?? null;
-}
-
 // Attaches every registration parked for this appointment to the now-existing
 // tournament, then clears them. addTournamentParticipantFromCrm is idempotent,
 // so a registration that already attached is harmless to process again.
@@ -437,13 +427,13 @@ export async function addTournamentParticipantFromCrm(
     .maybeSingle();
   if (tournament?.registration_closed) return { action: "registration_closed" };
 
+  const { appendStudent, findStudentIdByPhone } = await import("./students");
   let studentId = input.phone ? await findStudentIdByPhone(input.phone) : null;
 
   if (studentId) {
     const { ensurePlayerSlug } = await import("./players");
     await ensurePlayerSlug(studentId);
   } else {
-    const { appendStudent } = await import("./students");
     studentId = await appendStudent({
       first_name: input.firstName,
       last_name: input.lastName,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
-import { appendStudent, fetchStudents } from "@/lib/sheets/students";
+import { createOrPromoteStudent, fetchStudents } from "@/lib/sheets/students";
 import { SKILL_LEVELS } from "@/lib/sheets/schemas";
 
 export async function GET() {
@@ -34,10 +34,11 @@ export async function POST(req: Request) {
         skill_level: z.enum(SKILL_LEVELS).nullable().optional(),
       })
       .parse(await req.json());
-    const id = await appendStudent(body);
+    const id = await createOrPromoteStudent(body);
     return NextResponse.json({ id });
   } catch (e) {
     if (e instanceof Response) return e;
+    if (e instanceof Error) return NextResponse.json({ error: e.message }, { status: 400 });
     return new NextResponse("error", { status: 500 });
   }
 }

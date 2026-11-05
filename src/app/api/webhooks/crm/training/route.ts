@@ -44,8 +44,10 @@ async function findStudentByPhone(phone: string): Promise<Student | null> {
     .from("students")
     .select("*")
     .or(`phone.eq.${local},phone.eq.${intl}`)
-    .maybeSingle();
-  return (data as Student) ?? null;
+    .order("is_tournament_only")
+    .order("id")
+    .limit(1);
+  return (data?.[0] as Student) ?? null;
 }
 
 function parseMeetingTime(raw: string): { date: string; startTime: string } | null {

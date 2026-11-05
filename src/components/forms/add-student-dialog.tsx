@@ -74,7 +74,10 @@ export function AddStudentDialog() {
           skill_level: skillLevel === "__none__" ? null : skillLevel,
         }),
       });
-      if (!r.ok) throw new Error("failed");
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "שגיאה בהוספת מתאמן");
+      }
       return (await r.json()) as { id: string };
     },
     onSuccess: ({ id }) => {
@@ -83,7 +86,7 @@ export function AddStudentDialog() {
       setOpen(false);
       reset();
     },
-    onError: () => toast.error("שגיאה בהוספת מתאמן"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בהוספת מתאמן"),
   });
 
   const canSubmit = (firstName.trim().length > 0 || lastName.trim().length > 0) && !mut.isPending;

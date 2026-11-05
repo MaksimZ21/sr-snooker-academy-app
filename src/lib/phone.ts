@@ -7,6 +7,6 @@
 export function normalizePhoneLocal(raw: string): string {
   const digits = raw.replace(/\D/g, "");
   if (!digits) return "";
-  const core = digits.startsWith("972") ? digits.slice(3) : digits.startsWith("0") ? digits.slice(1) : digits;
+  const core = (digits.startsWith("972") ? digits.slice(3) : digits).replace(/^0+/, "");
   return `0${core}`;
 }

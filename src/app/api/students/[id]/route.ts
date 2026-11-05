@@ -31,6 +31,7 @@ export async function PATCH(
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;
+    if (e instanceof Error) return NextResponse.json({ error: e.message }, { status: 400 });
     return new NextResponse("error", { status: 500 });
   }
 }

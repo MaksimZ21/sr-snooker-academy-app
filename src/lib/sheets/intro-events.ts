@@ -274,18 +274,6 @@ export async function upsertIntroEventFromCrm(input: {
   return { id, action };
 }
 
-async function findStudentIdByPhone(phone: string): Promise<string | null> {
-  const digits = phone.replace(/\D/g, "");
-  if (!digits) return null;
-  const core = digits.startsWith("972") ? digits.slice(3) : digits.startsWith("0") ? digits.slice(1) : digits;
-  const { data } = await db
-    .from("students")
-    .select("id")
-    .or(`phone.eq.0${core},phone.eq.972${core}`)
-    .maybeSingle();
-  return (data?.id as string) ?? null;
-}
-
 // The CRM equivalent of addIntroEventParticipant's manual-add path:
 // someone registered for a CRM-created intro event, so they join the
 // shared students table exactly like a CRM tournament ticket buyer does
@@ -297,10 +285,10 @@ export async function addIntroEventParticipantFromCrm(
   introEventId: string,
   input: { firstName: string; lastName: string; phone: string },
 ): Promise<{ action: "added" | "already_registered" }> {
+  const { appendStudent, findStudentIdByPhone } = await import("./students");
   let studentId = input.phone ? await findStudentIdByPhone(input.phone) : null;
 
   if (!studentId) {
-    const { appendStudent } = await import("./students");
     studentId = await appendStudent({
       first_name: input.firstName,
       last_name: input.lastName,

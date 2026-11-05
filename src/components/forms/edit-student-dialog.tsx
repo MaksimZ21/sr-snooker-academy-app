@@ -85,14 +85,17 @@ export function EditStudentDialog({
           skill_level: skillLevel === "__none__" ? null : skillLevel,
         }),
       });
-      if (!r.ok) throw new Error("failed");
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "שגיאה בעדכון הפרטים");
+      }
     },
     onSuccess: () => {
       toast.success("הפרטים עודכנו");
       qc.invalidateQueries({ queryKey: ["students"] });
       onOpenChange(false);
     },
-    onError: () => toast.error("שגיאה בעדכון הפרטים"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בעדכון הפרטים"),
   });
 
   const canSubmit = (firstName.trim().length > 0 || lastName.trim().length > 0) && !mut.isPending;

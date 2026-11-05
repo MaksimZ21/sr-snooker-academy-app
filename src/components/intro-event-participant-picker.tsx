@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { hasStudentNamed } from "@/lib/student-name";
 
 type StudentSearchResult = { id: string; first_name: string; last_name: string; phone: string };
 
@@ -73,7 +74,9 @@ export function IntroEventParticipantPicker({ introEventId }: { introEventId: st
                 disabled={addMut.isPending}
                 className="w-full text-right px-3 py-2 hover:bg-muted/60 transition-colors text-sm text-primary border-t border-border/40"
               >
-                {`+ הוסף כמשתתף חדש: "${query.trim()}"`}
+                {hasStudentNamed(results, query)
+                  ? `כבר קיים שחקן בשם הזה. להוסיף בכל זאת משתתף נוסף: "${query.trim()}"`
+                  : `+ הוסף כמשתתף חדש: "${query.trim()}"`}
               </button>
             </>
           )}

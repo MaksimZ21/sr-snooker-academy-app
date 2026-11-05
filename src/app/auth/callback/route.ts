@@ -24,10 +24,15 @@ export async function GET(req: NextRequest) {
     },
   );
 
+  let error: unknown = null;
   if (code) {
-    await supabase.auth.exchangeCodeForSession(code);
+    ({ error } = await supabase.auth.exchangeCodeForSession(code));
   } else if (tokenHash && type) {
-    await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+    ({ error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type }));
+  }
+  if (error) {
+    console.error("auth/callback", error);
+    return NextResponse.redirect(new URL("/login?error=link", req.url));
   }
 
   return redirectResponse;

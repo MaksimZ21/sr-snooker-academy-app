@@ -49,18 +49,18 @@ export async function POST(req: Request) {
     if (!email) return NextResponse.json({ error: "משתמש לא נמצא" }, { status: 404 });
 
     const origin = new URL(req.url).origin;
-    const { data, error } = await db.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: { redirectTo: `${origin}/auth/callback?next=/` },
-    });
+    const { data, error } = await db.auth.admin.generateLink({ type: "magiclink", email });
 
-    if (error || !data.properties?.action_link) {
+    if (error || !data.properties?.hashed_token) {
       console.error("generateLink error", error);
       return NextResponse.json({ error: "שגיאת כניסה" }, { status: 500 });
     }
 
-    return NextResponse.json({ actionLink: data.properties.action_link });
+    // Straight to our own callback. The link Supabase generates would go
+    // through its server and land back on the login page to finish signing
+    // in, showing the login form again for a few seconds.
+    const params = new URLSearchParams({ token_hash: data.properties.hashed_token, type: "magiclink", next: "/" });
+    return NextResponse.json({ actionLink: `${origin}/auth/callback?${params}` });
   } catch (e) {
     console.error("whatsapp-otp/verify", e);
     return NextResponse.json({ error: "שגיאה" }, { status: 500 });

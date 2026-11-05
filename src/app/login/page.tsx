@@ -6,12 +6,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useSearchParams } from "next/navigation";
+import { createPortal } from "react-dom";
 import { MessageCircle } from "lucide-react";
+import { AppSplash } from "@/components/app-splash";
+
+// Rendered into body: the login card's backdrop-filter would otherwise trap
+// the fixed-position splash inside the card.
+function EnteringSplash() {
+  return createPortal(<AppSplash message="מתחברים..." />, document.body);
+}
 
 function EmailPasswordLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [entering, setEntering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const supabase = createSupabaseBrowserClient();
@@ -25,10 +34,13 @@ function EmailPasswordLoginForm() {
       setError(error.message);
       setLoading(false);
     } else {
-      const redirect = searchParams.get("redirect") ?? "/";
-      window.location.href = redirect;
+      setEntering(true);
+      // replace, so the back button doesn't return to this page mid-splash.
+      window.location.replace(searchParams.get("redirect") ?? "/");
     }
   }
+
+  if (entering) return <EnteringSplash />;
 
   return (
     <form onSubmit={signIn} className="flex flex-col gap-3">
@@ -64,6 +76,7 @@ function WhatsAppLoginForm() {
   const [code, setCode] = useState("");
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
+  const [entering, setEntering] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function sendOtp(e: React.FormEvent) {
@@ -101,9 +114,12 @@ function WhatsAppLoginForm() {
       setError(json.error ?? "קוד שגוי");
       setLoading(false);
     } else {
-      window.location.href = json.actionLink;
+      setEntering(true);
+      window.location.replace(json.actionLink);
     }
   }
+
+  if (entering) return <EnteringSplash />;
 
   if (step === "code") {
     return (
@@ -161,12 +177,16 @@ function WhatsAppLoginForm() {
 type Tab = "staff" | "student";
 
 function LoginTabs() {
+  const linkFailed = useSearchParams().get("error") === "link";
   const [tab, setTab] = useState<Tab>("staff");
   // Both staff and student default to WhatsApp. Each tab button resets to its own default.
   const [showWa, setShowWa] = useState(true);
 
   return (
     <div className="flex flex-col gap-4">
+      {linkFailed && (
+        <p className="text-sm text-destructive text-center">הכניסה לא הושלמה. אפשר לנסות שוב.</p>
+      )}
       <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg text-sm">
         <button
           type="button"
@@ -228,6 +248,7 @@ function LoginTabs() {
 
 function HashSessionHandler() {
   const supabase = createSupabaseBrowserClient();
+  const [entering, setEntering] = useState(false);
   useEffect(() => {
     const hash = window.location.hash;
     if (!hash.includes("access_token=")) return;
@@ -235,11 +256,13 @@ function HashSessionHandler() {
     const access_token = params.get("access_token");
     const refresh_token = params.get("refresh_token");
     if (!access_token || !refresh_token) return;
+    setEntering(true);
     supabase.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
-      if (!error) window.location.href = "/";
+      if (error) setEntering(false);
+      else window.location.replace("/");
     });
   }, [supabase]);
-  return null;
+  return entering ? <EnteringSplash /> : null;
 }
 
 export default function LoginPage() {

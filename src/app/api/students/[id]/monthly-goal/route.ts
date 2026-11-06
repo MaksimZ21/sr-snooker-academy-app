@@ -27,6 +27,7 @@ export async function GET(
 
 const CreateSchema = z.object({
   category: z.enum(["technique", "angle", "cue_ball_control", "breaks"]),
+  month: z.string().regex(/^\d{4}-\d{2}$/).optional(),
 });
 
 export async function POST(
@@ -42,8 +43,10 @@ export async function POST(
     } else if (user.role !== "admin" && user.role !== "coach") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    const { category } = CreateSchema.parse(await req.json());
-    const goal = await createMonthlyGoal(id, category);
+    const { category, month } = CreateSchema.parse(await req.json());
+    // Staff working in an older session set the goal for that session's month;
+    // a student only ever picks for the current one.
+    const goal = await createMonthlyGoal(id, category, user.role === "student" ? undefined : month);
     return NextResponse.json({ goal });
   } catch (e) {
     if (e instanceof Response) return e;

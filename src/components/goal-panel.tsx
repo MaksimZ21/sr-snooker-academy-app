@@ -1,22 +1,27 @@
 "use client";
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import type { Student } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
-import { GOAL_CATEGORIES, type MonthlyGoal, type GoalEntry } from "@/lib/sheets/monthly-goals-shared";
+import { GOAL_CATEGORIES, type GoalCategory, type MonthlyGoal, type GoalEntry } from "@/lib/sheets/monthly-goals-shared";
 
 export type GoalsByStudent = Record<string, { goal: MonthlyGoal | null; entry: GoalEntry | null }>;
 
+type SessionWithGoals = { goalsByStudent: GoalsByStudent; [k: string]: unknown };
+
 export function GoalPanel({
   sessionId,
+  month,
   students,
   goalsByStudent,
   readOnly,
 }: {
   sessionId: string;
+  month: string;
   students: Student[];
   goalsByStudent: GoalsByStudent;
   readOnly: boolean;
@@ -29,7 +34,11 @@ export function GoalPanel({
           return (
             <div key={s.id} className="flex items-center gap-3 border-2 rounded-xl p-3.5 border-border">
               <div className="font-medium text-sm flex-1">{studentFullName(s)}</div>
-              <span className="text-xs text-muted-foreground">לא נבחרה מטרה החודש</span>
+              {readOnly ? (
+                <span className="text-xs text-muted-foreground">לא נבחרה מטרה החודש</span>
+              ) : (
+                <GoalPicker sessionId={sessionId} studentId={s.id} month={month} />
+              )}
             </div>
           );
         }
@@ -45,6 +54,68 @@ export function GoalPanel({
           />
         );
       })}
+    </div>
+  );
+}
+
+// Keeps a save button rather than saving on pick: a goal can't be changed once
+// it is set, so a slip of the finger shouldn't stick for the whole month.
+function GoalPicker({
+  sessionId,
+  studentId,
+  month,
+}: {
+  sessionId: string;
+  studentId: string;
+  month: string;
+}) {
+  const qc = useQueryClient();
+  const [selected, setSelected] = useState<GoalCategory | "">("");
+  const sessionKey = ["session", sessionId];
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/students/${studentId}/monthly-goal`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ category: selected, month }),
+      });
+      const body = (await r.json().catch(() => null)) as { goal?: MonthlyGoal; error?: string } | null;
+      if (!r.ok || !body?.goal) throw new Error(body?.error ?? "שגיאה בשמירה");
+      return body.goal;
+    },
+    onSuccess: async (goal) => {
+      await qc.cancelQueries({ queryKey: sessionKey });
+      qc.setQueryData<SessionWithGoals>(sessionKey, (old) =>
+        old && {
+          ...old,
+          goalsByStudent: { ...old.goalsByStudent, [studentId]: { goal, entry: null } },
+        },
+      );
+      qc.invalidateQueries({ queryKey: ["student-goals", studentId] });
+    },
+    onError: (e) => {
+      toast.error(e.message);
+      // The student may have just picked their own goal: show it.
+      qc.invalidateQueries({ queryKey: sessionKey });
+    },
+  });
+
+  return (
+    <div className="flex items-center gap-2">
+      <Select value={selected} onValueChange={(v) => setSelected((v as GoalCategory) ?? "")}>
+        <SelectTrigger className="h-8 w-36 text-sm" aria-label="בחירת מטרה חודשית">
+          <SelectValue placeholder="בחר מטרה..." />
+        </SelectTrigger>
+        <SelectContent>
+          {GOAL_CATEGORIES.map((c) => (
+            <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button size="sm" disabled={!selected || mut.isPending} onClick={() => mut.mutate()} className="h-8 text-xs">
+        שמור
+      </Button>
     </div>
   );
 }

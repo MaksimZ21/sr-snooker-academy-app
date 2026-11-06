@@ -15,6 +15,7 @@ import { EditSessionDialog } from "./forms/edit-session-dialog";
 import { DuplicateSessionDialog } from "./forms/duplicate-session-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatHebrewDate } from "@/lib/date";
+import { monthOf } from "@/lib/sheets/monthly-goals-shared";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 import { User, Users, Trash2 } from "lucide-react";
@@ -245,6 +246,7 @@ export function SessionDetail({
                 </p>
                 <GoalPanel
                   sessionId={sessionId}
+                  month={monthOf(session.date)}
                   students={students}
                   goalsByStudent={goalsByStudent}
                   readOnly={!canEditAttendance}

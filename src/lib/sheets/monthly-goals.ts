@@ -75,10 +75,14 @@ export async function fetchGoalForMonth(studentId: string, month: string): Promi
   return (data as MonthlyGoal) ?? null;
 }
 
-export async function createMonthlyGoal(studentId: string, category: GoalCategory): Promise<MonthlyGoal> {
+export async function createMonthlyGoal(
+  studentId: string,
+  category: GoalCategory,
+  month: string = currentMonth(),
+): Promise<MonthlyGoal> {
   const { data, error } = await db
     .from("student_monthly_goals")
-    .insert({ student_id: studentId, month: currentMonth(), category })
+    .insert({ student_id: studentId, month, category })
     .select()
     .single();
   if (error) {

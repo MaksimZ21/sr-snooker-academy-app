@@ -22,9 +22,13 @@ function Harness() {
   );
 }
 
-function setup(attendance: Attendance[] = []) {
+const savedNote: Note = {
+  id: "n1", student_id: "S1", session_id: "A", coach_email: "c@x.com", text: "הערה קיימת", created_at: "2026-11-01T10:00:00Z",
+};
+
+function setup(attendance: Attendance[] = [], notes: Note[] = []) {
   const qc = new QueryClient();
-  qc.setQueryData(["session", "A"], { attendance, notesByStudent: {} });
+  qc.setQueryData(["session", "A"], { attendance, notesByStudent: { S1: notes } });
   render(
     <QueryClientProvider client={qc}>
       <Harness />
@@ -104,5 +108,44 @@ describe("AttendancePanel", () => {
     const box = await screen.findByPlaceholderText("הוסף הערה לשחקן...");
     await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe("לא ללכת לאיבוד"));
     expect(screen.queryByText("לא ללכת לאיבוד", { selector: "p" })).toBeNull();
+  });
+
+  it("deletes a note at once, after confirming", async () => {
+    let answer: (r: Response) => void = () => {};
+    const fetchMock = vi.fn((..._args: unknown[]) => new Promise<Response>((resolve) => { answer = resolve; }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    setup([], [savedNote]);
+
+    fireEvent.click(button("מחק הערה"));
+
+    await waitFor(() => expect(screen.queryByText("הערה קיימת")).toBeNull());
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(init.method).toBe("DELETE");
+    expect(JSON.parse(init.body as string)).toEqual({ note_id: "n1" });
+    answer(new Response("{}", { status: 200 }));
+  });
+
+  it("keeps the note when the confirmation is declined", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("confirm", vi.fn(() => false));
+    setup([], [savedNote]);
+
+    fireEvent.click(button("מחק הערה"));
+
+    expect(screen.getByText("הערה קיימת")).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("brings the note back when deleting fails", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("no", { status: 500 })));
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    setup([], [savedNote]);
+
+    fireEvent.click(button("מחק הערה"));
+
+    await waitFor(() => expect(screen.getByText("הערה קיימת")).toBeTruthy());
+    await waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalled());
   });
 });

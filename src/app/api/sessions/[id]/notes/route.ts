@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchSessionById } from "@/lib/sheets/sessions";
-import { appendNote } from "@/lib/sheets/notes";
+import { appendNote, deleteNote } from "@/lib/sheets/notes";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
@@ -36,6 +36,32 @@ export async function POST(
     };
     await appendNote(note);
     return NextResponse.json({ note });
+  } catch (e) {
+    if (e instanceof Response) return e;
+    return new NextResponse("error", { status: 500 });
+  }
+}
+
+const DeleteBody = z.object({ note_id: z.string().min(1) });
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const user = await requireUser();
+    const { id } = await params;
+    const session = await fetchSessionById(id);
+    if (!session) return new NextResponse("not found", { status: 404 });
+    if (user.role === "coach" && session.coach_email !== user.email) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
+    if (user.role !== "admin" && user.role !== "coach") {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
+    const { note_id } = DeleteBody.parse(await req.json());
+    await deleteNote(id, note_id);
+    return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;
     return new NextResponse("error", { status: 500 });

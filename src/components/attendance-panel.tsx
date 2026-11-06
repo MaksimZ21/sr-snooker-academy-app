@@ -8,7 +8,7 @@ import { MessageSquarePlus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Attendance, Note, Student } from "@/lib/sheets/schemas";
-import { useAddSessionNote } from "@/components/notes-panel";
+import { DeleteNoteButton, useAddSessionNote } from "@/components/notes-panel";
 import { studentFullName } from "@/lib/sheets/schemas";
 
 function getInitials(name: string) {
@@ -304,9 +304,12 @@ function AttendanceRow({
       {notes.length > 0 && (
         <div className="mt-2.5 flex flex-col gap-1.5 border-t border-border/40 pt-2.5">
           {notes.map((n) => (
-            <p key={n.id} className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-              {n.text}
-            </p>
+            <div key={n.id} className="flex items-start gap-2">
+              <p className="flex-1 min-w-0 text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                {n.text}
+              </p>
+              {!readOnly && <DeleteNoteButton sessionId={sessionId} studentId={s.id} noteId={n.id} />}
+            </div>
           ))}
         </div>
       )}

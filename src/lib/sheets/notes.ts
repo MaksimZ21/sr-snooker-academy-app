@@ -54,3 +54,15 @@ export async function appendNote(row: Note): Promise<void> {
   revalidateTag("notes:all", { expire: 0 });
   revalidateTag(`notes:${row.student_id}`, { expire: 0 });
 }
+
+export async function deleteNote(sessionId: string, noteId: string): Promise<void> {
+  const { data, error } = await db
+    .from("notes")
+    .delete()
+    .eq("id", noteId)
+    .eq("session_id", sessionId)
+    .select("student_id");
+  if (error) throw new Error(error.message);
+  revalidateTag("notes:all", { expire: 0 });
+  for (const row of data ?? []) revalidateTag(`notes:${row.student_id}`, { expire: 0 });
+}

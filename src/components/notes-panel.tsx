@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Send } from "lucide-react";
+import { Send, X } from "lucide-react";
 import type { Note, Student } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
 
@@ -39,7 +39,7 @@ export function useAddSessionNote(sessionId: string, studentId: string) {
       await qc.cancelQueries({ queryKey });
       const previous = qc.getQueryData<SessionWithNotes>(queryKey);
       const note: Note = {
-        id: `pending-${Date.now()}`,
+        id: `${PENDING_PREFIX}${Date.now()}`,
         student_id: studentId,
         session_id: sessionId,
         coach_email: "",
@@ -60,6 +60,72 @@ export function useAddSessionNote(sessionId: string, studentId: string) {
     },
     onSettled: () => qc.invalidateQueries({ queryKey }),
   });
+}
+
+const PENDING_PREFIX = "pending-";
+
+// Same approach as adding: gone from the screen at once, back if it fails.
+function useDeleteSessionNote(sessionId: string, studentId: string) {
+  const qc = useQueryClient();
+  const queryKey = ["session", sessionId];
+
+  return useMutation({
+    mutationFn: async (noteId: string) => {
+      const r = await fetch(`/api/sessions/${sessionId}/notes`, {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ note_id: noteId }),
+      });
+      if (!r.ok) throw new Error("delete failed");
+    },
+    onMutate: async (noteId) => {
+      await qc.cancelQueries({ queryKey });
+      const previous = qc.getQueryData<SessionWithNotes>(queryKey);
+      qc.setQueryData<SessionWithNotes>(queryKey, (old) =>
+        old && {
+          ...old,
+          notesByStudent: {
+            ...old.notesByStudent,
+            [studentId]: (old.notesByStudent[studentId] ?? []).filter((n) => n.id !== noteId),
+          },
+        },
+      );
+      return { previous };
+    },
+    onError: (_error, _noteId, context) => {
+      if (context?.previous) qc.setQueryData(queryKey, context.previous);
+      toast.error("ההערה לא נמחקה, נסה שוב");
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey }),
+  });
+}
+
+// A note still being saved has no real id yet, so it can't be deleted until
+// the save finishes.
+export function DeleteNoteButton({
+  sessionId,
+  studentId,
+  noteId,
+}: {
+  sessionId: string;
+  studentId: string;
+  noteId: string;
+}) {
+  const mut = useDeleteSessionNote(sessionId, studentId);
+  if (noteId.startsWith(PENDING_PREFIX)) return null;
+  return (
+    <button
+      type="button"
+      aria-label="מחק הערה"
+      title="מחק הערה"
+      onClick={() => {
+        if (window.confirm("למחוק את ההערה?")) mut.mutate(noteId);
+      }}
+      className="shrink-0 rounded p-1 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
+    >
+      <X size={14} />
+    </button>
+  );
 }
 
 export function NotesPanel({
@@ -137,12 +203,17 @@ function StudentNotes({
             i % 2 === 0 ? "bg-background" : "bg-muted/20",
           )}
         >
-          <p className="text-sm leading-relaxed">{n.text}</p>
-          <p className="text-[11px] text-muted-foreground/55 mt-1">
-            {new Date(n.created_at).toLocaleString("he-IL", {
-              day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit",
-            })}
-          </p>
+          <div className="flex items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm leading-relaxed">{n.text}</p>
+              <p className="text-[11px] text-muted-foreground/55 mt-1">
+                {new Date(n.created_at).toLocaleString("he-IL", {
+                  day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit",
+                })}
+              </p>
+            </div>
+            {!readOnly && <DeleteNoteButton sessionId={sessionId} studentId={student.id} noteId={n.id} />}
+          </div>
         </div>
       ))}
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireUser } from "@/lib/auth/requireUser";
+import { requireStaff } from "@/lib/auth/requireUser";
 import { fetchSessionById } from "@/lib/sheets/sessions";
 import { fetchGoalForMonth, upsertGoalEntry, monthOf } from "@/lib/sheets/monthly-goals";
 
@@ -14,7 +14,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; studentId: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     if (user.role !== "admin" && user.role !== "coach") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

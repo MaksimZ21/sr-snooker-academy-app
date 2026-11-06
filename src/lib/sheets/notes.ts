@@ -11,6 +11,18 @@ export async function fetchNotesForStudent(studentId: string): Promise<Note[]> {
   return (data ?? []) as Note[];
 }
 
+// The only query a student's own pages may use: team notes never leave the
+// server for them.
+export async function fetchStudentVisibleNotes(studentId: string): Promise<Note[]> {
+  const { data } = await db
+    .from("notes")
+    .select("*")
+    .eq("student_id", studentId)
+    .eq("visibility", "student")
+    .order("created_at", { ascending: false });
+  return (data ?? []) as Note[];
+}
+
 export async function fetchNotesForMultipleStudents(
   studentIds: string[],
 ): Promise<Record<string, Note[]>> {

@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { MessageSquarePlus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { Attendance, Note, Student } from "@/lib/sheets/schemas";
-import { DeleteNoteButton, useAddSessionNote } from "@/components/notes-panel";
+import type { Attendance, Note, NoteVisibility, Student } from "@/lib/sheets/schemas";
+import { DeleteNoteButton, NoteTeamBadge, NoteVisibilityPicker, useAddSessionNote } from "@/components/notes-panel";
 import { studentFullName } from "@/lib/sheets/schemas";
 
 function getInitials(name: string) {
@@ -69,17 +69,21 @@ type SessionDetailData = {
 
 function InlineNoteInput({
   initialText,
+  initialVisibility,
   onSave,
   onClose,
 }: {
   initialText: string;
-  onSave: (text: string) => void;
+  initialVisibility: NoteVisibility;
+  onSave: (text: string, visibility: NoteVisibility) => void;
   onClose: () => void;
 }) {
   const [text, setText] = useState(initialText);
+  const [visibility, setVisibility] = useState(initialVisibility);
 
   return (
     <div className="mt-2.5 flex flex-col gap-2">
+      <NoteVisibilityPicker value={visibility} onChange={setVisibility} />
       <Textarea
         autoFocus
         value={text}
@@ -91,7 +95,7 @@ function InlineNoteInput({
         <Button size="sm" variant="ghost" onClick={onClose} className="text-xs h-8">
           ביטול
         </Button>
-        <Button size="sm" disabled={!text.trim()} onClick={() => onSave(text.trim())} className="text-xs h-8">
+        <Button size="sm" disabled={!text.trim()} onClick={() => onSave(text.trim(), visibility)} className="text-xs h-8">
           שמור
         </Button>
       </div>
@@ -193,15 +197,15 @@ function AttendanceRow({
   isAdmin: boolean;
 }) {
   const [noteOpen, setNoteOpen] = useState(false);
-  const [noteDraft, setNoteDraft] = useState("");
+  const [noteDraft, setNoteDraft] = useState<{ text: string; visibility: NoteVisibility }>({ text: "", visibility: "student" });
   const addNote = useAddSessionNote(sessionId, s.id);
 
-  function saveNote(text: string) {
+  function saveNote(text: string, visibility: NoteVisibility) {
     setNoteOpen(false);
-    setNoteDraft("");
-    addNote.mutate(text, {
+    setNoteDraft({ text: "", visibility: "student" });
+    addNote.mutate({ text, visibility }, {
       onError: () => {
-        setNoteDraft(text);
+        setNoteDraft({ text, visibility });
         setNoteOpen(true);
       },
     });
@@ -299,12 +303,18 @@ function AttendanceRow({
         </div>
       </div>
       {noteOpen && (
-        <InlineNoteInput initialText={noteDraft} onSave={saveNote} onClose={() => setNoteOpen(false)} />
+        <InlineNoteInput
+          initialText={noteDraft.text}
+          initialVisibility={noteDraft.visibility}
+          onSave={saveNote}
+          onClose={() => setNoteOpen(false)}
+        />
       )}
       {notes.length > 0 && (
         <div className="mt-2.5 flex flex-col gap-1.5 border-t border-border/40 pt-2.5">
           {notes.map((n) => (
             <div key={n.id} className="flex items-start gap-2">
+              <NoteTeamBadge note={n} />
               <p className="flex-1 min-w-0 text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
                 {n.text}
               </p>

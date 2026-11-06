@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth/requireUser";
+import { requireStaff } from "@/lib/auth/requireUser";
 import { fetchSessionById } from "@/lib/sheets/sessions";
 import { deleteAttendance, upsertAttendance } from "@/lib/sheets/attendance";
 import { z } from "zod";
@@ -18,7 +18,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     const { id } = await params;
     const session = await fetchSessionById(id);
     if (!session) return new NextResponse("not found", { status: 404 });
@@ -53,7 +53,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     const { id } = await params;
     const session = await fetchSessionById(id);
     if (!session) return new NextResponse("not found", { status: 404 });

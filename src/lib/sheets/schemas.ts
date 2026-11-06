@@ -84,12 +84,17 @@ export const AttendanceRow = z.object({
 });
 export type Attendance = z.infer<typeof AttendanceRow>;
 
+// "student": a training note, shown to the student too. "team": coach and admin only.
+export const NOTE_VISIBILITIES = ["student", "team"] as const;
+export type NoteVisibility = (typeof NOTE_VISIBILITIES)[number];
+
 export const NoteRow = z.object({
   id: z.string(),
   student_id: z.string(),
   session_id: z.string(),
   coach_email: z.email(),
   text: z.string(),
+  visibility: z.enum(NOTE_VISIBILITIES).default("student"),
   created_at: z.string(),
 });
 export type Note = z.infer<typeof NoteRow>;

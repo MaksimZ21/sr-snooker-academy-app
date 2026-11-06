@@ -23,7 +23,7 @@ function Harness() {
 }
 
 const savedNote: Note = {
-  id: "n1", student_id: "S1", session_id: "A", coach_email: "c@x.com", text: "הערה קיימת", created_at: "2026-11-01T10:00:00Z",
+  id: "n1", student_id: "S1", session_id: "A", coach_email: "c@x.com", text: "הערה קיימת", visibility: "student", created_at: "2026-11-01T10:00:00Z",
 };
 
 function setup(attendance: Attendance[] = [], notes: Note[] = []) {
@@ -147,5 +147,32 @@ describe("AttendancePanel", () => {
 
     await waitFor(() => expect(screen.getByText("הערה קיימת")).toBeTruthy());
     await waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalled());
+  });
+
+  it("saves a team note as team and marks it on screen", async () => {
+    const fetchMock = vi.fn(async (..._args: unknown[]) => new Response(JSON.stringify({ note: {} }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    setup();
+
+    fireEvent.click(button("הוסף הערה"));
+    fireEvent.click(screen.getByRole("button", { name: /הערה צוותית/ }));
+    fireEvent.change(screen.getByPlaceholderText("הוסף הערה לשחקן..."), { target: { value: "לא למתאמן" } });
+    fireEvent.click(button("שמור"));
+
+    await waitFor(() => expect(screen.getByText("צוותית")).toBeTruthy());
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body).toMatchObject({ text: "לא למתאמן", visibility: "team" });
+  });
+
+  it("a note is a training note unless team is chosen", async () => {
+    const fetchMock = vi.fn(async (..._args: unknown[]) => new Response(JSON.stringify({ note: {} }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    setup();
+
+    writeNote("לכולם");
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string).visibility).toBe("student");
+    expect(screen.queryByText("צוותית")).toBeNull();
   });
 });

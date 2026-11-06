@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireUser } from "@/lib/auth/requireUser";
+import { requireStaff } from "@/lib/auth/requireUser";
 import { fetchSessionById, updateSession, deleteSession } from "@/lib/sheets/sessions";
 import { fetchAttendanceForSession } from "@/lib/sheets/attendance";
 import { fetchStudents } from "@/lib/sheets/students";
@@ -12,7 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     const { id } = await params;
     const session = await fetchSessionById(id);
     if (!session) return new NextResponse("not found", { status: 404 });
@@ -63,7 +63,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
     const { id } = await params;
     const body = PatchBody.parse(await req.json());
@@ -80,7 +80,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
     const { id } = await params;
     await deleteSession(id);

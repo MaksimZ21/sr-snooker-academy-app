@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireUser } from "@/lib/auth/requireUser";
+import { requireStaff } from "@/lib/auth/requireUser";
 import { db } from "@/lib/db/client";
 
 const Body = z.object({
@@ -12,7 +12,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     const { id } = await params;
 
     // Coaches may only update their own sessions

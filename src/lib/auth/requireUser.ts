@@ -14,3 +14,11 @@ export async function requireUser(): Promise<AuthedUser> {
   if (role === "denied") throw new Response("Forbidden", { status: 403 });
   return { email: user.email, role };
 }
+
+// For anything a logged-in student must not reach: their login is valid, so
+// requireUser alone lets them through.
+export async function requireStaff(): Promise<AuthedUser> {
+  const user = await requireUser();
+  if (user.role !== "admin" && user.role !== "coach") throw new Response("Forbidden", { status: 403 });
+  return user;
+}

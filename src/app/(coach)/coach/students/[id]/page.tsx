@@ -1,4 +1,5 @@
 "use client";
+import { NoteTeamBadge } from "@/components/notes-panel";
 import { use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -153,6 +154,7 @@ export default function CoachStudentDetailPage({ params }: { params: Promise<{ i
             <div className="flex flex-col gap-2">
               {notes.map((n) => (
                 <div key={n.id} className="bg-card border border-border/60 rounded-2xl px-4 py-3">
+                  <NoteTeamBadge note={n} />
                   <p className="text-sm leading-relaxed">{n.text}</p>
                   <p className="text-[11px] text-muted-foreground/50 mt-1.5">
                     {new Date(n.created_at).toLocaleString("he-IL", {

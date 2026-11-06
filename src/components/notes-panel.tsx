@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Send, X } from "lucide-react";
-import type { Note, Student } from "@/lib/sheets/schemas";
+import type { Note, NoteVisibility, Student } from "@/lib/sheets/schemas";
 import { studentFullName } from "@/lib/sheets/schemas";
 
 function getInitials(name: string) {
@@ -18,6 +18,48 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
+export function NoteTeamBadge({ note }: { note: Pick<Note, "visibility"> }) {
+  if (note.visibility !== "team") return null;
+  return (
+    <span className="inline-block shrink-0 rounded-full border border-amber-400 px-1.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+      צוותית
+    </span>
+  );
+}
+
+// Says who will read the note, right where it's written.
+export function NoteVisibilityPicker({
+  value,
+  onChange,
+}: {
+  value: NoteVisibility;
+  onChange: (value: NoteVisibility) => void;
+}) {
+  const options: { key: NoteVisibility; label: string; hint: string; active: string }[] = [
+    { key: "student", label: "הערה לאימון", hint: "גם המתאמן רואה", active: "border-primary bg-primary/10 text-primary" },
+    { key: "team", label: "הערה צוותית", hint: "רק מאמן ואדמין", active: "border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-1.5">
+      {options.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          aria-pressed={value === o.key}
+          onClick={() => onChange(o.key)}
+          className={cn(
+            "rounded-lg border px-2 py-1.5 text-center",
+            value === o.key ? o.active : "border-border/60 text-muted-foreground",
+          )}
+        >
+          <span className="block text-xs font-semibold">{o.label}</span>
+          <span className="block text-[10px] opacity-80">{o.hint}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 type SessionWithNotes = { notesByStudent: Record<string, Note[]>; [k: string]: unknown };
 
 // Shows the note at once from the cache and saves behind it; a failure removes
@@ -27,15 +69,15 @@ export function useAddSessionNote(sessionId: string, studentId: string) {
   const queryKey = ["session", sessionId];
 
   return useMutation({
-    mutationFn: async (text: string) => {
+    mutationFn: async ({ text, visibility }: { text: string; visibility: NoteVisibility }) => {
       const r = await fetch(`/api/sessions/${sessionId}/notes`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ student_id: studentId, text }),
+        body: JSON.stringify({ student_id: studentId, text, visibility }),
       });
       if (!r.ok) throw new Error("write failed");
     },
-    onMutate: async (text) => {
+    onMutate: async ({ text, visibility }) => {
       await qc.cancelQueries({ queryKey });
       const previous = qc.getQueryData<SessionWithNotes>(queryKey);
       const note: Note = {
@@ -44,6 +86,7 @@ export function useAddSessionNote(sessionId: string, studentId: string) {
         session_id: sessionId,
         coach_email: "",
         text,
+        visibility,
         created_at: new Date().toISOString(),
       };
       qc.setQueryData<SessionWithNotes>(queryKey, (old) =>
@@ -54,7 +97,7 @@ export function useAddSessionNote(sessionId: string, studentId: string) {
       );
       return { previous };
     },
-    onError: (_error, _text, context) => {
+    onError: (_error, _vars, context) => {
       if (context?.previous) qc.setQueryData(queryKey, context.previous);
       toast.error("ההערה לא נשמרה, נסה שוב");
     },
@@ -166,6 +209,7 @@ function StudentNotes({
   readOnly: boolean;
 }) {
   const [text, setText] = useState("");
+  const [visibility, setVisibility] = useState<NoteVisibility>("student");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mut = useAddSessionNote(sessionId, student.id);
 
@@ -174,7 +218,7 @@ function StudentNotes({
     if (!t) return;
     setText("");
     textareaRef.current?.focus();
-    mut.mutate(t, { onError: () => setText(t) });
+    mut.mutate({ text: t, visibility }, { onError: () => setText(t) });
   }
 
   const name = studentFullName(student);
@@ -205,6 +249,7 @@ function StudentNotes({
         >
           <div className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
+              <NoteTeamBadge note={n} />
               <p className="text-sm leading-relaxed">{n.text}</p>
               <p className="text-[11px] text-muted-foreground/55 mt-1">
                 {new Date(n.created_at).toLocaleString("he-IL", {
@@ -219,7 +264,9 @@ function StudentNotes({
 
       {/* Chat-style input */}
       {!readOnly && (
-        <div className="flex items-end gap-2 p-2 border-t border-border/40 bg-background/60">
+        <div className="flex flex-col gap-2 p-2 border-t border-border/40 bg-background/60">
+          <NoteVisibilityPicker value={visibility} onChange={setVisibility} />
+          <div className="flex items-end gap-2">
           <Textarea
             ref={textareaRef}
             value={text}
@@ -243,6 +290,7 @@ function StudentNotes({
           >
             <Send size={14} />
           </Button>
+          </div>
         </div>
       )}
 

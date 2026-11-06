@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStudentByEmail } from "@/lib/sheets/students";
 import { fetchAttendanceForStudent } from "@/lib/sheets/attendance";
 import { fetchSessionsAll } from "@/lib/sheets/sessions";
-import { fetchNotesForStudent } from "@/lib/sheets/notes";
+import { fetchStudentVisibleNotes } from "@/lib/sheets/notes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Note, Session } from "@/lib/sheets/schemas";
@@ -39,7 +39,7 @@ export default async function StudentHistoryPage() {
   const [attendance, allSessions, allNotes] = await Promise.all([
     fetchAttendanceForStudent(student.id),
     fetchSessionsAll(),
-    fetchNotesForStudent(student.id),
+    fetchStudentVisibleNotes(student.id),
   ]);
 
   const presentIds = new Set(

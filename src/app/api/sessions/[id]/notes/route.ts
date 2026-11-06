@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth/requireUser";
+import { requireStaff } from "@/lib/auth/requireUser";
 import { fetchSessionById } from "@/lib/sheets/sessions";
 import { appendNote, deleteNote } from "@/lib/sheets/notes";
 import { randomUUID } from "node:crypto";
+import { NOTE_VISIBILITIES } from "@/lib/sheets/schemas";
 import { z } from "zod";
 
 const Body = z.object({
   student_id: z.string().min(1),
   text: z.string().min(1).max(2000),
+  visibility: z.enum(NOTE_VISIBILITIES).default("student"),
 });
 
 export async function POST(
@@ -15,7 +17,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     const { id } = await params;
     const session = await fetchSessionById(id);
     if (!session) return new NextResponse("not found", { status: 404 });
@@ -32,6 +34,7 @@ export async function POST(
       session_id: id,
       coach_email: user.email,
       text: body.text,
+      visibility: body.visibility,
       created_at: new Date().toISOString(),
     };
     await appendNote(note);
@@ -49,14 +52,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     const { id } = await params;
     const session = await fetchSessionById(id);
     if (!session) return new NextResponse("not found", { status: 404 });
     if (user.role === "coach" && session.coach_email !== user.email) {
-      return new NextResponse("Forbidden", { status: 403 });
-    }
-    if (user.role !== "admin" && user.role !== "coach") {
       return new NextResponse("Forbidden", { status: 403 });
     }
     const { note_id } = DeleteBody.parse(await req.json());

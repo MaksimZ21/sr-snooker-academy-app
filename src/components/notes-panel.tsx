@@ -18,6 +18,50 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
+type SessionWithNotes = { notesByStudent: Record<string, Note[]>; [k: string]: unknown };
+
+// Shows the note at once from the cache and saves behind it; a failure removes
+// it again. Waiting for the whole session page to reload made saving feel stuck.
+export function useAddSessionNote(sessionId: string, studentId: string) {
+  const qc = useQueryClient();
+  const queryKey = ["session", sessionId];
+
+  return useMutation({
+    mutationFn: async (text: string) => {
+      const r = await fetch(`/api/sessions/${sessionId}/notes`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ student_id: studentId, text }),
+      });
+      if (!r.ok) throw new Error("write failed");
+    },
+    onMutate: async (text) => {
+      await qc.cancelQueries({ queryKey });
+      const previous = qc.getQueryData<SessionWithNotes>(queryKey);
+      const note: Note = {
+        id: `pending-${Date.now()}`,
+        student_id: studentId,
+        session_id: sessionId,
+        coach_email: "",
+        text,
+        created_at: new Date().toISOString(),
+      };
+      qc.setQueryData<SessionWithNotes>(queryKey, (old) =>
+        old && {
+          ...old,
+          notesByStudent: { ...old.notesByStudent, [studentId]: [note, ...(old.notesByStudent[studentId] ?? [])] },
+        },
+      );
+      return { previous };
+    },
+    onError: (_error, _text, context) => {
+      if (context?.previous) qc.setQueryData(queryKey, context.previous);
+      toast.error("ההערה לא נשמרה, נסה שוב");
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey }),
+  });
+}
+
 export function NotesPanel({
   sessionId,
   students,
@@ -57,28 +101,14 @@ function StudentNotes({
 }) {
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const qc = useQueryClient();
-
-  const mut = useMutation({
-    mutationFn: async (t: string) => {
-      const r = await fetch(`/api/sessions/${sessionId}/notes`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ student_id: student.id, text: t }),
-      });
-      if (!r.ok) throw new Error("write failed");
-      return (await r.json()) as { note: Note };
-    },
-    onSuccess: () => {
-      setText("");
-      textareaRef.current?.focus();
-      qc.invalidateQueries({ queryKey: ["session", sessionId] });
-    },
-    onError: () => toast.error("שגיאה בשמירת ההערה"),
-  });
+  const mut = useAddSessionNote(sessionId, student.id);
 
   function submit() {
-    if (text.trim() && !mut.isPending) mut.mutate(text.trim());
+    const t = text.trim();
+    if (!t) return;
+    setText("");
+    textareaRef.current?.focus();
+    mut.mutate(t, { onError: () => setText(t) });
   }
 
   const name = studentFullName(student);
@@ -136,8 +166,9 @@ function StudentNotes({
           <Button
             size="icon"
             className="h-9 w-9 shrink-0"
-            disabled={!text.trim() || mut.isPending}
+            disabled={!text.trim()}
             onClick={submit}
+            aria-label="שמור הערה"
           >
             <Send size={14} />
           </Button>

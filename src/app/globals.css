@@ -315,6 +315,12 @@
     .animate-drift-1, .animate-drift-2, .animate-drift-3, .session-orb { animation: none !important; }
   }
 
+  /* Heavily blurred, animated layers redraw constantly and slow phones down
+     on the very page people tap through quickly. They stay, just still. */
+  @media (max-width: 767.98px) {
+    .session-orb { animation: none !important; }
+  }
+
   /* Scoreboard numbers — precise, tabular */
   .scoreboard-num {
     font-feature-settings: "tnum";

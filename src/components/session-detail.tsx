@@ -232,6 +232,7 @@ export function SessionDetail({
               sessionId={sessionId}
               students={students}
               attendance={attendance}
+              notesByStudent={notesByStudent}
               readOnly={!canEditAttendance}
               isAdmin={isAdmin}
             />

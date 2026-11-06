@@ -1,13 +1,14 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { MessageSquarePlus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { Attendance, Student } from "@/lib/sheets/schemas";
+import type { Attendance, Note, Student } from "@/lib/sheets/schemas";
+import { useAddSessionNote } from "@/components/notes-panel";
 import { studentFullName } from "@/lib/sheets/schemas";
 
 function getInitials(name: string) {
@@ -67,37 +68,15 @@ type SessionDetailData = {
 };
 
 function InlineNoteInput({
-  sessionId,
-  studentId,
+  initialText,
+  onSave,
   onClose,
 }: {
-  sessionId: string;
-  studentId: string;
+  initialText: string;
+  onSave: (text: string) => void;
   onClose: () => void;
 }) {
-  const [text, setText] = useState("");
-  const qc = useQueryClient();
-  const [saving, setSaving] = useState(false);
-
-  async function save() {
-    if (!text.trim()) return;
-    setSaving(true);
-    try {
-      const r = await fetch(`/api/sessions/${sessionId}/notes`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ student_id: studentId, text: text.trim() }),
-      });
-      if (!r.ok) throw new Error("write failed");
-      await qc.invalidateQueries({ queryKey: ["session", sessionId] });
-      toast.success("ההערה נשמרה");
-      onClose();
-    } catch {
-      toast.error("שגיאה בשמירת ההערה");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const [text, setText] = useState(initialText);
 
   return (
     <div className="mt-2.5 flex flex-col gap-2">
@@ -109,21 +88,10 @@ function InlineNoteInput({
         className="min-h-[72px] resize-none text-sm"
       />
       <div className="flex gap-2 justify-end">
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={onClose}
-          disabled={saving}
-          className="text-xs h-8"
-        >
+        <Button size="sm" variant="ghost" onClick={onClose} className="text-xs h-8">
           ביטול
         </Button>
-        <Button
-          size="sm"
-          disabled={!text.trim() || saving}
-          onClick={save}
-          className="text-xs h-8"
-        >
+        <Button size="sm" disabled={!text.trim()} onClick={() => onSave(text.trim())} className="text-xs h-8">
           שמור
         </Button>
       </div>
@@ -131,215 +99,216 @@ function InlineNoteInput({
   );
 }
 
+function useAttendanceMutation(sessionId: string, studentId: string) {
+  const qc = useQueryClient();
+  const queryKey = ["session", sessionId];
+  const mutationKey = ["attendance", sessionId];
+
+  return useMutation({
+    mutationKey,
+    mutationFn: async (status: Attendance["status"] | null) => {
+      const r = await fetch(`/api/sessions/${sessionId}/attendance`, {
+        method: status ? "POST" : "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(status ? { student_id: studentId, status } : { student_id: studentId }),
+      });
+      if (!r.ok) throw new Error("write failed");
+    },
+    // Presses on one student run in order, so a quick correction can't be
+    // overwritten by the earlier press finishing last. Different students
+    // don't wait for each other.
+    scope: { id: `attendance:${sessionId}:${studentId}` },
+    onMutate: async (status) => {
+      await qc.cancelQueries({ queryKey });
+      const previous = qc.getQueryData<SessionDetailData>(queryKey);
+      qc.setQueryData<SessionDetailData>(queryKey, (old) => {
+        if (!old) return old;
+        const others = old.attendance.filter((a) => a.student_id !== studentId);
+        return {
+          ...old,
+          attendance: status
+            ? [...others, { session_id: sessionId, student_id: studentId, status, marked_by: "", marked_at: "" }]
+            : others,
+        };
+      });
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) qc.setQueryData(queryKey, context.previous);
+      toast.error("שגיאה בשמירת הנוכחות");
+    },
+    // Only once the last press finished, so a refetch can't briefly undo a
+    // press that is still on its way.
+    onSettled: () => {
+      if (qc.isMutating({ mutationKey }) === 1) qc.invalidateQueries({ queryKey });
+    },
+  });
+}
+
 export function AttendancePanel({
   sessionId,
   students,
   attendance,
+  notesByStudent,
   readOnly,
   isAdmin = false,
 }: {
   sessionId: string;
   students: Student[];
   attendance: Attendance[];
+  notesByStudent: Record<string, Note[]>;
   readOnly: boolean;
   isAdmin?: boolean;
 }) {
-  const [openNoteId, setOpenNoteId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const qc = useQueryClient();
-
-  // Local state: student_id → status. Initialized from server attendance.
-  const [local, setLocal] = useState<Record<string, Attendance["status"]>>(() => {
-    const map: Record<string, Attendance["status"]> = {};
-    for (const a of attendance) map[a.student_id] = a.status;
-    return map;
-  });
-  // That initializer only ever runs once, on mount — a status that arrives
-  // later (e.g. a student confirming via CRM/WhatsApp while this page is
-  // already open, surfaced through a background refetch of `attendance`)
-  // was never picked up, leaving `local` stale and out of sync with the
-  // real server status. That's what the dashed-border "dirty but no
-  // recognized status" styling below was actually showing — not a
-  // deliberate "pending" indicator. Re-sync on every attendance change,
-  // but only for a student the coach hasn't already started editing
-  // locally (local still matching what the server had last) — an
-  // in-progress, unsaved click must never be silently overwritten by a
-  // refetch.
-  const lastServerRef = useRef<Record<string, Attendance["status"]>>(local);
-  useEffect(() => {
-    const nextServer: Record<string, Attendance["status"]> = {};
-    for (const a of attendance) nextServer[a.student_id] = a.status;
-
-    setLocal((prevLocal) => {
-      let changed = false;
-      const merged = { ...prevLocal };
-      for (const s of students) {
-        const prevServerStatus = lastServerRef.current[s.id];
-        const newServerStatus = nextServer[s.id];
-        if (prevLocal[s.id] === prevServerStatus && newServerStatus !== prevServerStatus) {
-          merged[s.id] = newServerStatus;
-          changed = true;
-        }
-      }
-      lastServerRef.current = nextServer;
-      return changed ? merged : prevLocal;
-    });
-  }, [attendance, students]);
-
-  const isDirty = students.some((s) => {
-    const server = attendance.find((a) => a.student_id === s.id)?.status;
-    return local[s.id] !== server;
-  });
-
-  function toggle(studentId: string, status: Attendance["status"]) {
-    setLocal((prev) => ({
-      ...prev,
-      [studentId]: prev[studentId] === status ? undefined! : status,
-    }));
-  }
-
-  async function saveAll() {
-    // Only what actually changed: resending an untouched CRM status
-    // (confirmed/declined) would be rejected for a coach.
-    const toSave = students.filter((s) => {
-      const server = attendance.find((a) => a.student_id === s.id)?.status;
-      return local[s.id] !== undefined && local[s.id] !== server;
-    });
-    if (toSave.length === 0) return;
-    setSaving(true);
-    try {
-      const results = await Promise.all(
-        toSave.map((s) =>
-          fetch(`/api/sessions/${sessionId}/attendance`, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ student_id: s.id, status: local[s.id] }),
-          }),
-        ),
-      );
-      if (results.some((r) => !r.ok)) throw new Error("partial failure");
-      await qc.invalidateQueries({ queryKey: ["session", sessionId] });
-      toast.success("הנוכחות נשמרה");
-    } catch {
-      toast.error("שגיאה בשמירת הנוכחות");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   return (
     <div className="flex flex-col gap-2.5 mt-4">
-      {students.map((s) => {
-        const cur = local[s.id];
-        const isConfirmed = cur === "confirmed";
-        const isDeclined = cur === "declined";
-        const curConfig = STATUSES.find((st) => st.key === cur);
-        const serverStatus = attendance.find((a) => a.student_id === s.id)?.status;
-        const dirty = cur !== serverStatus;
-        return (
+      {students.map((s) => (
+        <AttendanceRow
+          key={s.id}
+          sessionId={sessionId}
+          student={s}
+          cur={attendance.find((a) => a.student_id === s.id)?.status}
+          notes={notesByStudent[s.id] ?? []}
+          readOnly={readOnly}
+          isAdmin={isAdmin}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AttendanceRow({
+  sessionId,
+  student: s,
+  cur,
+  notes,
+  readOnly,
+  isAdmin,
+}: {
+  sessionId: string;
+  student: Student;
+  cur: Attendance["status"] | undefined;
+  notes: Note[];
+  readOnly: boolean;
+  isAdmin: boolean;
+}) {
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const addNote = useAddSessionNote(sessionId, s.id);
+
+  function saveNote(text: string) {
+    setNoteOpen(false);
+    setNoteDraft("");
+    addNote.mutate(text, {
+      onError: () => {
+        setNoteDraft(text);
+        setNoteOpen(true);
+      },
+    });
+  }
+
+  // Every press saves by itself: the screen changes at once from the cache,
+  // the request runs behind it, and a failure puts the old status back.
+  const markMut = useAttendanceMutation(sessionId, s.id);
+  const press = (status: Attendance["status"]) => markMut.mutate(cur === status ? null : status);
+
+  const isConfirmed = cur === "confirmed";
+  const isDeclined = cur === "declined";
+  const curConfig = STATUSES.find((st) => st.key === cur);
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col border-2 rounded-xl p-3.5",
+        curConfig
+          ? curConfig.rowClass
+          : isConfirmed
+            ? CONFIRMED_ROW_CLASS
+            : isDeclined
+              ? DECLINED_ROW_CLASS
+              : "border-border",
+      )}
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-center gap-3 sm:flex-1 min-w-0">
           <div
-            key={s.id}
             className={cn(
-              "flex flex-col border-2 rounded-xl p-3.5 transition-all duration-200",
-              curConfig
-                ? curConfig.rowClass
-                : isConfirmed
-                  ? CONFIRMED_ROW_CLASS
-                  : isDeclined
-                    ? DECLINED_ROW_CLASS
-                    : "border-border",
-              dirty && !curConfig && "border-dashed",
+              "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none",
+              curConfig ? curConfig.avatarClass : "bg-muted text-muted-foreground",
             )}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex items-center gap-3 sm:flex-1 min-w-0">
-                <div
-                  className={cn(
-                    "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none transition-colors",
-                    curConfig ? curConfig.avatarClass : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  {getInitials(studentFullName(s))}
-                </div>
-                <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                  <div className="font-medium text-sm truncate">{studentFullName(s)}</div>
-                  {isConfirmed && (
-                    <Badge variant="outline" className="text-xs border-blue-400 text-blue-600 dark:text-blue-400 shrink-0">
-                      אישר הגעה
-                    </Badge>
-                  )}
-                  {isDeclined && (
-                    <Badge variant="outline" className="text-xs border-red-400 text-red-600 dark:text-red-400 shrink-0">
-                      דחה הגעה
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-                {STATUSES.map((st) => (
-                  <Button
-                    key={st.key}
-                    size="sm"
-                    variant="outline"
-                    disabled={readOnly || saving}
-                    onClick={() => toggle(s.id, st.key)}
-                    className={cn(
-                      "text-xs h-8 px-3 transition-all",
-                      cur === st.key && st.activeClass,
-                    )}
-                  >
-                    {st.label}
-                  </Button>
-                ))}
-                {isAdmin && !readOnly && (
-                  <>
-                    <span className="w-px h-5 bg-border mx-0.5" aria-hidden />
-                    {RSVP_STATUSES.map((st) => (
-                      <Button
-                        key={st.key}
-                        size="sm"
-                        variant="outline"
-                        disabled={saving}
-                        onClick={() => toggle(s.id, st.key)}
-                        className={cn("text-xs h-8 px-3 transition-all", cur === st.key && st.activeClass)}
-                      >
-                        {st.label}
-                      </Button>
-                    ))}
-                  </>
-                )}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setOpenNoteId(openNoteId === s.id ? null : s.id)}
-                  className={cn(
-                    "h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground",
-                    openNoteId === s.id && "text-foreground bg-muted",
-                  )}
-                >
-                  <MessageSquarePlus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-            {openNoteId === s.id && (
-              <InlineNoteInput
-                sessionId={sessionId}
-                studentId={s.id}
-                onClose={() => setOpenNoteId(null)}
-              />
+            {getInitials(studentFullName(s))}
+          </div>
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <div className="font-medium text-sm truncate">{studentFullName(s)}</div>
+            {isConfirmed && (
+              <Badge variant="outline" className="text-xs border-blue-400 text-blue-600 dark:text-blue-400 shrink-0">
+                אישר הגעה
+              </Badge>
+            )}
+            {isDeclined && (
+              <Badge variant="outline" className="text-xs border-red-400 text-red-600 dark:text-red-400 shrink-0">
+                דחה הגעה
+              </Badge>
             )}
           </div>
-        );
-      })}
-
-      {!readOnly && (
-        <Button
-          className="mt-2 w-full"
-          disabled={saving || !isDirty}
-          onClick={saveAll}
-        >
-          {saving ? "שומר..." : "שמור נוכחות"}
-        </Button>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+          {STATUSES.map((st) => (
+            <Button
+              key={st.key}
+              size="sm"
+              variant="outline"
+              disabled={readOnly}
+              aria-pressed={cur === st.key}
+              onClick={() => press(st.key)}
+              className={cn("text-xs h-8 px-3 transition-none", cur === st.key && st.activeClass)}
+            >
+              {st.label}
+            </Button>
+          ))}
+          {isAdmin && !readOnly && (
+            <>
+              <span className="w-px h-5 bg-border mx-0.5" aria-hidden />
+              {RSVP_STATUSES.map((st) => (
+                <Button
+                  key={st.key}
+                  size="sm"
+                  variant="outline"
+                  aria-pressed={cur === st.key}
+                  onClick={() => press(st.key)}
+                  className={cn("text-xs h-8 px-3 transition-none", cur === st.key && st.activeClass)}
+                >
+                  {st.label}
+                </Button>
+              ))}
+            </>
+          )}
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setNoteOpen((open) => !open)}
+            aria-label="הוסף הערה"
+            className={cn(
+              "h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground",
+              noteOpen && "text-foreground bg-muted",
+            )}
+          >
+            <MessageSquarePlus className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+      {noteOpen && (
+        <InlineNoteInput initialText={noteDraft} onSave={saveNote} onClose={() => setNoteOpen(false)} />
+      )}
+      {notes.length > 0 && (
+        <div className="mt-2.5 flex flex-col gap-1.5 border-t border-border/40 pt-2.5">
+          {notes.map((n) => (
+            <p key={n.id} className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+              {n.text}
+            </p>
+          ))}
+        </div>
       )}
     </div>
   );

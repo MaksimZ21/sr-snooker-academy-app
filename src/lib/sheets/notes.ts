@@ -49,7 +49,8 @@ export async function fetchNotesForSessionStudents(
 }
 
 export async function appendNote(row: Note): Promise<void> {
-  await db.from("notes").insert(row);
+  const { error } = await db.from("notes").insert(row);
+  if (error) throw new Error(error.message);
   revalidateTag("notes:all", { expire: 0 });
   revalidateTag(`notes:${row.student_id}`, { expire: 0 });
 }

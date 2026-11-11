@@ -19,6 +19,7 @@ import { TournamentHousesView } from "@/components/tournament-houses-view";
 import { TournamentLocationsView } from "@/components/tournament-locations-view";
 import { TournamentKnockoutView } from "@/components/tournament-knockout-view";
 import { EditTournamentDialog } from "@/components/edit-tournament-dialog";
+import { ParticipantNote } from "@/components/participant-note";
 import { SKILL_LEVELS } from "@/lib/sheets/schemas";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
@@ -61,7 +62,11 @@ type Tournament = {
 
 type TournamentLocation = { id: string; tournament_id: string; label: string };
 
-type TournamentQueryData = { tournament: Tournament; participants: TournamentParticipant[] };
+type TournamentQueryData = {
+  tournament: Tournament;
+  participants: TournamentParticipant[];
+  participantNotes?: Record<string, string>;
+};
 
 export function TournamentDetailView({
   tournamentId,
@@ -267,6 +272,7 @@ export function TournamentDetailView({
   }
 
   const { tournament, participants } = data;
+  const participantNotes = data.participantNotes ?? {};
   const locations = locationsData?.locations ?? [];
   // A multi-location tournament has no manager coach — only an admin can
   // edit it, mirroring isTournamentManager on the server exactly.
@@ -379,6 +385,12 @@ export function TournamentDetailView({
                       {tournament.type === "regular" && (
                         <p className="text-xs text-muted-foreground">{p.student.phone || "—"}</p>
                       )}
+                      <ParticipantNote
+                        tournamentId={tournamentId}
+                        participantId={p.id}
+                        note={participantNotes[p.id] ?? ""}
+                        canEdit={canEdit}
+                      />
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       {tournament.type === "multi_location" && (

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchTournamentDetail, updateTournament, isTournamentManager } from "@/lib/sheets/tournaments";
 import { fetchActiveCoachEmails } from "@/lib/sheets/coaches";
+import { fetchParticipantNotes } from "@/lib/sheets/tournament-participant-notes";
 
 export async function GET(
   _req: Request,
@@ -16,7 +17,10 @@ export async function GET(
     const { id } = await params;
     const detail = await fetchTournamentDetail(id);
     if (!detail) return NextResponse.json({ error: "not found" }, { status: 404 });
-    return NextResponse.json(detail);
+    // Staff only (checked above): never add these to fetchTournamentDetail,
+    // which also serves the student's tournament page.
+    const participantNotes = await fetchParticipantNotes(id);
+    return NextResponse.json({ ...detail, participantNotes });
   } catch (e) {
     if (e instanceof Response) return e;
     return NextResponse.json({ error: "internal error" }, { status: 500 });

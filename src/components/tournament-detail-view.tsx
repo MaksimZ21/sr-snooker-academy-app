@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Trophy, ExternalLink, Trash2 } from "lucide-react";
+import { ArrowRight, Trophy, ExternalLink, Trash2, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -328,6 +328,22 @@ export function TournamentDetailView({
               /t/{tournament.public_slug}
               <ExternalLink size={12} />
             </a>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(publicUrl);
+                  toast.success("הקישור הועתק");
+                } catch {
+                  toast.error("לא הצלחתי להעתיק, העתק ידנית");
+                }
+              }}
+            >
+              <Copy size={12} />
+              העתק
+            </Button>
           </div>
           {tournament.rules_url && (
             <div className="flex items-center gap-2 text-sm">

@@ -85,7 +85,7 @@ export function LeagueBreaksView({
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-      <p className="text-sm font-semibold px-4 pt-3 pb-2">טבלת ברייקים</p>
+      <div className="pt-3" />
       <BreaksSearchInput value={query} onChange={setQuery} />
       {isLoading ? (
         <div className="px-4 pb-4"><Skeleton className="h-16 w-full rounded-xl" /></div>

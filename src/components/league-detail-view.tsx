@@ -18,6 +18,7 @@ import { LeagueDistrictsView } from "@/components/league-districts-view";
 import { LeagueScheduleView } from "@/components/league-schedule-view";
 import { LeagueBreaksView } from "@/components/league-breaks-view";
 import { LeagueLevelsView } from "@/components/league-levels-view";
+import { FoldSection } from "@/components/fold-section";
 import { TableSizeBadge, TableSizeSelect } from "@/components/table-size";
 import type { TableSize } from "@/lib/sheets/schemas";
 
@@ -168,82 +169,89 @@ export function LeagueDetailView({
           </div>
         )}
 
-        <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-4 pt-3 pb-1">
-            {`שחקנים (${participants.length})`}
-          </p>
-          {participants.length === 0 ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">אין שחקנים עדיין</div>
-          ) : (
-            <div className="divide-y divide-border/40">
-              {participants.map((p) => (
-                <div key={p.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
-                    </p>
-                    {p.student.phone && (
-                      <p className="text-xs text-muted-foreground tabular-nums" dir="ltr">{p.student.phone}</p>
+        <FoldSection title={`שחקנים (${participants.length})`} storageKey={`league:${leagueId}:players`}>
+          <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+            {participants.length === 0 ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">אין שחקנים עדיין</div>
+            ) : (
+              <div className="divide-y divide-border/40">
+                {participants.map((p) => (
+                  <div key={p.id} className="flex items-center gap-3 px-4 py-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
+                      </p>
+                      {p.student.phone && (
+                        <p className="text-xs text-muted-foreground tabular-nums" dir="ltr">{p.student.phone}</p>
+                      )}
+                    </div>
+                    {canEdit ? (
+                      <Select
+                        value={p.district_id ?? "none"}
+                        onValueChange={(v) => assignMut.mutate({ participantId: p.id, districtId: v === "none" ? null : v })}
+                      >
+                        <SelectTrigger className="h-8 w-32 text-xs">
+                          <SelectValue placeholder="ללא מחוז" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">ללא מחוז</SelectItem>
+                          {districts.map((d) => (
+                            <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {districts.find((d) => d.id === p.district_id)?.label ?? "ללא מחוז"}
+                      </span>
+                    )}
+                    {canEdit && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeMut.mutate(p.id)}
+                        disabled={removeMut.isPending}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
                     )}
                   </div>
-                  {canEdit ? (
-                    <Select
-                      value={p.district_id ?? "none"}
-                      onValueChange={(v) => assignMut.mutate({ participantId: p.id, districtId: v === "none" ? null : v })}
-                    >
-                      <SelectTrigger className="h-8 w-32 text-xs">
-                        <SelectValue placeholder="ללא מחוז" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">ללא מחוז</SelectItem>
-                        {districts.map((d) => (
-                          <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">
-                      {districts.find((d) => d.id === p.district_id)?.label ?? "ללא מחוז"}
-                    </span>
-                  )}
-                  {canEdit && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => removeMut.mutate(p.id)}
-                      disabled={removeMut.isPending}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </FoldSection>
 
-        <LeagueLevelsView leagueId={leagueId} canEdit={canEdit} />
+        <FoldSection title="נקודות דירוג (12 פיט)" storageKey={`league:${leagueId}:levels`}>
+          <LeagueLevelsView leagueId={leagueId} canEdit={canEdit} />
+        </FoldSection>
 
-        <LeagueScheduleView
-          leagueId={leagueId}
-          leagueName={league.name}
-          participants={participants}
-          canEdit={canEdit}
-        />
+        <FoldSection title="לוז" storageKey={`league:${leagueId}:schedule`}>
+          <LeagueScheduleView
+            leagueId={leagueId}
+            leagueName={league.name}
+            participants={participants}
+            canEdit={canEdit}
+          />
+        </FoldSection>
 
-        <LeagueDistrictsView
-          leagueId={leagueId}
-          participants={participants}
-          canEdit={canEdit}
-        />
+        <FoldSection title="מחוזות ותוצאות" storageKey={`league:${leagueId}:districts`}>
+          <LeagueDistrictsView
+            leagueId={leagueId}
+            participants={participants}
+            canEdit={canEdit}
+          />
+        </FoldSection>
 
-        <LeagueBreaksView
-          leagueId={leagueId}
-          participants={participants}
-          districts={districts}
-          canEdit={canEdit}
-        />
+        <FoldSection title="טבלת ברייקים" storageKey={`league:${leagueId}:breaks`}>
+          <LeagueBreaksView
+            leagueId={leagueId}
+            participants={participants}
+            districts={districts}
+            canEdit={canEdit}
+          />
+        </FoldSection>
       </div>
     </div>
   );

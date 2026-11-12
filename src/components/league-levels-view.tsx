@@ -53,8 +53,7 @@ export function LeagueLevelsView({ leagueId, canEdit }: { leagueId: string; canE
   return (
     <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
       <div className="px-4 pt-3 pb-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">נקודות דירוג (12 פיט)</p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
+        <p className="text-[11px] text-muted-foreground">
           ±5 נקודות אחרי {MIN_MATCHES} משחקים לפחות = מועמד לשינוי דרגה. הספירה מתאפסת אחרי כל שינוי.
         </p>
       </div>

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { computeLeagueStandings, computeBreakTable } from "@/lib/sheets/tournament-logic";
 import { LeagueStandingsTable, type StandingLevel } from "@/components/league-standings-table";
-import { LeagueBreaksTable } from "@/components/league-breaks-table";
+import { PublicBreaksPanel } from "@/components/public-breaks-panel";
 import { PublicLeagueBoard } from "@/components/public-league-board";
 import type { PublicLeague, PublicLeagueParticipant } from "@/lib/sheets/leagues-public";
 import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
@@ -88,7 +88,9 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
           <PublicLeagueBoard
             districts={league.districts.map((district) => {
               const standings = computeLeagueStandings(district.memberIds, district.matches);
-              const rounds = [...new Set(district.matches.map((m) => m.round))].sort((a, b) => a - b);
+              // Only matches that already have a result.
+              const playedMatches = district.matches.filter((m) => m.frames_a !== null && m.frames_b !== null);
+              const rounds = [...new Set(playedMatches.map((m) => m.round))].sort((a, b) => a - b);
               return {
                 id: district.id,
                 label: district.label,
@@ -113,12 +115,11 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
                       {rounds.map((round) => (
                         <div key={round} className="flex flex-col gap-2">
                           <p className="text-xs font-medium text-muted-foreground">מחזור {round}</p>
-                          {district.matches
+                          {playedMatches
                             .filter((m) => m.round === round)
                             .map((m) => {
                               const nameA = lookup(m.participant_a_id);
                               const nameB = lookup(m.participant_b_id);
-                              const played = m.frames_a !== null && m.frames_b !== null;
                               return (
                                 <div key={m.id} className="flex items-center gap-2 text-sm">
                                   <span className="flex-1 truncate">
@@ -134,11 +135,7 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
                                       nameB?.name ?? "?"
                                     )}
                                   </span>
-                                  {played ? (
-                                    <span className="font-medium tabular-nums">{m.frames_a} - {m.frames_b}</span>
-                                  ) : (
-                                    <span className="text-muted-foreground text-xs">טרם שוחק</span>
-                                  )}
+                                  <span className="font-medium tabular-nums">{m.frames_a} - {m.frames_b}</span>
                                 </div>
                               );
                             })}
@@ -149,10 +146,10 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
               };
             })}
             breaks={
-              <LeagueBreaksTable
+              <PublicBreaksPanel
                 rows={breakRows}
-                renderName={(id) => lookup(id)?.name ?? "?"}
-                districtOf={(id) => districtOfParticipant.get(id) ?? ""}
+                names={Object.fromEntries(league.participants.map((p) => [p.id, p.name]))}
+                districts={Object.fromEntries(districtOfParticipant)}
               />
             }
           />

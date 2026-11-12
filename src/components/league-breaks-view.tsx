@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { computeBreakTable } from "@/lib/sheets/tournament-logic";
 import { LeagueBreaksTable } from "@/components/league-breaks-table";
+import { BreaksSearchInput } from "@/components/breaks-search-input";
 
 type Participant = { id: string; district_id: string | null; student: { first_name: string; last_name: string } };
 type District = { id: string; label: string };
@@ -25,6 +26,7 @@ export function LeagueBreaksView({
   canEdit: boolean;
 }) {
   const qc = useQueryClient();
+  const [query, setQuery] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["league-breaks", leagueId],
@@ -84,12 +86,15 @@ export function LeagueBreaksView({
   return (
     <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
       <p className="text-sm font-semibold px-4 pt-3 pb-2">טבלת ברייקים</p>
+      <BreaksSearchInput value={query} onChange={setQuery} />
       {isLoading ? (
         <div className="px-4 pb-4"><Skeleton className="h-16 w-full rounded-xl" /></div>
       ) : (
         <LeagueBreaksTable
           rows={rows}
           renderName={nameOf}
+          nameText={nameOf}
+          query={query}
           districtOf={districtOf}
           onDelete={canEdit ? (id) => deleteMut.mutate(id) : undefined}
           deleting={deleteMut.isPending}

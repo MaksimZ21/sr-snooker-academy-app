@@ -56,7 +56,7 @@ export function PublicLeagueBoard({ districts, breaks }: { districts: DistrictPa
           [
             ["standings", "טבלת ליגה"],
             ["breaks", "ברייקים"],
-            ["rounds", "משחקים"],
+            ["rounds", "תוצאות"],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -81,8 +81,13 @@ export function PublicLeagueBoard({ districts, breaks }: { districts: DistrictPa
         <div className={cn(tab !== "breaks" && "hidden", "md:block min-w-0")}>{card("טבלת ברייקים", breaks)}</div>
       </div>
 
-      {district?.rounds && (
-        <div className={cn(tab !== "rounds" && "hidden", "md:block")}>{card(`משחקים · ${district.label}`, district.rounds)}</div>
+      {district && (
+        <div className={cn(tab !== "rounds" && "hidden", "md:block")}>
+          {card(
+            `תוצאות · ${district.label}`,
+            district.rounds ?? <p className="pb-4 text-center text-sm text-muted-foreground">עדיין אין תוצאות</p>,
+          )}
+        </div>
       )}
     </section>
   );

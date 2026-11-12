@@ -10,8 +10,14 @@ export function LeagueBreaksTable({
   onDelete,
   deleting,
   renderAdd,
+  query = "",
+  nameText,
 }: {
   rows: BreakTableRow[];
+  // Name search: rows whose nameText doesn't contain the query are hidden;
+  // places stay those of the full table.
+  query?: string;
+  nameText?: (participantId: string) => string;
   renderName: (participantId: string) => React.ReactNode;
   districtOf: (participantId: string) => string;
   onDelete?: (breakId: string) => void;
@@ -20,6 +26,13 @@ export function LeagueBreaksTable({
 }) {
   if (rows.length === 0) {
     return <p className="py-6 text-center text-sm text-muted-foreground">אין שחקנים בליגה</p>;
+  }
+  const q = query.trim().toLowerCase();
+  const visible = rows
+    .map((row, i) => ({ row, place: i + 1 }))
+    .filter(({ row }) => !q || !nameText || nameText(row.participantId).toLowerCase().includes(q));
+  if (visible.length === 0) {
+    return <p className="py-6 text-center text-sm text-muted-foreground">לא נמצא שחקן בשם הזה</p>;
   }
   return (
     <div className="overflow-x-auto">
@@ -34,9 +47,9 @@ export function LeagueBreaksTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => (
+          {visible.map(({ row, place }) => (
             <tr key={row.participantId} className="border-b border-border/20 last:border-b-0">
-              <td className="px-4 py-2 text-muted-foreground">{row.breaks.length > 0 ? i + 1 : ""}</td>
+              <td className="px-4 py-2 text-muted-foreground">{row.breaks.length > 0 ? place : ""}</td>
               <td className="px-2 py-2 whitespace-nowrap">{renderName(row.participantId)}</td>
               <td className="px-2 py-2 whitespace-nowrap text-muted-foreground">{districtOf(row.participantId)}</td>
               <td className="px-2 py-2">

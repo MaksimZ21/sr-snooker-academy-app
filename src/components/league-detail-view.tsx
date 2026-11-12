@@ -146,9 +146,9 @@ export function LeagueDetailView({
                     <p className="text-sm font-medium truncate">
                       {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {p.student.phone || "—"} · דירוג {p.student.rating}
-                    </p>
+                    {p.student.phone && (
+                      <p className="text-xs text-muted-foreground tabular-nums" dir="ltr">{p.student.phone}</p>
+                    )}
                   </div>
                   {canEdit ? (
                     <Select

@@ -26,7 +26,6 @@ export default function AdminLeaguesPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [handicapGap, setHandicapGap] = useState("20");
 
   const { data, isLoading } = useQuery({
     queryKey: ["leagues"],
@@ -43,7 +42,6 @@ export default function AdminLeaguesPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
-          handicap_points_per_rating_gap: Number(handicapGap) || undefined,
         }),
       });
       if (!r.ok) throw new Error(await r.text());
@@ -54,7 +52,6 @@ export default function AdminLeaguesPage() {
       qc.invalidateQueries({ queryKey: ["leagues"] });
       setOpen(false);
       setName("");
-      setHandicapGap("20");
       router.push(`/admin/leagues/${league.id}`);
     },
     onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה ביצירת הליגה"),
@@ -84,10 +81,6 @@ export default function AdminLeaguesPage() {
                 <div>
                   <Label className="text-xs text-muted-foreground mb-1 block">שם הליגה</Label>
                   <Input value={name} onChange={(e) => setName(e.target.value)} dir="auto" />
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">מקדם פור (ברירת מחדל 20)</Label>
-                  <Input type="number" value={handicapGap} onChange={(e) => setHandicapGap(e.target.value)} />
                 </div>
               </div>
               <DialogFooter>

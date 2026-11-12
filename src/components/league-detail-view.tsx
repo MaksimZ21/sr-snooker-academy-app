@@ -123,10 +123,6 @@ export function LeagueDetailView({
               <ExternalLink size={12} />
             </a>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">מקדם פור:</span>
-            <span>{league.handicap_points_per_rating_gap}</span>
-          </div>
         </div>
 
         {canEdit && (

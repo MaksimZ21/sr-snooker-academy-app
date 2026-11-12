@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import type { College } from "@/lib/sheets/colleges";
-import { SKILL_LEVELS } from "@/lib/sheets/schemas";
+import { SKILL_LEVELS, SKILL_LEVELS_9FT } from "@/lib/sheets/schemas";
 
 export function AddStudentDialog() {
   const [open, setOpen] = useState(false);
@@ -31,6 +31,7 @@ export function AddStudentDialog() {
   const [birthDate, setBirthDate] = useState("");
   const [lastPaymentDate, setLastPaymentDate] = useState("");
   const [skillLevel, setSkillLevel] = useState("__none__");
+  const [skillLevel9, setSkillLevel9] = useState("__none__");
   const qc = useQueryClient();
 
   const collegesQ = useQuery({
@@ -54,6 +55,7 @@ export function AddStudentDialog() {
     setBirthDate("");
     setLastPaymentDate("");
     setSkillLevel("__none__");
+    setSkillLevel9("__none__");
   };
 
   const mut = useMutation({
@@ -72,6 +74,7 @@ export function AddStudentDialog() {
           birth_date: birthDate || null,
           last_payment_date: lastPaymentDate || null,
           skill_level: skillLevel === "__none__" ? null : skillLevel,
+          skill_level_9ft: skillLevel9 === "__none__" ? null : skillLevel9,
         }),
       });
       if (!r.ok) {
@@ -145,7 +148,21 @@ export function AddStudentDialog() {
             <Input type="date" value={lastPaymentDate} onChange={(e) => setLastPaymentDate(e.target.value)} />
           </div>
           <div>
-            <Label>סיווג</Label>
+            <Label>סיווג 9-10 פיט</Label>
+            <Select value={skillLevel9} onValueChange={(v) => setSkillLevel9(v ?? "__none__")}>
+              <SelectTrigger>
+                <SelectValue placeholder="בחר סיווג..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">ללא סיווג</SelectItem>
+                {SKILL_LEVELS_9FT.map((l) => (
+                  <SelectItem key={l} value={l}>{l}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>סיווג 12 פיט</Label>
             <Select value={skillLevel} onValueChange={(v) => setSkillLevel(v ?? "__none__")}>
               <SelectTrigger>
                 <SelectValue placeholder="בחר סיווג..." />

@@ -25,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TableSizeSelect } from "@/components/table-size";
+import type { TableSize } from "@/lib/sheets/schemas";
 
 type Tournament = { id: string; name: string; manager_email: string | null; completed: boolean; public_slug: string };
 type Coach = { email: string; name: string; phone: string };
@@ -37,6 +39,7 @@ export default function AdminTournamentsPage() {
   const [managerEmail, setManagerEmail] = useState("");
   const [rulesUrl, setRulesUrl] = useState("");
   const [type, setType] = useState<"regular" | "multi_location">("regular");
+  const [tableSize, setTableSize] = useState<TableSize | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["tournaments"],
@@ -65,6 +68,7 @@ export default function AdminTournamentsPage() {
           manager_email: type === "multi_location" ? undefined : managerEmail,
           rules_url: rulesUrl.trim() || undefined,
           type,
+          table_size: tableSize,
         }),
       });
       if (!r.ok) throw new Error(await r.text());
@@ -78,6 +82,7 @@ export default function AdminTournamentsPage() {
       setManagerEmail("");
       setRulesUrl("");
       setType("regular");
+      setTableSize(null);
       router.push(`/admin/tournaments/${tournament.id}`);
     },
     onError: () => toast.error("שגיאה ביצירה"),
@@ -135,6 +140,10 @@ export default function AdminTournamentsPage() {
                     </Select>
                   </div>
                 )}
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">שולחן</Label>
+                  <TableSizeSelect value={tableSize} onChange={setTableSize} />
+                </div>
                 <div>
                   <Label className="text-xs text-muted-foreground mb-1 block">קישור לתקנון (אופציונלי)</Label>
                   <Input value={rulesUrl} onChange={(e) => setRulesUrl(e.target.value)} dir="ltr" placeholder="https://..." />

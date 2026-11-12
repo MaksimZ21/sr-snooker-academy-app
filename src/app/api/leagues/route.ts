@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { TABLE_SIZES } from "@/lib/sheets/schemas";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchLeagues, createLeague } from "@/lib/sheets/leagues";
@@ -20,6 +21,7 @@ export async function GET() {
 const CreateSchema = z.object({
   name: z.string().min(1),
   handicap_points_per_rating_gap: z.number().int().positive().optional(),
+  table_size: z.enum(TABLE_SIZES).nullable().optional(),
 });
 
 export async function POST(req: Request) {

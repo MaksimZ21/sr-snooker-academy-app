@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { createOrPromoteStudent, fetchStudents } from "@/lib/sheets/students";
-import { SKILL_LEVELS } from "@/lib/sheets/schemas";
+import { SKILL_LEVELS, SKILL_LEVELS_9FT } from "@/lib/sheets/schemas";
 
 export async function GET() {
   try {
@@ -32,6 +32,7 @@ export async function POST(req: Request) {
         birth_date: z.string().nullable().optional(),
         last_payment_date: z.string().nullable().optional(),
         skill_level: z.enum(SKILL_LEVELS).nullable().optional(),
+        skill_level_9ft: z.enum(SKILL_LEVELS_9FT).nullable().optional(),
       })
       .parse(await req.json());
     const id = await createOrPromoteStudent(body);

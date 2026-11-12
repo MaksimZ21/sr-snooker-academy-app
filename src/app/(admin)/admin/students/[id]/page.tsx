@@ -203,6 +203,16 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
                 {student.subscription_type}
               </span>
             )}
+            {student.skill_level_9ft && (
+              <span className="bg-white/15 text-white/85 text-xs px-2.5 py-0.5 rounded-full">
+                9-10 פיט: {student.skill_level_9ft}
+              </span>
+            )}
+            {student.skill_level && (
+              <span className="bg-white/15 text-white/85 text-xs px-2.5 py-0.5 rounded-full">
+                12 פיט: {student.skill_level}
+              </span>
+            )}
             {student.college_name && (
               <span className="flex items-center gap-1.5 text-white/60 text-xs">
                 <Users size={11} />

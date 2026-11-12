@@ -1,5 +1,6 @@
 import { db } from "@/lib/db/client";
 import { generatePublicSlug } from "./tournaments-slug";
+import type { TableSize } from "./schemas";
 import { districtHasFixtures, type LeagueDistrict } from "./league-districts";
 
 export type League = {
@@ -8,6 +9,7 @@ export type League = {
   completed: boolean;
   public_slug: string;
   handicap_points_per_rating_gap: number;
+  table_size: TableSize | null;
   created_at: string;
 };
 
@@ -45,12 +47,14 @@ export async function fetchLeagues(): Promise<League[]> {
 export async function createLeague(input: {
   name: string;
   handicap_points_per_rating_gap?: number;
+  table_size?: TableSize | null;
 }): Promise<League> {
   const { data, error } = await db
     .from("leagues")
     .insert({
       name: input.name,
       handicap_points_per_rating_gap: input.handicap_points_per_rating_gap ?? 20,
+      table_size: input.table_size ?? null,
       public_slug: generatePublicSlug(),
     })
     .select()
@@ -59,7 +63,10 @@ export async function createLeague(input: {
   return data as League;
 }
 
-export async function updateLeague(id: string, input: { name?: string; completed?: boolean }): Promise<void> {
+export async function updateLeague(
+  id: string,
+  input: { name?: string; completed?: boolean; table_size?: TableSize | null },
+): Promise<void> {
   const { error } = await db.from("leagues").update(input).eq("id", id);
   if (error) throw new Error(error.message);
 }

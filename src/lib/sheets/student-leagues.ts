@@ -2,6 +2,7 @@ import { db } from "@/lib/db/client";
 import { fetchLeagueDetail } from "./leagues";
 import { fetchLeagueDistricts } from "./league-districts";
 import { computeLeaguePlacement } from "./tournament-logic";
+import type { TableSize } from "./schemas";
 
 export type StudentLeagueMatchEntry = {
   opponentName: string;
@@ -13,6 +14,7 @@ export type StudentLeagueMatchEntry = {
 export type StudentLeagueEntry = {
   leagueId: string;
   leagueName: string;
+  tableSize: TableSize | null;
   districtLabel: string | null;
   matches: StudentLeagueMatchEntry[];
   placement: string | null;
@@ -40,13 +42,13 @@ async function buildEntry(
   // Not yet assigned to a district — nothing to schedule or show yet, but
   // the league still shows up so the student knows they're registered.
   if (!districtId) {
-    return { leagueId, leagueName: detail.league.name, districtLabel: null, matches: [], placement: null };
+    return { leagueId, leagueName: detail.league.name, tableSize: detail.league.table_size ?? null, districtLabel: null, matches: [], placement: null };
   }
 
   const districts = await fetchLeagueDistricts(leagueId);
   const myDistrict = districts.find((d) => d.id === districtId);
   if (!myDistrict) {
-    return { leagueId, leagueName: detail.league.name, districtLabel: null, matches: [], placement: null };
+    return { leagueId, leagueName: detail.league.name, tableSize: detail.league.table_size ?? null, districtLabel: null, matches: [], placement: null };
   }
 
   const participantById = new Map(detail.participants.map((p) => [p.id, p]));
@@ -81,5 +83,5 @@ async function buildEntry(
     label: myDistrict.label,
   });
 
-  return { leagueId, leagueName: detail.league.name, districtLabel: myDistrict.label, matches, placement };
+  return { leagueId, leagueName: detail.league.name, tableSize: detail.league.table_size ?? null, districtLabel: myDistrict.label, matches, placement };
 }

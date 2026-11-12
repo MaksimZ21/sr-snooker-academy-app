@@ -1,4 +1,5 @@
 import { db } from "@/lib/db/client";
+import { levelForTable, type TableSize } from "./schemas";
 import { fetchTournamentHouses, type HouseWithMatches } from "./tournament-houses";
 import { fetchKnockoutBracket, type KnockoutMatch } from "./tournament-knockout";
 import { fetchTournamentLocations, type TournamentLocation } from "./tournament-locations";
@@ -45,7 +46,7 @@ export type PublicTournament = {
 export async function fetchPublicTournament(slug: string): Promise<PublicTournament | null> {
   const { data: tournament } = await db
     .from("tournaments")
-    .select("id, name, rules_url, completed, type")
+    .select("id, name, rules_url, completed, type, table_size")
     .eq("public_slug", slug)
     .maybeSingle();
   if (!tournament) return null;
@@ -60,8 +61,9 @@ export async function fetchPublicTournament(slug: string): Promise<PublicTournam
 
   const studentIds = rows.map((r) => r.student_id).filter((id): id is string => id !== null);
   const { data: studentRows } = studentIds.length
-    ? await db.from("students").select("id, first_name, last_name, skill_level").in("id", studentIds)
-    : { data: [] as { id: string; first_name: string; last_name: string; skill_level: string | null }[] };
+    ? await db.from("students").select("id, first_name, last_name, skill_level, skill_level_9ft").in("id", studentIds)
+    : { data: [] as { id: string; first_name: string; last_name: string; skill_level: string | null; skill_level_9ft: string | null }[] };
+  const tableSize = (tournament.table_size as TableSize | null) ?? null;
   const studentsById = new Map((studentRows ?? []).map((s) => [s.id as string, s]));
 
   // A local (multi-location) participant has no student row and no
@@ -74,7 +76,7 @@ export async function fetchPublicTournament(slug: string): Promise<PublicTournam
     return {
       id: r.id,
       name: s ? [s.first_name, s.last_name].filter(Boolean).join(" ") : "?",
-      skillLevel: (s?.skill_level as string | null) ?? null,
+      skillLevel: s ? levelForTable({ skill_level: s.skill_level as string | null, skill_level_9ft: s.skill_level_9ft as string | null }, tableSize) : null,
     };
   });
 

@@ -21,6 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TableSizeSelect } from "@/components/table-size";
+import type { TableSize } from "@/lib/sheets/schemas";
 
 type Coach = { email: string; name: string; phone: string };
 
@@ -30,6 +32,7 @@ type EditableTournament = {
   manager_email: string | null;
   rules_url: string | null;
   type: "regular" | "multi_location";
+  table_size: TableSize | null;
 };
 
 // Admin-only — there was previously no way at all to edit a tournament's
@@ -43,6 +46,7 @@ export function EditTournamentDialog({ tournament }: { tournament: EditableTourn
   const [name, setName] = useState(tournament.name);
   const [managerEmail, setManagerEmail] = useState(tournament.manager_email ?? "");
   const [rulesUrl, setRulesUrl] = useState(tournament.rules_url ?? "");
+  const [tableSize, setTableSize] = useState<TableSize | null>(tournament.table_size);
 
   const { data: coachData } = useQuery({
     queryKey: ["coaches"],
@@ -61,6 +65,7 @@ export function EditTournamentDialog({ tournament }: { tournament: EditableTourn
         body: JSON.stringify({
           name: name.trim(),
           rules_url: rulesUrl.trim() || null,
+          table_size: tableSize,
           ...(tournament.type === "regular" && {
             manager_email: managerEmail,
           }),
@@ -108,6 +113,10 @@ export function EditTournamentDialog({ tournament }: { tournament: EditableTourn
               </Select>
             </div>
           )}
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">שולחן</Label>
+            <TableSizeSelect value={tableSize} onChange={setTableSize} />
+          </div>
           <div>
             <Label className="text-xs text-muted-foreground mb-1 block">קישור לתקנון (אופציונלי)</Label>
             <Input value={rulesUrl} onChange={(e) => setRulesUrl(e.target.value)} dir="ltr" placeholder="https://..." />

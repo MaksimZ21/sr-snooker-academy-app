@@ -89,6 +89,7 @@ export async function appendStudent(input: {
   rating?: number;
   public_slug?: string | null;
   skill_level?: string | null;
+  skill_level_9ft?: string | null;
 }) {
   const phone = normalizePhoneLocal(input.phone ?? "");
   if (phone) {
@@ -124,6 +125,7 @@ export async function appendStudent(input: {
     rating: input.rating ?? 1000,
     public_slug: input.public_slug ?? null,
     skill_level: input.skill_level ?? null,
+    skill_level_9ft: input.skill_level_9ft ?? null,
   });
   if (error) {
     // Two deliveries of the same registration at once: the other one won.
@@ -149,6 +151,7 @@ export async function createOrPromoteStudent(input: {
   birth_date?: string | null;
   last_payment_date?: string | null;
   skill_level?: string | null;
+  skill_level_9ft?: string | null;
 }): Promise<string> {
   const existingId = input.phone ? await findStudentIdByPhone(input.phone) : null;
   if (!existingId) return appendStudent(input);
@@ -223,6 +226,7 @@ export async function updateStudent(
     is_tournament_only?: boolean;
     rating?: number;
     skill_level?: string | null;
+    skill_level_9ft?: string | null;
   },
 ): Promise<void> {
   const row = {

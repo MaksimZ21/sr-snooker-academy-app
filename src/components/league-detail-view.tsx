@@ -17,6 +17,8 @@ import { LeagueParticipantPicker } from "@/components/league-participant-picker"
 import { LeagueDistrictsView } from "@/components/league-districts-view";
 import { LeagueScheduleView } from "@/components/league-schedule-view";
 import { LeagueBreaksView } from "@/components/league-breaks-view";
+import { TableSizeBadge, TableSizeSelect } from "@/components/table-size";
+import type { TableSize } from "@/lib/sheets/schemas";
 
 type LeagueParticipant = {
   id: string;
@@ -35,6 +37,7 @@ type League = {
   completed: boolean;
   public_slug: string;
   handicap_points_per_rating_gap: number;
+  table_size: TableSize | null;
   created_at: string;
 };
 
@@ -56,6 +59,22 @@ export function LeagueDetailView({
       if (!r.ok) throw new Error("fetch failed");
       return (await r.json()) as { league: League; participants: LeagueParticipant[]; districts: LeagueDistrict[] };
     },
+  });
+
+  const tableSizeMut = useMutation({
+    mutationFn: async (tableSize: TableSize | null) => {
+      const r = await fetch(`/api/leagues/${leagueId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ table_size: tableSize }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+    },
+    onSuccess: () => {
+      toast.success("השולחן עודכן");
+      qc.invalidateQueries({ queryKey: ["league", leagueId] });
+    },
+    onError: () => toast.error("שגיאה בעדכון"),
   });
 
   const assignMut = useMutation({
@@ -122,6 +141,22 @@ export function LeagueDetailView({
               /l/{league.public_slug}
               <ExternalLink size={12} />
             </a>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">שולחן:</span>
+            {canEdit ? (
+              <div className="w-36">
+                <TableSizeSelect
+                  value={league.table_size}
+                  onChange={(v) => tableSizeMut.mutate(v)}
+                  disabled={tableSizeMut.isPending}
+                />
+              </div>
+            ) : league.table_size ? (
+              <TableSizeBadge size={league.table_size} />
+            ) : (
+              <span>לא נבחר</span>
+            )}
           </div>
         </div>
 

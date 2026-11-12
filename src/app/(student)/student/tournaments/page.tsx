@@ -5,6 +5,7 @@ import { fetchStudentTournamentHistory } from "@/lib/sheets/student-tournaments"
 import { fetchStudentLeagueHistory } from "@/lib/sheets/student-leagues";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TableSizeBadge } from "@/components/table-size";
 
 export default async function StudentTournamentsPage() {
   const supabase = await createSupabaseServerClient();
@@ -24,8 +25,17 @@ export default async function StudentTournamentsPage() {
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-1">הטורנירים שלי</h1>
-      <p className="text-muted-foreground mb-1">דירוג נוכחי</p>
-      <p className="text-3xl font-bold mb-6">{student.rating}</p>
+      <p className="text-muted-foreground mb-2">הסיווג שלי</p>
+      <div className="flex gap-8 mb-6">
+        <div>
+          <p className="text-xs text-muted-foreground">9-10 פיט</p>
+          <p className="text-3xl font-bold">{student.skill_level_9ft ?? "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">12 פיט</p>
+          <p className="text-3xl font-bold">{student.skill_level ?? "—"}</p>
+        </div>
+      </div>
 
       {entries.length === 0 ? (
         <p className="text-muted-foreground text-center py-12">עדיין לא השתתפת בטורניר</p>
@@ -35,7 +45,10 @@ export default async function StudentTournamentsPage() {
             <Card key={entry.tournamentId}>
               <CardContent className="p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-medium">{entry.tournamentName}</p>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="font-medium">{entry.tournamentName}</p>
+                    <TableSizeBadge size={entry.tableSize} />
+                  </div>
                   {entry.placement && <Badge>{entry.placement}</Badge>}
                 </div>
                 {entry.matches.length === 0 ? (
@@ -68,7 +81,10 @@ export default async function StudentTournamentsPage() {
               <CardContent className="p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <p className="font-medium">{entry.leagueName}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{entry.leagueName}</p>
+                      <TableSizeBadge size={entry.tableSize} />
+                    </div>
                     {entry.districtLabel && <p className="text-xs text-muted-foreground">{entry.districtLabel}</p>}
                   </div>
                   {entry.placement && <Badge>{entry.placement}</Badge>}

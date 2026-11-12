@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { TABLE_SIZES } from "@/lib/sheets/schemas";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchTournaments, createTournament } from "@/lib/sheets/tournaments";
@@ -24,6 +25,7 @@ const CreateSchema = z.object({
   rules_url: z.string().optional(),
   handicap_points_per_rating_gap: z.number().int().positive().optional(),
   type: z.enum(["regular", "multi_location"]).optional(),
+  table_size: z.enum(TABLE_SIZES).nullable().optional(),
 });
 
 export async function POST(req: Request) {

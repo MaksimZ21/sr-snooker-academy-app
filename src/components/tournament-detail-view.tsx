@@ -20,7 +20,8 @@ import { TournamentLocationsView } from "@/components/tournament-locations-view"
 import { TournamentKnockoutView } from "@/components/tournament-knockout-view";
 import { EditTournamentDialog } from "@/components/edit-tournament-dialog";
 import { ParticipantNote } from "@/components/participant-note";
-import { SKILL_LEVELS } from "@/lib/sheets/schemas";
+import { skillLevelsFor, type TableSize } from "@/lib/sheets/schemas";
+import { TableSizeBadge } from "@/components/table-size";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -57,6 +58,7 @@ type Tournament = {
   handicap_points_per_rating_gap: number;
   type: "regular" | "multi_location";
   registration_closed: boolean;
+  table_size: TableSize | null;
   created_at: string;
 };
 
@@ -345,6 +347,10 @@ export function TournamentDetailView({
               העתק
             </Button>
           </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">שולחן:</span>
+            {tournament.table_size ? <TableSizeBadge size={tournament.table_size} /> : <span>לא נבחר</span>}
+          </div>
           {tournament.rules_url && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">תקנון:</span>
@@ -460,7 +466,7 @@ export function TournamentDetailView({
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="none">ללא</SelectItem>
-                                {SKILL_LEVELS.map((l) => (
+                                {skillLevelsFor(tournament.table_size).map((l) => (
                                   <SelectItem key={l} value={l}>{l}</SelectItem>
                                 ))}
                               </SelectContent>

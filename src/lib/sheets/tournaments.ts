@@ -1,5 +1,6 @@
 import { db } from "@/lib/db/client";
 import { generatePublicSlug } from "./tournaments-slug";
+import { levelForTable, SKILL_LEVELS_9FT, type TableSize } from "./schemas";
 
 export type Tournament = {
   id: string;
@@ -19,6 +20,7 @@ export type Tournament = {
   // the manager/admin once the tournament is full/underway, independent of
   // the global CRM pause.
   registration_closed: boolean;
+  table_size: TableSize | null;
   // Set only for a tournament created from a CRM calendar event — that's
   // what makes it appear on the Schedule (see fetchTournamentsInRange). A
   // manually-created tournament has none of these four CRM fields set.
@@ -81,9 +83,16 @@ export async function fetchTournamentDetail(id: string): Promise<TournamentDetai
   const participants = (participantRows ?? []) as TournamentParticipant[];
   const studentIds = participants.map((p) => p.student_id).filter((id): id is string => id !== null);
   const { data: studentRows } = studentIds.length
-    ? await db.from("students").select("id, first_name, last_name, phone, rating, skill_level").in("id", studentIds)
-    : { data: [] as { id: string; first_name: string; last_name: string; phone: string; rating: number; skill_level: string | null }[] };
-  const studentsById = new Map((studentRows ?? []).map((s) => [s.id as string, s]));
+    ? await db.from("students").select("id, first_name, last_name, phone, rating, skill_level, skill_level_9ft").in("id", studentIds)
+    : { data: [] as { id: string; first_name: string; last_name: string; phone: string; rating: number; skill_level: string | null; skill_level_9ft: string | null }[] };
+  // skill_level here is the player's rating for THIS tournament's table.
+  const size = (tournament as Tournament).table_size;
+  const studentsById = new Map(
+    (studentRows ?? []).map(({ skill_level_9ft, ...s }) => [
+      s.id as string,
+      { ...s, skill_level: levelForTable({ skill_level: s.skill_level, skill_level_9ft }, size) },
+    ]),
+  );
 
   return {
     tournament: tournament as Tournament,
@@ -108,6 +117,7 @@ export async function createTournament(input: {
   rules_url?: string;
   handicap_points_per_rating_gap?: number;
   type?: "regular" | "multi_location";
+  table_size?: TableSize | null;
 }): Promise<Tournament> {
   const { data, error } = await db
     .from("tournaments")
@@ -117,6 +127,7 @@ export async function createTournament(input: {
       rules_url: input.rules_url ?? null,
       handicap_points_per_rating_gap: input.handicap_points_per_rating_gap ?? 20,
       type: input.type ?? "regular",
+      table_size: input.table_size ?? null,
       public_slug: generatePublicSlug(),
     })
     .select()
@@ -134,6 +145,7 @@ export async function updateTournament(
     handicap_points_per_rating_gap?: number;
     completed?: boolean;
     registration_closed?: boolean;
+    table_size?: TableSize | null;
   },
 ): Promise<void> {
   const { error } = await db.from("tournaments").update(input).eq("id", id);
@@ -251,7 +263,16 @@ export async function updateParticipantSkillLevel(
     .maybeSingle();
   const studentId = (data as { student_id: string | null } | null)?.student_id;
   if (!studentId) throw new Error("participant has no linked student");
-  const { error } = await db.from("students").update({ skill_level: skillLevel }).eq("id", studentId);
+  // Writes the rating for this tournament's table size.
+  const { data: t } = await db.from("tournaments").select("table_size").eq("id", tournamentId).maybeSingle();
+  const nineFoot = (t as { table_size: TableSize | null } | null)?.table_size === "9-10";
+  if (nineFoot && skillLevel && !(SKILL_LEVELS_9FT as readonly string[]).includes(skillLevel)) {
+    throw new Error("בשולחן 9-10 פיט הסיווג הוא A עד E בלבד");
+  }
+  const { error } = await db
+    .from("students")
+    .update(nineFoot ? { skill_level_9ft: skillLevel } : { skill_level: skillLevel })
+    .eq("id", studentId);
   if (error) throw new Error(error.message);
 }
 

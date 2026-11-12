@@ -33,6 +33,7 @@ describe("parseRows + Student", () => {
         rating: 1000,
         public_slug: null,
         skill_level: null,
+        skill_level_9ft: null,
       },
     ]);
   });

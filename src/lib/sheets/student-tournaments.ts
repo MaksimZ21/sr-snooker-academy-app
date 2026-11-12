@@ -3,6 +3,7 @@ import { fetchTournamentDetail } from "./tournaments";
 import { fetchTournamentHouses } from "./tournament-houses";
 import { fetchKnockoutBracket } from "./tournament-knockout";
 import { computeTournamentPlacement } from "./tournament-logic";
+import type { TableSize } from "./schemas";
 
 export type StudentMatchEntry = {
   opponentName: string;
@@ -15,6 +16,7 @@ export type StudentMatchEntry = {
 export type StudentTournamentEntry = {
   tournamentId: string;
   tournamentName: string;
+  tableSize: TableSize | null;
   matches: StudentMatchEntry[];
   placement: string | null;
 };
@@ -99,5 +101,5 @@ async function buildEntry(tournamentId: string, participantId: string): Promise<
     myHouse ? { memberIds: myHouse.memberIds, matches: myHouse.matches, label: myHouse.label } : null,
   );
 
-  return { tournamentId, tournamentName: detail.tournament.name, matches, placement };
+  return { tournamentId, tournamentName: detail.tournament.name, tableSize: detail.tournament.table_size ?? null, matches, placement };
 }

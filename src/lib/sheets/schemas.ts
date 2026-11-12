@@ -20,6 +20,27 @@ const Csv = z.preprocess(
 export const SKILL_LEVELS = ["A", "B+", "B", "C+", "C", "D", "E"] as const;
 export type SkillLevel = (typeof SKILL_LEVELS)[number];
 
+// Every player has two ratings: skill_level is the 12 ft one (the scale
+// above, with pluses), skill_level_9ft the 9-10 ft one (plain A-E).
+export const SKILL_LEVELS_9FT = ["A", "B", "C", "D", "E"] as const;
+
+// Which table a tournament or league is played on. null = not set yet,
+// treated as 12 ft (the only rating that existed before).
+export const TABLE_SIZES = ["9-10", "12"] as const;
+export type TableSize = (typeof TABLE_SIZES)[number];
+export const TABLE_SIZE_LABEL: Record<TableSize, string> = { "9-10": "9-10 פיט", "12": "12 פיט" };
+
+export function skillLevelsFor(size: TableSize | null | undefined): readonly string[] {
+  return size === "9-10" ? SKILL_LEVELS_9FT : SKILL_LEVELS;
+}
+
+export function levelForTable(
+  s: { skill_level: string | null; skill_level_9ft?: string | null },
+  size: TableSize | null | undefined,
+): string | null {
+  return size === "9-10" ? (s.skill_level_9ft ?? null) : s.skill_level;
+}
+
 export const StudentRow = z.object({
   id: z.string().min(1),
   first_name: z.string().default(""),
@@ -36,6 +57,7 @@ export const StudentRow = z.object({
   rating: z.number().int().default(1000),
   public_slug: z.string().nullable().default(null),
   skill_level: z.enum(SKILL_LEVELS).nullable().default(null),
+  skill_level_9ft: z.enum(SKILL_LEVELS_9FT).nullable().default(null),
 });
 export type Student = z.infer<typeof StudentRow>;
 

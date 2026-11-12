@@ -17,6 +17,7 @@ import { LeagueParticipantPicker } from "@/components/league-participant-picker"
 import { LeagueDistrictsView } from "@/components/league-districts-view";
 import { LeagueScheduleView } from "@/components/league-schedule-view";
 import { LeagueBreaksView } from "@/components/league-breaks-view";
+import { LeagueLevelsView } from "@/components/league-levels-view";
 import { TableSizeBadge, TableSizeSelect } from "@/components/table-size";
 import type { TableSize } from "@/lib/sheets/schemas";
 
@@ -221,6 +222,8 @@ export function LeagueDetailView({
             </div>
           )}
         </div>
+
+        <LeagueLevelsView leagueId={leagueId} canEdit={canEdit} />
 
         <LeagueScheduleView
           leagueId={leagueId}

@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { computeLeagueStandings, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
-import { LeagueStandingsTable } from "@/components/league-standings-table";
+import { LeagueStandingsTable, type StandingLevel } from "@/components/league-standings-table";
+import type { LeagueLevelRow } from "@/lib/sheets/league-levels";
 import { DistrictSwitcher } from "@/components/district-switcher";
 import { dayLabelHe } from "@/lib/date";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 
 type Participant = {
   id: string;
+  student_id: string;
   student: { first_name: string; last_name: string; rating: number };
 };
 
@@ -60,6 +62,23 @@ export function LeagueDistrictsView({
       return (await r.json()) as { districts: DistrictWithMatches[] };
     },
   });
+
+  // Same query as the level-tracking section, so they share one fetch.
+  const { data: levelData } = useQuery({
+    queryKey: ["league-districts", leagueId, "levels"],
+    queryFn: async () => {
+      const r = await fetch(`/api/leagues/${leagueId}/levels`);
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as { rows: LeagueLevelRow[] };
+    },
+  });
+  const levelByStudent = new Map((levelData?.rows ?? []).map((r) => [r.studentId, r]));
+  const levelsByParticipant: Record<string, StandingLevel> = Object.fromEntries(
+    participants.flatMap((p) => {
+      const r = levelByStudent.get(p.student_id);
+      return r ? [[p.id, { level: r.level, points: r.points }]] : [];
+    }),
+  );
 
   const addDistrictMut = useMutation({
     mutationFn: async ({ label, numCycles }: { label: string; numCycles: number }) => {
@@ -193,7 +212,7 @@ export function LeagueDistrictsView({
                 )}
               </div>
 
-              <LeagueStandingsTable rows={standings} renderName={participantName} />
+              <LeagueStandingsTable rows={standings} renderName={participantName} levels={levelsByParticipant} />
 
               {hasFixtures && (
                 <div className="flex flex-col gap-3 px-4 py-3 border-t border-border/40">

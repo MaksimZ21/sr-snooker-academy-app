@@ -154,26 +154,33 @@ export async function enterLeagueMatchResult(
     .maybeSingle();
   if (!district || district.league_id !== leagueId) throw new Error("match not found");
 
-  const { error: updateError } = await db
-    .from("league_matches")
-    .update({ frames_a: framesA, frames_b: framesB })
-    .eq("id", matchId);
-  if (updateError) throw new Error(updateError.message);
-
   const { data: participants } = await db
     .from("league_participants")
     .select("id, student_id")
     .in("id", [match.participant_a_id, match.participant_b_id]);
   const pa = participants?.find((p) => p.id === match.participant_a_id);
   const pb = participants?.find((p) => p.id === match.participant_b_id);
-  if (!pa || !pb) return;
 
-  const { data: students } = await db
-    .from("students")
-    .select("id, rating")
-    .in("id", [pa.student_id, pb.student_id]);
-  const sa = students?.find((s) => s.id === pa.student_id);
-  const sb = students?.find((s) => s.id === pb.student_id);
+  const { data: students } = pa && pb
+    ? await db.from("students").select("id, rating, skill_level").in("id", [pa.student_id, pb.student_id])
+    : { data: [] as { id: string; rating: number; skill_level: string | null }[] };
+  const sa = pa ? students?.find((s) => s.id === pa.student_id) : undefined;
+  const sb = pb ? students?.find((s) => s.id === pb.student_id) : undefined;
+
+  // The 12 ft levels both players have right now, kept on the match for
+  // level-change tracking (see league-levels.ts).
+  const { error: updateError } = await db
+    .from("league_matches")
+    .update({
+      frames_a: framesA,
+      frames_b: framesB,
+      level_a: (sa?.skill_level as string | null) ?? null,
+      level_b: (sb?.skill_level as string | null) ?? null,
+      result_at: new Date().toISOString(),
+    })
+    .eq("id", matchId);
+  if (updateError) throw new Error(updateError.message);
+
   if (!sa || !sb) return;
 
   // Re-entering a corrected result recalculates from whatever the two

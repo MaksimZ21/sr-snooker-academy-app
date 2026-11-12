@@ -1,5 +1,5 @@
 import { db } from "@/lib/db/client";
-import { generateLeagueRounds, computeEloUpdate } from "./tournament-logic";
+import { generateLeagueRounds, computeEloUpdate, missingFixtures } from "./tournament-logic";
 
 export type LeagueDistrict = { id: string; league_id: string; label: string; num_cycles: number };
 
@@ -73,13 +73,12 @@ export async function assignParticipantToDistrict(
       .eq("id", districtId)
       .maybeSingle();
     if (!district || district.league_id !== leagueId) throw new Error("district not found");
-    if (await districtHasFixtures(districtId)) {
-      throw new Error("cannot assign a participant into a district whose fixture schedule was already generated");
-    }
   }
 
-  if (participant.district_id && (await districtHasFixtures(participant.district_id as string))) {
-    throw new Error("cannot move a participant out of a district whose fixture schedule was already generated");
+  const fromDistrict = (participant.district_id as string | null) ?? null;
+  if (fromDistrict === districtId) return;
+  if (fromDistrict && (await participantHasResults(fromDistrict, participantId))) {
+    throw new Error("לשחקן כבר יש תוצאות במחוז הזה, אי אפשר להעביר אותו");
   }
 
   const { error } = await db
@@ -87,6 +86,64 @@ export async function assignParticipantToDistrict(
     .update({ district_id: districtId })
     .eq("id", participantId);
   if (error) throw new Error(error.message);
+
+  // The district's matches follow its members automatically.
+  if (fromDistrict) await syncDistrictFixtures(fromDistrict);
+  if (districtId) await syncDistrictFixtures(districtId);
+}
+
+export async function participantHasResults(districtId: string, participantId: string): Promise<boolean> {
+  const { data } = await db
+    .from("league_matches")
+    .select("id")
+    .eq("district_id", districtId)
+    .not("frames_a", "is", null)
+    .or(`participant_a_id.eq.${participantId},participant_b_id.eq.${participantId}`)
+    .limit(1);
+  return (data ?? []).length > 0;
+}
+
+// Keeps a district's matches in line with its members: every pair of
+// members meets num_cycles times. A new member gets the missing matches; a
+// member who left loses their unplayed ones. Matches with a result, and
+// every scheduled date, are never touched. (Matches are no longer shown by
+// round, so new ones all get round 1.)
+export async function syncDistrictFixtures(districtId: string): Promise<void> {
+  const { data: district } = await db
+    .from("league_districts")
+    .select("id, num_cycles")
+    .eq("id", districtId)
+    .maybeSingle();
+  if (!district) return;
+  const cycles = district.num_cycles as number;
+
+  const [{ data: memberRows }, { data: matchRows }] = await Promise.all([
+    db.from("league_participants").select("id").eq("district_id", districtId).order("created_at"),
+    db.from("league_matches").select("id, participant_a_id, participant_b_id, frames_a").eq("district_id", districtId),
+  ]);
+  const members = (memberRows ?? []).map((m) => m.id as string);
+  const memberSet = new Set(members);
+  const matches = (matchRows ?? []) as { id: string; participant_a_id: string; participant_b_id: string; frames_a: number | null }[];
+
+  const stale = matches
+    .filter((m) => m.frames_a === null && (!memberSet.has(m.participant_a_id) || !memberSet.has(m.participant_b_id)))
+    .map((m) => m.id);
+  if (stale.length) {
+    const { error } = await db.from("league_matches").delete().in("id", stale);
+    if (error) throw new Error(error.message);
+  }
+
+  const kept = matches.filter((m) => !stale.includes(m.id));
+  const rows = missingFixtures(members, kept, cycles).map(([a, b]) => ({
+    district_id: districtId,
+    round: 1,
+    participant_a_id: a,
+    participant_b_id: b,
+  }));
+  if (rows.length) {
+    const { error } = await db.from("league_matches").insert(rows);
+    if (error) throw new Error(error.message);
+  }
 }
 
 export async function generateDistrictFixtures(leagueId: string, districtId: string): Promise<void> {

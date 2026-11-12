@@ -339,3 +339,29 @@ export function generateLeagueRounds(participantIds: string[], numCycles: number
 
   return fixtures;
 }
+
+// The matches a district still needs so every pair of members meets
+// `cycles` times, given the matches it already has. Who's listed first
+// alternates from one cycle to the next.
+export function missingFixtures(
+  members: string[],
+  existing: { participant_a_id: string; participant_b_id: string }[],
+  cycles: number,
+): [string, string][] {
+  const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+  const count = new Map<string, number>();
+  for (const m of existing) {
+    const k = pairKey(m.participant_a_id, m.participant_b_id);
+    count.set(k, (count.get(k) ?? 0) + 1);
+  }
+  const out: [string, string][] = [];
+  for (let i = 0; i < members.length; i++) {
+    for (let j = i + 1; j < members.length; j++) {
+      const have = count.get(pairKey(members[i], members[j])) ?? 0;
+      for (let c = have; c < cycles; c++) {
+        out.push(c % 2 === 0 ? [members[i], members[j]] : [members[j], members[i]]);
+      }
+    }
+  }
+  return out;
+}

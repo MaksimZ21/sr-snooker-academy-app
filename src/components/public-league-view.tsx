@@ -89,7 +89,10 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
               const standings = computeLeagueStandings(district.memberIds, district.matches);
               // Only matches that already have a result.
               const playedMatches = district.matches.filter((m) => m.frames_a !== null && m.frames_b !== null);
-              const rounds = [...new Set(playedMatches.map((m) => m.round))].sort((a, b) => a - b);
+              // Newest first; a result entered without a play date goes last.
+              const resultDays = [...new Set(playedMatches.map((m) => m.scheduled_date ?? ""))].sort((a, b) =>
+                a === "" ? 1 : b === "" ? -1 : b.localeCompare(a),
+              );
               return {
                 id: district.id,
                 label: district.label,
@@ -103,13 +106,15 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
                   />
                 ),
                 rounds:
-                  rounds.length > 0 ? (
+                  resultDays.length > 0 ? (
                     <div className="flex flex-col gap-3 px-4 pb-3">
-                      {rounds.map((round) => (
-                        <div key={round} className="flex flex-col gap-2">
-                          <p className="text-xs font-medium text-muted-foreground">מחזור {round}</p>
+                      {resultDays.map((day) => (
+                        <div key={day || "none"} className="flex flex-col gap-2">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            {day ? `${dayLabelHe(day)} · ${shortDate(day)}` : "ללא תאריך"}
+                          </p>
                           {playedMatches
-                            .filter((m) => m.round === round)
+                            .filter((m) => (m.scheduled_date ?? "") === day)
                             .map((m) => {
                               const nameA = lookup(m.participant_a_id);
                               const nameB = lookup(m.participant_b_id);

@@ -178,8 +178,23 @@ export function LeagueDistrictsView({
           items={districts.map((district) => {
           const standings = computeLeagueStandings(district.memberIds, district.matches);
           const hasFixtures = district.matches.length > 0;
-          const hasResults = district.matches.some((m) => m.frames_a !== null);
-          const rounds = [...new Set(district.matches.map((m) => m.round))].sort((a, b) => a - b);
+          // Matches by when they're played (the weekly schedule), not by round.
+          const datedDays = [
+            ...new Set(district.matches.filter((m) => m.scheduled_date).map((m) => m.scheduled_date as string)),
+          ].sort();
+          const playedNoDate = district.matches.filter((m) => !m.scheduled_date && m.frames_a !== null);
+          const unscheduled = district.matches.filter((m) => !m.scheduled_date && m.frames_a === null);
+          const groups: { key: string; title: string; matches: DistrictMatch[] }[] = [
+            ...datedDays.map((day) => ({
+              key: day,
+              title: `${dayLabelHe(day)} · ${shortDate(day)}`,
+              matches: district.matches.filter((m) => m.scheduled_date === day),
+            })),
+            ...(playedNoDate.length ? [{ key: "played", title: "שוחקו (ללא תאריך)", matches: playedNoDate }] : []),
+            ...(unscheduled.length
+              ? [{ key: "open", title: `עוד לא שובצו (${unscheduled.length})`, matches: unscheduled }]
+              : []),
+          ];
           return {
             id: district.id,
             label: district.label,
@@ -192,17 +207,16 @@ export function LeagueDistrictsView({
                     {district.num_cycles === 1 ? "סיבוב אחד" : `${district.num_cycles} סיבובים`}
                   </p>
                 </div>
-                {canEdit && !hasResults && (
+                {/* Matches are created automatically when players join the
+                    district; this only covers a district filled before that. */}
+                {canEdit && !hasFixtures && district.memberIds.length >= 2 && (
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={generateMut.isPending || district.memberIds.length < 2}
-                    onClick={() => {
-                      if (hasFixtures && !window.confirm("כבר יש לוח משחקים במחוז זה — יצירה מחדש תמחק אותו. להמשיך?")) return;
-                      generateMut.mutate(district.id);
-                    }}
+                    disabled={generateMut.isPending}
+                    onClick={() => generateMut.mutate(district.id)}
                   >
-                    {hasFixtures ? "צור לוח משחקים מחדש" : "צור לוח משחקים"}
+                    צור משחקים
                   </Button>
                 )}
               </div>
@@ -211,11 +225,10 @@ export function LeagueDistrictsView({
 
               {hasFixtures && (
                 <div className="flex flex-col gap-3 px-4 py-3 border-t border-border/40">
-                  {rounds.map((round) => (
-                    <div key={round} className="flex flex-col gap-2">
-                      <p className="text-xs font-medium text-muted-foreground">מחזור {round}</p>
-                      {district.matches
-                        .filter((m) => m.round === round)
+                  {groups.map((group) => (
+                    <div key={group.key} className="flex flex-col gap-2">
+                      <p className="text-xs font-medium text-muted-foreground">{group.title}</p>
+                      {group.matches
                         .map((m) => {
                           const nameA = participantName(m.participant_a_id);
                           const nameB = participantName(m.participant_b_id);

@@ -1,7 +1,7 @@
 import { db } from "@/lib/db/client";
 import { generatePublicSlug } from "./tournaments-slug";
 import type { TableSize } from "./schemas";
-import { districtHasFixtures, type LeagueDistrict } from "./league-districts";
+import { type LeagueDistrict, participantHasResults } from "./league-districts";
 
 export type League = {
   id: string;
@@ -139,8 +139,10 @@ export async function removeLeagueParticipant(leagueId: string, participantId: s
     .maybeSingle();
   if (!participant || participant.league_id !== leagueId) throw new Error("participant not found");
 
-  if (participant.district_id && (await districtHasFixtures(participant.district_id as string))) {
-    throw new Error("cannot remove a participant whose district already has a fixture schedule");
+  // Their unplayed matches go with them (ON DELETE CASCADE). Once they have
+  // a result, removing them would rewrite the standings, so it's refused.
+  if (participant.district_id && (await participantHasResults(participant.district_id as string, participantId))) {
+    throw new Error("לשחקן כבר יש תוצאות בליגה, אי אפשר להסיר אותו");
   }
 
   const { error } = await db.from("league_participants").delete().eq("id", participantId).eq("league_id", leagueId);

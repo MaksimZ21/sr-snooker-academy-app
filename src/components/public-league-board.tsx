@@ -3,7 +3,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 type DistrictPanel = { id: string; label: string; standings: React.ReactNode; rounds: React.ReactNode | null };
-type Tab = "standings" | "breaks" | "rounds";
+type Tab = "schedule" | "standings" | "breaks" | "rounds";
 
 function Pill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
@@ -27,7 +27,16 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
 // side, the rounds underneath. Phone: one at a time, picked with buttons,
 // instead of one long scroll. The panels are rendered on the server and
 // handed in as nodes.
-export function PublicLeagueBoard({ districts, breaks }: { districts: DistrictPanel[]; breaks: React.ReactNode }) {
+export function PublicLeagueBoard({
+  districts,
+  breaks,
+  schedule,
+}: {
+  districts: DistrictPanel[];
+  breaks: React.ReactNode;
+  // This week's and upcoming matches, all districts; null when none.
+  schedule: React.ReactNode | null;
+}) {
   const [districtId, setDistrictId] = useState(districts[0]?.id);
   const [tab, setTab] = useState<Tab>("standings");
   const district = districts.find((d) => d.id === districtId) ?? districts[0];
@@ -41,19 +50,10 @@ export function PublicLeagueBoard({ districts, breaks }: { districts: DistrictPa
 
   return (
     <section className="flex flex-col gap-4">
-      {districts.length > 1 && (
-        <div className="flex flex-wrap gap-2">
-          {districts.map((d) => (
-            <Pill key={d.id} active={d.id === district?.id} onClick={() => setDistrictId(d.id)}>
-              {d.label}
-            </Pill>
-          ))}
-        </div>
-      )}
-
       <div className="flex gap-1 rounded-xl bg-muted p-1 md:hidden">
         {(
           [
+            ["schedule", "לוז"],
             ["standings", "טבלת ליגה"],
             ["breaks", "ברייקים"],
             ["rounds", "תוצאות"],
@@ -73,6 +73,21 @@ export function PublicLeagueBoard({ districts, breaks }: { districts: DistrictPa
           </button>
         ))}
       </div>
+
+      {/* Desktop: the schedule stays on top. Phone: it's one of the tabs. */}
+      <div className={tab === "schedule" ? (schedule ? "block" : "block md:hidden") : schedule ? "hidden md:block" : "hidden"}>
+        {card("לוז", schedule ?? <p className="pb-4 text-center text-sm text-muted-foreground">אין משחקים מתוכננים</p>)}
+      </div>
+
+      {districts.length > 1 && (
+        <div className={cn("flex flex-wrap gap-2", tab === "schedule" && "hidden md:flex")}>
+          {districts.map((d) => (
+            <Pill key={d.id} active={d.id === district?.id} onClick={() => setDistrictId(d.id)}>
+              {d.label}
+            </Pill>
+          ))}
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-[3fr_2fr] md:items-start">
         <div className={cn(tab !== "standings" && "hidden", "md:block min-w-0")}>

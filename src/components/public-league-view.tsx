@@ -50,42 +50,41 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
       </div>
 
       <div className="px-4 py-6 flex flex-col gap-8 max-w-6xl mx-auto">
-        {scheduleDays.length > 0 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-base font-semibold">לוז</h2>
-            <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40">
-              {scheduleDays.map((day) => (
-                <div key={day} className="px-4 py-3 flex flex-col gap-2">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    {dayLabelHe(day)} · {shortDate(day)}
-                  </p>
-                  {scheduled
-                    .filter((m) => m.scheduled_date === day)
-                    .map((m) => {
-                      const played = m.frames_a !== null && m.frames_b !== null;
-                      return (
-                        <div key={m.id} className="flex items-center gap-2 text-sm">
-                          <span className="flex-1 min-w-0 truncate">
-                            {lookup(m.participant_a_id)?.name ?? "?"} נגד {lookup(m.participant_b_id)?.name ?? "?"}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground shrink-0">
-                            {districtLabel.get(m.district_id)}
-                          </span>
-                          {played ? (
-                            <span className="font-medium tabular-nums shrink-0">{m.frames_a} - {m.frames_b}</span>
-                          ) : (
-                            <span className="text-muted-foreground text-xs shrink-0">טרם שוחק</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
         {league.districts.length > 0 || league.participants.length > 0 ? (
           <PublicLeagueBoard
+            schedule={
+              scheduleDays.length > 0 ? (
+              <div className="divide-y divide-border/40">
+                {scheduleDays.map((day) => (
+                  <div key={day} className="px-4 py-3 flex flex-col gap-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {dayLabelHe(day)} · {shortDate(day)}
+                    </p>
+                    {scheduled
+                      .filter((m) => m.scheduled_date === day)
+                      .map((m) => {
+                        const played = m.frames_a !== null && m.frames_b !== null;
+                        return (
+                          <div key={m.id} className="flex items-center gap-2 text-sm">
+                            <span className="flex-1 min-w-0 truncate">
+                              {lookup(m.participant_a_id)?.name ?? "?"} נגד {lookup(m.participant_b_id)?.name ?? "?"}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground shrink-0">
+                              {districtLabel.get(m.district_id)}
+                            </span>
+                            {played ? (
+                              <span className="font-medium tabular-nums shrink-0">{m.frames_a} - {m.frames_b}</span>
+                            ) : (
+                              <span className="text-muted-foreground text-xs shrink-0">טרם שוחק</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                ))}
+              </div>
+              ) : null
+            }
             districts={league.districts.map((district) => {
               const standings = computeLeagueStandings(district.memberIds, district.matches);
               // Only matches that already have a result.

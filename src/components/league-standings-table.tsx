@@ -40,7 +40,15 @@ export function LeagueStandingsTable({
             {levels && (
               <>
                 <Head short="דרגה" full="דרגה" className="ps-2 md:ps-4" />
-                <Head short="נק׳" full="נק׳ דירוג" />
+                {/* Two lines on a phone, so it isn't mistaken for the league points. */}
+                <th className="text-center px-1 md:px-2 py-1.5 font-medium leading-tight">
+                  <span className="md:hidden">
+                    נק׳
+                    <br />
+                    דירוג
+                  </span>
+                  <span className="hidden md:inline">נק׳ דירוג</span>
+                </th>
               </>
             )}
             <Head short="#" full="מקום" className={cn("text-right", !levels && "ps-2 md:ps-4")} />

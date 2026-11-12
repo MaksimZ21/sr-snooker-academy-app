@@ -13,6 +13,7 @@ import { NotesPanel } from "./notes-panel";
 import { GoalPanel, type GoalsByStudent } from "./goal-panel";
 import { EditSessionDialog } from "./forms/edit-session-dialog";
 import { DuplicateSessionDialog } from "./forms/duplicate-session-dialog";
+import { SessionHeldButton } from "./session-held-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatHebrewDate } from "@/lib/date";
 import { monthOf } from "@/lib/sheets/monthly-goals-shared";
@@ -180,7 +181,7 @@ export function SessionDetail({
             </Badge>
             {cancelled && (
               <span className="text-red-300/80 text-xs font-medium border border-red-300/30 rounded-full px-2 py-0.5">
-                בוטל
+                לא התקיים
               </span>
             )}
             {coachName && (
@@ -223,6 +224,11 @@ export function SessionDetail({
 
       {/* Tabs */}
       <div className="p-4 flex flex-col gap-4">
+        {(isAdmin || canEditAttendance) && (
+          <div className="flex justify-end -mb-1">
+            <SessionHeldButton sessionId={sessionId} cancelled={cancelled} />
+          </div>
+        )}
         <Tabs defaultValue="attendance">
           <TabsList className="grid grid-cols-2">
             <TabsTrigger value="attendance">נוכחות</TabsTrigger>

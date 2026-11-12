@@ -159,7 +159,7 @@ export function EditSessionDialog({ session }: { session: Session }) {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="scheduled">פעיל</SelectItem>
-                <SelectItem value="cancelled">בוטל</SelectItem>
+                <SelectItem value="cancelled">לא התקיים</SelectItem>
               </SelectContent>
             </Select>
           </div>

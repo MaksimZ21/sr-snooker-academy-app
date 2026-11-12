@@ -91,7 +91,7 @@ export function SessionCard({
                   {label}
                 </Badge>
                 {cancelled && (
-                  <Badge variant="destructive" className="text-xs">בוטל</Badge>
+                  <Badge variant="destructive" className="text-xs">לא התקיים</Badge>
                 )}
               </div>
             </div>

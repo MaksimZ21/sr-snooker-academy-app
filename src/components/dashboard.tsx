@@ -139,7 +139,7 @@ function HeroNextCard({
               </div>
             </div>
             {cancelled && (
-              <Badge variant="destructive" className="self-start">בוטל</Badge>
+              <Badge variant="destructive" className="self-start">לא התקיים</Badge>
             )}
           </div>
 

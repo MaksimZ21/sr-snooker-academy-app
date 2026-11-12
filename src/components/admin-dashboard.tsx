@@ -338,7 +338,7 @@ function SessionRow({ session, coachMap }: { session: Session; coachMap: Record<
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="outline" className={cn("text-xs py-0 h-5 shrink-0", className)}>{label}</Badge>
-          {cancelled && <Badge variant="destructive" className="text-xs py-0 h-5">בוטל</Badge>}
+          {cancelled && <Badge variant="destructive" className="text-xs py-0 h-5">לא התקיים</Badge>}
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="truncate">{coachName}</span>

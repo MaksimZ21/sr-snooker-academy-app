@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type DistrictPanel = { id: string; label: string; standings: React.ReactNode; rounds: React.ReactNode | null };
 type Tab = "schedule" | "standings" | "breaks" | "rounds";
+type Panel = Tab;
 
 function Pill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
@@ -41,12 +43,39 @@ export function PublicLeagueBoard({
   const [tab, setTab] = useState<Tab>("standings");
   const district = districts.find((d) => d.id === districtId) ?? districts[0];
 
-  const card = (title: string, body: React.ReactNode) => (
-    <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-      <p className="text-sm font-semibold px-4 pt-3 pb-2">{title}</p>
-      {body}
-    </div>
-  );
+  // Desktop only: each list can be folded away to cut the scrolling. The
+  // long breaks list starts folded. On a phone the tabs already show one
+  // list at a time, so folding is off there.
+  const [folded, setFolded] = useState<Set<Panel>>(() => new Set<Panel>(["breaks"]));
+  const toggle = (panel: Panel) =>
+    setFolded((prev) => {
+      const next = new Set(prev);
+      if (next.has(panel)) next.delete(panel);
+      else next.add(panel);
+      return next;
+    });
+
+  const card = (panel: Panel, title: string, body: React.ReactNode) => {
+    const isFolded = folded.has(panel);
+    return (
+      <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+        <p className="text-sm font-semibold px-4 pt-3 pb-2 md:hidden">{title}</p>
+        <button
+          type="button"
+          onClick={() => toggle(panel)}
+          aria-expanded={!isFolded}
+          className="hidden md:flex w-full items-center justify-between gap-2 px-4 pt-3 pb-2 text-sm font-semibold hover:bg-muted/40"
+        >
+          {title}
+          <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
+            {isFolded ? "הצג" : "הסתר"}
+            <ChevronDown size={14} className={cn("transition-transform", !isFolded && "rotate-180")} />
+          </span>
+        </button>
+        <div className={cn(isFolded && "md:hidden")}>{body}</div>
+      </div>
+    );
+  };
 
   return (
     <section className="flex flex-col gap-4">
@@ -76,7 +105,7 @@ export function PublicLeagueBoard({
 
       {/* Desktop: the schedule stays on top. Phone: it's one of the tabs. */}
       <div className={tab === "schedule" ? (schedule ? "block" : "block md:hidden") : schedule ? "hidden md:block" : "hidden"}>
-        {card("לוז", schedule ?? <p className="pb-4 text-center text-sm text-muted-foreground">אין משחקים מתוכננים</p>)}
+        {card("schedule", "לוז", schedule ?? <p className="pb-4 text-center text-sm text-muted-foreground">אין משחקים מתוכננים</p>)}
       </div>
 
       {districts.length > 1 && (
@@ -94,19 +123,20 @@ export function PublicLeagueBoard({
         <div className={cn("flex flex-col gap-4 min-w-0", tab !== "standings" && tab !== "rounds" && "hidden md:flex")}>
           <div className={cn(tab !== "standings" && "hidden md:block")}>
             {district
-              ? card(district.label, district.standings)
-              : card("טבלת ליגה", <p className="py-6 text-center text-sm text-muted-foreground">הליגה טרם החלה</p>)}
+              ? card("standings", district.label, district.standings)
+              : card("standings", "טבלת ליגה", <p className="py-6 text-center text-sm text-muted-foreground">הליגה טרם החלה</p>)}
           </div>
           {district && (
             <div className={cn(tab !== "rounds" && "hidden md:block")}>
               {card(
+                "rounds",
                 `תוצאות · ${district.label}`,
                 district.rounds ?? <p className="pb-4 text-center text-sm text-muted-foreground">עדיין אין תוצאות</p>,
               )}
             </div>
           )}
         </div>
-        <div className={cn("min-w-0", tab !== "breaks" && "hidden md:block")}>{card("טבלת ברייקים", breaks)}</div>
+        <div className={cn("min-w-0", tab !== "breaks" && "hidden md:block")}>{card("breaks", "טבלת ברייקים", breaks)}</div>
       </div>
     </section>
   );

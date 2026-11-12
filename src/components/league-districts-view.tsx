@@ -267,7 +267,10 @@ function MatchRow({
   const [framesB, setFramesB] = useState(match.frames_b?.toString() ?? "");
   const played = match.frames_a !== null && match.frames_b !== null;
 
-  function save() {
+  // Saves on blur (or Enter) once both boxes hold a valid score — no Save
+  // button, same as the weekly schedule. Unchanged values don't resave
+  // (each save re-runs the rating update).
+  function trySave() {
     const a = framesA.trim();
     const b = framesB.trim();
     const na = Number(a);
@@ -275,12 +278,13 @@ function MatchRow({
     // Number("") and Number(" ") both coerce to 0 — trim + explicit
     // emptiness + Number.isInteger together are required to reject a
     // whitespace-only input instead of silently recording a 0 result.
-    if (a === "" || b === "" || !Number.isInteger(na) || !Number.isInteger(nb) || na < 0 || nb < 0) {
-      toast.error("יש להזין תוצאה תקינה");
-      return;
-    }
+    if (a === "" || b === "" || !Number.isInteger(na) || !Number.isInteger(nb) || na < 0 || nb < 0) return;
+    if (played && na === match.frames_a && nb === match.frames_b) return;
     onSave(na, nb);
   }
+  const onEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") e.currentTarget.blur();
+  };
 
   return (
     <div className="flex flex-col gap-1">
@@ -288,18 +292,25 @@ function MatchRow({
         <span className="flex-1">{nameA} נגד {nameB}</span>
         {canEdit ? (
           <>
-            <Input type="number" min={0} value={framesA} onChange={(e) => setFramesA(e.target.value)} className="h-7 w-14 text-center px-1" />
+            <Input
+              type="number"
+              min={0}
+              value={framesA}
+              onChange={(e) => setFramesA(e.target.value)}
+              onBlur={trySave}
+              onKeyDown={onEnter}
+              className="h-7 w-14 text-center px-1"
+            />
             <span className="text-muted-foreground">-</span>
-            <Input type="number" min={0} value={framesB} onChange={(e) => setFramesB(e.target.value)} className="h-7 w-14 text-center px-1" />
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs"
-              disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
-              onClick={save}
-            >
-              שמור
-            </Button>
+            <Input
+              type="number"
+              min={0}
+              value={framesB}
+              onChange={(e) => setFramesB(e.target.value)}
+              onBlur={trySave}
+              onKeyDown={onEnter}
+              className="h-7 w-14 text-center px-1"
+            />
           </>
         ) : played ? (
           <span className="font-medium">{match.frames_a} - {match.frames_b}</span>

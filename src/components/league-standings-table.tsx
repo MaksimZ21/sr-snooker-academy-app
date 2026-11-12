@@ -3,10 +3,24 @@ import type { LeagueStandingRow } from "@/lib/sheets/tournament-logic";
 
 export type StandingLevel = { level: string | null; points: number };
 
+// Short header on a phone, full header from md up.
+function Head({ short, full, className }: { short: string; full: string; className?: string }) {
+  return (
+    <th className={cn("text-center px-1 md:px-2 py-1.5 font-medium", className)}>
+      <span className="md:hidden">{short}</span>
+      <span className="hidden md:inline">{full}</span>
+    </th>
+  );
+}
+
+const cell = "text-center px-1 md:px-2 py-1.5 tabular-nums";
+
 // One table for both the admin league page and the public league page, so
 // the two never drift apart. No hooks — renders on the server or client.
-// `levels` (12 ft level + level-change points, by participant id) adds two
-// columns before the place; only the admin page passes it.
+// `levels` (12 ft level + points gathered toward the next level change, by
+// participant id) adds two columns before the place.
+// Compact on a phone (short headers, tight padding) so the whole table fits
+// without scrolling sideways.
 export function LeagueStandingsTable({
   rows,
   renderName,
@@ -20,24 +34,24 @@ export function LeagueStandingsTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm whitespace-nowrap">
+      <table className="w-full text-xs md:text-sm whitespace-nowrap">
         <thead>
-          <tr className="text-xs text-muted-foreground border-b border-border/40">
+          <tr className="text-[10px] md:text-xs text-muted-foreground border-b border-border/40">
             {levels && (
               <>
-                <th className="text-center ps-4 pe-1 py-1.5 font-medium">דרגה</th>
-                <th className="text-center px-1 py-1.5 font-medium">פור</th>
+                <Head short="דרגה" full="דרגה" className="ps-2 md:ps-4" />
+                <Head short="נק׳" full="נק׳ דירוג" />
               </>
             )}
-            <th className="text-right px-4 py-1.5 font-medium">מקום</th>
-            <th className="text-right px-2 py-1.5 font-medium">שם</th>
-            <th className="text-center px-2 py-1.5 font-medium">משחקים</th>
-            <th className="text-center px-2 py-1.5 font-medium">נצחונות</th>
-            <th className="text-center px-2 py-1.5 font-medium">תיקו</th>
-            <th className="text-center px-2 py-1.5 font-medium">הפסדים</th>
-            <th className="text-center px-2 py-1.5 font-medium">מאזן פריימים</th>
-            <th className="text-center px-2 py-1.5 font-medium">הפרש</th>
-            <th className="text-center px-2 py-1.5 font-medium">נקודות</th>
+            <Head short="#" full="מקום" className={cn("text-right", !levels && "ps-2 md:ps-4")} />
+            <th className="text-right px-1 md:px-2 py-1.5 font-medium">שם</th>
+            <Head short="מש׳" full="משחקים" />
+            <Head short="נ׳" full="נצחונות" />
+            <Head short="ת׳" full="תיקו" />
+            <Head short="ה׳" full="הפסדים" />
+            <Head short="פריימים" full="מאזן פריימים" />
+            <Head short="הפרש" full="הפרש" />
+            <Head short="נק׳" full="נקודות" className="pe-2 md:pe-2" />
           </tr>
         </thead>
         <tbody>
@@ -52,10 +66,11 @@ export function LeagueStandingsTable({
               >
                 {levels && (
                   <>
-                    <td className="text-center ps-4 pe-1 py-1.5 font-semibold">{lv?.level ?? "—"}</td>
+                    <td className={cn(cell, "ps-2 md:ps-4 font-semibold")}>{lv?.level ?? "—"}</td>
                     <td
                       className={cn(
-                        "text-center px-1 py-1.5 tabular-nums text-xs",
+                        cell,
+                        "text-[11px] md:text-xs",
                         lv && lv.points > 0 && "text-emerald-600 dark:text-emerald-400",
                         lv && lv.points < 0 && "text-destructive",
                       )}
@@ -65,22 +80,30 @@ export function LeagueStandingsTable({
                     </td>
                   </>
                 )}
-                <td className={cn("px-4 py-1.5", leading && "font-semibold text-primary")}>{i + 1}</td>
-                <td className={cn("px-2 py-1.5 max-w-[9rem] truncate", leading && "font-semibold")}>
+                <td
+                  className={cn(
+                    "px-1 md:px-2 py-1.5",
+                    !levels && "ps-2 md:ps-4",
+                    leading && "font-semibold text-primary",
+                  )}
+                >
+                  {i + 1}
+                </td>
+                <td className={cn("px-1 md:px-2 py-1.5 max-w-[5.5rem] md:max-w-[9rem] truncate", leading && "font-semibold")}>
                   {renderName(row.participantId)}
                 </td>
-                <td className="text-center px-2 py-1.5 tabular-nums">{row.played}</td>
-                <td className="text-center px-2 py-1.5 tabular-nums">{row.wins}</td>
-                <td className="text-center px-2 py-1.5 tabular-nums">{row.draws}</td>
-                <td className="text-center px-2 py-1.5 tabular-nums">{row.losses}</td>
-                <td className="text-center px-2 py-1.5 tabular-nums" dir="ltr">
+                <td className={cell}>{row.played}</td>
+                <td className={cell}>{row.wins}</td>
+                <td className={cell}>{row.draws}</td>
+                <td className={cell}>{row.losses}</td>
+                <td className={cell} dir="ltr">
                   {row.framesFor}-{row.framesAgainst}
                 </td>
-                <td className="text-center px-2 py-1.5 tabular-nums" dir="ltr">
+                <td className={cell} dir="ltr">
                   {diff > 0 ? "+" : ""}
                   {diff}
                 </td>
-                <td className="text-center px-2 py-1.5 tabular-nums font-semibold">{row.points}</td>
+                <td className={cn(cell, "pe-2 font-semibold")}>{row.points}</td>
               </tr>
             );
           })}

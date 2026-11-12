@@ -89,21 +89,25 @@ export function PublicLeagueBoard({
         </div>
       )}
 
+      {/* Desktop: district table with its results right under it, breaks beside. */}
       <div className="grid gap-4 md:grid-cols-[3fr_2fr] md:items-start">
-        <div className={cn(tab !== "standings" && "hidden", "md:block min-w-0")}>
-          {district ? card(district.label, district.standings) : card("טבלת ליגה", <p className="py-6 text-center text-sm text-muted-foreground">הליגה טרם החלה</p>)}
-        </div>
-        <div className={cn(tab !== "breaks" && "hidden", "md:block min-w-0")}>{card("טבלת ברייקים", breaks)}</div>
-      </div>
-
-      {district && (
-        <div className={cn(tab !== "rounds" && "hidden", "md:block")}>
-          {card(
-            `תוצאות · ${district.label}`,
-            district.rounds ?? <p className="pb-4 text-center text-sm text-muted-foreground">עדיין אין תוצאות</p>,
+        <div className={cn("flex flex-col gap-4 min-w-0", tab !== "standings" && tab !== "rounds" && "hidden md:flex")}>
+          <div className={cn(tab !== "standings" && "hidden md:block")}>
+            {district
+              ? card(district.label, district.standings)
+              : card("טבלת ליגה", <p className="py-6 text-center text-sm text-muted-foreground">הליגה טרם החלה</p>)}
+          </div>
+          {district && (
+            <div className={cn(tab !== "rounds" && "hidden md:block")}>
+              {card(
+                `תוצאות · ${district.label}`,
+                district.rounds ?? <p className="pb-4 text-center text-sm text-muted-foreground">עדיין אין תוצאות</p>,
+              )}
+            </div>
           )}
         </div>
-      )}
+        <div className={cn("min-w-0", tab !== "breaks" && "hidden md:block")}>{card("טבלת ברייקים", breaks)}</div>
+      </div>
     </section>
   );
 }

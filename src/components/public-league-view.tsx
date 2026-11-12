@@ -98,14 +98,8 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
                     rows={standings}
                     highlightLeader
                     levels={levels}
-                    renderName={(id) => {
-                      const p = lookup(id);
-                      return p?.publicSlug ? (
-                        <a href={`/p/${p.publicSlug}`} className="text-primary underline">{p.name}</a>
-                      ) : (
-                        p?.name ?? "?"
-                      );
-                    }}
+                    // Player pages aren't public yet: names are plain text for now.
+                    renderName={(id) => lookup(id)?.name ?? "?"}
                   />
                 ),
                 rounds:
@@ -122,17 +116,9 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
                               return (
                                 <div key={m.id} className="flex items-center gap-2 text-sm">
                                   <span className="flex-1 truncate">
-                                    {nameA?.publicSlug ? (
-                                      <a href={`/p/${nameA.publicSlug}`} className="text-primary underline">{nameA.name}</a>
-                                    ) : (
-                                      nameA?.name ?? "?"
-                                    )}
+                                    {nameA?.name ?? "?"}
                                     {" "}נגד{" "}
-                                    {nameB?.publicSlug ? (
-                                      <a href={`/p/${nameB.publicSlug}`} className="text-primary underline">{nameB.name}</a>
-                                    ) : (
-                                      nameB?.name ?? "?"
-                                    )}
+                                    {nameB?.name ?? "?"}
                                   </span>
                                   <span className="font-medium tabular-nums">{m.frames_a} - {m.frames_b}</span>
                                 </div>

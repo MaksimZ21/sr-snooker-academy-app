@@ -235,7 +235,6 @@ export function LeagueDetailView({
         <LeagueDistrictsView
           leagueId={leagueId}
           participants={participants}
-          handicapPointsPerRatingGap={league.handicap_points_per_rating_gap}
           canEdit={canEdit}
         />
 

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { computeLeagueStandings, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
+import { computeLeagueStandings } from "@/lib/sheets/tournament-logic";
 import { LeagueStandingsTable, type StandingLevel } from "@/components/league-standings-table";
 import type { LeagueLevelRow } from "@/lib/sheets/league-levels";
 import { DistrictSwitcher } from "@/components/district-switcher";
@@ -42,12 +42,10 @@ type DistrictWithMatches = {
 export function LeagueDistrictsView({
   leagueId,
   participants,
-  handicapPointsPerRatingGap,
   canEdit,
 }: {
   leagueId: string;
   participants: Participant[];
-  handicapPointsPerRatingGap: number;
   canEdit: boolean;
 }) {
   const qc = useQueryClient();
@@ -144,9 +142,6 @@ export function LeagueDistrictsView({
     const p = participants.find((x) => x.id === id);
     return p ? [p.student.first_name, p.student.last_name].filter(Boolean).join(" ") : "?";
   }
-  function participantRating(id: string) {
-    return participants.find((x) => x.id === id)?.student.rating ?? 1000;
-  }
 
   if (isLoading) return <Skeleton className="h-32 w-full rounded-2xl" />;
 
@@ -224,19 +219,11 @@ export function LeagueDistrictsView({
                         .map((m) => {
                           const nameA = participantName(m.participant_a_id);
                           const nameB = participantName(m.participant_b_id);
-                          const handicap = formatHandicapLabel(
-                            nameA,
-                            participantRating(m.participant_a_id),
-                            nameB,
-                            participantRating(m.participant_b_id),
-                            handicapPointsPerRatingGap,
-                          );
                           return (
                             <MatchRow
                               key={`${m.id}:${m.frames_a ?? ""}:${m.frames_b ?? ""}`}
                               nameA={nameA}
                               nameB={nameB}
-                              handicap={handicap}
                               match={m}
                               canEdit={canEdit}
                               onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
@@ -262,7 +249,6 @@ export function LeagueDistrictsView({
 function MatchRow({
   nameA,
   nameB,
-  handicap,
   match,
   canEdit,
   onSave,
@@ -271,7 +257,6 @@ function MatchRow({
 }: {
   nameA: string;
   nameB: string;
-  handicap: string;
   match: DistrictMatch;
   canEdit: boolean;
   onSave: (framesA: number, framesB: number) => void;
@@ -322,7 +307,6 @@ function MatchRow({
           <span className="text-muted-foreground text-xs">טרם שוחק</span>
         )}
       </div>
-      {handicap && !played && <p className="text-[11px] text-muted-foreground">{handicap}</p>}
       {canEdit && !played ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>יום משחק:</span>

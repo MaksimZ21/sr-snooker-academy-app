@@ -1,8 +1,8 @@
 import Image from "next/image";
-import { computeLeagueStandings, computeBreakTable, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
-import { LeagueStandingsTable } from "@/components/league-standings-table";
+import { computeLeagueStandings, computeBreakTable } from "@/lib/sheets/tournament-logic";
+import { LeagueStandingsTable, type StandingLevel } from "@/components/league-standings-table";
 import { LeagueBreaksTable } from "@/components/league-breaks-table";
-import { DistrictSwitcher } from "@/components/district-switcher";
+import { PublicLeagueBoard } from "@/components/public-league-board";
 import type { PublicLeague, PublicLeagueParticipant } from "@/lib/sheets/leagues-public";
 import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
@@ -26,6 +26,9 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
     [...league.participants].sort((a, b) => a.name.localeCompare(b.name, "he")).map((p) => p.id),
     league.breaks,
   );
+  const levels: Record<string, StandingLevel> = Object.fromEntries(
+    league.participants.map((p) => [p.id, { level: p.level, points: p.levelPoints }]),
+  );
   const districtOfParticipant = new Map(
     league.districts.flatMap((d) => d.memberIds.map((id) => [id, d.label] as const)),
   );
@@ -46,7 +49,7 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
         )}
       </div>
 
-      <div className="px-4 py-6 flex flex-col gap-8 max-w-4xl mx-auto">
+      <div className="px-4 py-6 flex flex-col gap-8 max-w-6xl mx-auto">
         {scheduleDays.length > 0 && (
           <section className="flex flex-col gap-3">
             <h2 className="text-base font-semibold">לוז</h2>
@@ -81,97 +84,80 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
             </div>
           </section>
         )}
-        {league.districts.length > 0 ? (
-          <section className="flex flex-col gap-3">
-            <DistrictSwitcher
-              items={league.districts.map((district) => {
-                const standings = computeLeagueStandings(district.memberIds, district.matches);
-                const rounds = [...new Set(district.matches.map((m) => m.round))].sort((a, b) => a - b);
-                return {
-                  id: district.id,
-                  label: district.label,
-                  content: (
-                  <div key={district.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-                    <p className="text-sm font-semibold px-4 pt-3 pb-2">{district.label}</p>
-                    <LeagueStandingsTable
-                      rows={standings}
-                      highlightLeader
-                      renderName={(id) => {
-                        const p = lookup(id);
-                        return p?.publicSlug ? (
-                          <a href={`/p/${p.publicSlug}`} className="text-primary underline">{p.name}</a>
-                        ) : (
-                          p?.name ?? "?"
-                        );
-                      }}
-                    />
-
-                    {rounds.length > 0 && (
-                      <div className="flex flex-col gap-3 px-4 py-3 border-t border-border/40">
-                        {rounds.map((round) => (
-                          <div key={round} className="flex flex-col gap-2">
-                            <p className="text-xs font-medium text-muted-foreground">מחזור {round}</p>
-                            {district.matches
-                              .filter((m) => m.round === round)
-                              .map((m) => {
-                                const nameA = lookup(m.participant_a_id);
-                                const nameB = lookup(m.participant_b_id);
-                                const played = m.frames_a !== null && m.frames_b !== null;
-                                const handicap =
-                                  nameA && nameB
-                                    ? formatHandicapLabel(nameA.name, nameA.rating, nameB.name, nameB.rating, league.handicapPointsPerRatingGap)
-                                    : "";
-                                return (
-                                  <div key={m.id} className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-2 text-sm">
-                                      <span className="flex-1 truncate">
-                                        {nameA?.publicSlug ? (
-                                          <a href={`/p/${nameA.publicSlug}`} className="text-primary underline">{nameA.name}</a>
-                                        ) : (
-                                          nameA?.name ?? "?"
-                                        )}
-                                        {" "}נגד{" "}
-                                        {nameB?.publicSlug ? (
-                                          <a href={`/p/${nameB.publicSlug}`} className="text-primary underline">{nameB.name}</a>
-                                        ) : (
-                                          nameB?.name ?? "?"
-                                        )}
-                                      </span>
-                                      {played ? (
-                                        <span className="font-medium tabular-nums">{m.frames_a} - {m.frames_b}</span>
-                                      ) : (
-                                        <span className="text-muted-foreground text-xs">טרם שוחק</span>
-                                      )}
-                                    </div>
-                                    {handicap && !played && <p className="text-[11px] text-muted-foreground">{handicap}</p>}
-                                  </div>
-                                );
-                              })}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  ),
-                };
-              })}
-            />
-          </section>
-        ) : (
-          <p className="text-center text-sm text-muted-foreground py-10">הליגה טרם החלה</p>
-        )}
-
-        {league.participants.length > 0 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-base font-semibold">טבלת ברייקים</h2>
-            <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+        {league.districts.length > 0 || league.participants.length > 0 ? (
+          <PublicLeagueBoard
+            districts={league.districts.map((district) => {
+              const standings = computeLeagueStandings(district.memberIds, district.matches);
+              const rounds = [...new Set(district.matches.map((m) => m.round))].sort((a, b) => a - b);
+              return {
+                id: district.id,
+                label: district.label,
+                standings: (
+                  <LeagueStandingsTable
+                    rows={standings}
+                    highlightLeader
+                    levels={levels}
+                    renderName={(id) => {
+                      const p = lookup(id);
+                      return p?.publicSlug ? (
+                        <a href={`/p/${p.publicSlug}`} className="text-primary underline">{p.name}</a>
+                      ) : (
+                        p?.name ?? "?"
+                      );
+                    }}
+                  />
+                ),
+                rounds:
+                  rounds.length > 0 ? (
+                    <div className="flex flex-col gap-3 px-4 pb-3">
+                      {rounds.map((round) => (
+                        <div key={round} className="flex flex-col gap-2">
+                          <p className="text-xs font-medium text-muted-foreground">מחזור {round}</p>
+                          {district.matches
+                            .filter((m) => m.round === round)
+                            .map((m) => {
+                              const nameA = lookup(m.participant_a_id);
+                              const nameB = lookup(m.participant_b_id);
+                              const played = m.frames_a !== null && m.frames_b !== null;
+                              return (
+                                <div key={m.id} className="flex items-center gap-2 text-sm">
+                                  <span className="flex-1 truncate">
+                                    {nameA?.publicSlug ? (
+                                      <a href={`/p/${nameA.publicSlug}`} className="text-primary underline">{nameA.name}</a>
+                                    ) : (
+                                      nameA?.name ?? "?"
+                                    )}
+                                    {" "}נגד{" "}
+                                    {nameB?.publicSlug ? (
+                                      <a href={`/p/${nameB.publicSlug}`} className="text-primary underline">{nameB.name}</a>
+                                    ) : (
+                                      nameB?.name ?? "?"
+                                    )}
+                                  </span>
+                                  {played ? (
+                                    <span className="font-medium tabular-nums">{m.frames_a} - {m.frames_b}</span>
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs">טרם שוחק</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null,
+              };
+            })}
+            breaks={
               <LeagueBreaksTable
                 rows={breakRows}
                 renderName={(id) => lookup(id)?.name ?? "?"}
                 districtOf={(id) => districtOfParticipant.get(id) ?? ""}
               />
-            </div>
-          </section>
+            }
+          />
+        ) : (
+          <p className="text-center text-sm text-muted-foreground py-10">הליגה טרם החלה</p>
         )}
 
         <p className="text-center text-xs text-muted-foreground/60 pt-2">

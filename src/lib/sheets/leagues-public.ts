@@ -1,4 +1,5 @@
 import { db } from "@/lib/db/client";
+import { fetchLevelTracking } from "./league-levels";
 import { fetchLeagueDistricts, type DistrictWithMatches } from "./league-districts";
 
 // Deliberately separate from leagues.ts's own internal types, mirroring the
@@ -21,6 +22,9 @@ export type PublicLeagueParticipant = {
   id: string;
   name: string;
   rating: number;
+  // 12 ft level and level-change points (see league-levels.ts).
+  level: string | null;
+  levelPoints: number;
   publicSlug: string | null;
 };
 
@@ -56,6 +60,7 @@ export async function fetchPublicLeague(slug: string): Promise<PublicLeague | nu
     ? await db.from("students").select("id, first_name, last_name, rating, public_slug").in("id", studentIds)
     : { data: [] as { id: string; first_name: string; last_name: string; rating: number; public_slug: string | null }[] };
   const studentsById = new Map((studentRows ?? []).map((s) => [s.id as string, s]));
+  const levels = await fetchLevelTracking(studentIds);
 
   const participants: PublicLeagueParticipant[] = rows.map((r) => {
     const s = studentsById.get(r.student_id);
@@ -63,6 +68,8 @@ export async function fetchPublicLeague(slug: string): Promise<PublicLeague | nu
       id: r.id,
       name: s ? [s.first_name, s.last_name].filter(Boolean).join(" ") : "?",
       rating: (s?.rating as number) ?? 1000,
+      level: levels[r.student_id]?.level ?? null,
+      levelPoints: levels[r.student_id]?.points ?? 0,
       publicSlug: (s?.public_slug as string) ?? null,
     };
   });

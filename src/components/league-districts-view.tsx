@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { computeLeagueStandings } from "@/lib/sheets/tournament-logic";
-import { LeagueStandingsTable, type StandingLevel } from "@/components/league-standings-table";
+import { LeagueStandingsTable, remainingMatchesByParticipant, type StandingLevel } from "@/components/league-standings-table";
 import type { LeagueLevelRow } from "@/lib/sheets/league-levels";
 import { DistrictSwitcher } from "@/components/district-switcher";
 import { dayLabelHe } from "@/lib/date";
@@ -221,7 +221,12 @@ export function LeagueDistrictsView({
                 )}
               </div>
 
-              <LeagueStandingsTable rows={standings} renderName={participantName} levels={levelsByParticipant} />
+              <LeagueStandingsTable
+                rows={standings}
+                renderName={participantName}
+                levels={levelsByParticipant}
+                remaining={remainingMatchesByParticipant(district.matches)}
+              />
 
               {hasFixtures && (
                 <div className="flex flex-col gap-3 px-4 py-3 border-t border-border/40">

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { computeLeagueStandings, computeBreakTable } from "@/lib/sheets/tournament-logic";
-import { LeagueStandingsTable, type StandingLevel } from "@/components/league-standings-table";
+import { LeagueStandingsTable, remainingMatchesByParticipant, type StandingLevel } from "@/components/league-standings-table";
 import { PublicBreaksPanel } from "@/components/public-breaks-panel";
 import { PublicLeagueBoard } from "@/components/public-league-board";
 import type { PublicLeague, PublicLeagueParticipant } from "@/lib/sheets/leagues-public";
@@ -101,6 +101,7 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
                     rows={standings}
                     highlightLeader
                     levels={levels}
+                    remaining={remainingMatchesByParticipant(district.matches)}
                     // Player pages aren't public yet: names are plain text for now.
                     renderName={(id) => lookup(id)?.name ?? "?"}
                   />

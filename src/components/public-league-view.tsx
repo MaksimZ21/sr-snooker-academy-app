@@ -6,6 +6,7 @@ import { PublicLeagueBoard } from "@/components/public-league-board";
 import type { PublicLeague, PublicLeagueParticipant } from "@/lib/sheets/leagues-public";
 import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
 import { DayColumns } from "@/components/day-strip";
+import { PublicThemeToggle } from "@/components/public-theme-toggle";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 
 export function PublicLeagueView({ league }: { league: PublicLeague }) {
@@ -78,7 +79,8 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
   return (
     <div className="min-h-dvh bg-background" dir="rtl">
       {/* Hero */}
-      <div className="bg-brand-gradient px-5 py-8 flex flex-col items-center text-center gap-3">
+      <div className="relative bg-brand-gradient px-5 py-8 flex flex-col items-center text-center gap-3">
+        <PublicThemeToggle className="absolute top-3 left-3" />
         <Image src="/logo.png" alt="" width={52} height={52} className="object-contain" />
         <div className="flex flex-col gap-1.5">
           <h1 className="text-2xl font-bold text-white leading-tight">{league.name}</h1>

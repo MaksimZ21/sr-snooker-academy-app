@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -56,6 +57,8 @@ export function TournamentLocationsView({
   const qc = useQueryClient();
   const [newLocationLabel, setNewLocationLabel] = useState("");
   const [newHouseLabels, setNewHouseLabels] = useState<Record<string, string>>({});
+  // Per house: the names typed/pasted to add straight into it (open = key present).
+  const [houseNames, setHouseNames] = useState<Record<string, string>>({});
 
   const { data: locationsData, isLoading: locationsLoading } = useQuery({
     queryKey: ["tournament-locations", tournamentId],
@@ -137,6 +140,26 @@ export function TournamentLocationsView({
       qc.invalidateQueries({ queryKey: ["tournament", tournamentId] });
     },
     onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה בהסרה מהבית"),
+  });
+
+  const addToHouseMut = useMutation({
+    mutationFn: async ({ houseId, names }: { houseId: string; names: string[] }) => {
+      const r = await fetch(`/api/tournaments/${tournamentId}/participants`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ localNames: names, houseId }),
+      });
+      const body = (await r.json().catch(() => null)) as { added?: number; skipped?: number; error?: string } | null;
+      if (!r.ok) throw new Error(body?.error ?? "שגיאה בהוספה לבית");
+      return { added: body?.added ?? 0, skipped: body?.skipped ?? 0 };
+    },
+    onSuccess: ({ added, skipped }, { houseId }) => {
+      toast.success(skipped ? `נוספו ${added} שחקנים לבית (${skipped} כבר בטורניר)` : `נוספו ${added} שחקנים לבית`);
+      setHouseNames((prev) => ({ ...prev, [houseId]: "" }));
+      qc.invalidateQueries({ queryKey: ["tournament-houses", tournamentId] });
+      qc.invalidateQueries({ queryKey: ["tournament", tournamentId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בהוספה לבית"),
   });
 
   const resultMut = useMutation({
@@ -246,7 +269,51 @@ export function TournamentLocationsView({
                 const standings = computeHouseStandings(house.memberIds, house.matches);
                 return (
                   <div key={house.id} className="border-t border-border/40">
-                    <p className="text-sm font-semibold px-4 pt-3 pb-2">{house.label}</p>
+                    <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
+                      <p className="text-sm font-semibold">{house.label}</p>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          className="text-xs font-medium text-primary hover:underline"
+                          onClick={() =>
+                            setHouseNames((prev) => {
+                              const next = { ...prev };
+                              if (house.id in next) delete next[house.id];
+                              else next[house.id] = "";
+                              return next;
+                            })
+                          }
+                        >
+                          {house.id in houseNames ? "סגור" : "+ הוסף שחקנים לבית"}
+                        </button>
+                      )}
+                    </div>
+                    {canEdit && house.id in houseNames && (() => {
+                      const names = (houseNames[house.id] ?? "")
+                        .split(/\r?\n/)
+                        .map((l) => l.replace(/^\s*\d+[.)-]?\s*/, "").trim())
+                        .filter(Boolean);
+                      return (
+                        <div className="flex flex-col gap-2 px-4 pb-3">
+                          <Textarea
+                            value={houseNames[house.id] ?? ""}
+                            onChange={(e) => setHouseNames((prev) => ({ ...prev, [house.id]: e.target.value }))}
+                            placeholder={"שם אחד בכל שורה\nישראל ישראלי\nדני כהן"}
+                            dir="auto"
+                            rows={4}
+                          />
+                          <Button
+                            size="sm"
+                            className="self-start"
+                            disabled={names.length === 0 || addToHouseMut.isPending}
+                            onClick={() => addToHouseMut.mutate({ houseId: house.id, names })}
+                          >
+                            <Plus size={14} className="ml-1.5" />
+                            הוסף {names.length || ""} לבית
+                          </Button>
+                        </div>
+                      );
+                    })()}
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>

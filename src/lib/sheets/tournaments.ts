@@ -169,16 +169,31 @@ export async function searchStudents(query: string): Promise<StudentSearchResult
 }
 
 // Many names at once for a multi-location tournament (pasted list, one per
-// line), optionally straight into a location. Plain names only — never
-// the students table. Names already in the tournament are skipped.
+// line), optionally straight into a location, or straight into a house
+// (its location is implied, and the house's matches are created). Plain
+// names only — never the students table. A name already in the tournament
+// is skipped, except that with a house, someone of that name waiting in the
+// same location without a house is placed into it.
 export async function addLocalParticipantsBulk(
   tournamentId: string,
   names: string[],
-  locationId: string | null,
+  locationIdInput: string | null,
+  houseId: string | null = null,
 ): Promise<{ added: number; skipped: number }> {
   const { data: tournament } = await db.from("tournaments").select("id, type").eq("id", tournamentId).maybeSingle();
   if (!tournament) throw new Error("tournament not found");
   if (tournament.type !== "multi_location") throw new Error("bulk add is only for a multi-location tournament");
+  let locationId = locationIdInput;
+  if (houseId) {
+    const { data: house } = await db
+      .from("tournament_houses")
+      .select("id, location_id")
+      .eq("id", houseId)
+      .eq("tournament_id", tournamentId)
+      .maybeSingle();
+    if (!house) throw new Error("house not found");
+    locationId = (house.location_id as string | null) ?? null;
+  }
   if (locationId) {
     const { data: loc } = await db
       .from("tournament_locations")
@@ -189,27 +204,49 @@ export async function addLocalParticipantsBulk(
     if (!loc) throw new Error("location not found");
   }
 
-  const { data: existing } = await db.from("tournament_participants").select("local_name").eq("tournament_id", tournamentId);
-  const taken = new Set(((existing ?? []) as { local_name: string | null }[]).map((r) => (r.local_name ?? "").trim()));
+  const { data: existing } = await db
+    .from("tournament_participants")
+    .select("id, local_name, location_id, house_id")
+    .eq("tournament_id", tournamentId);
+  const existingRows = (existing ?? []) as {
+    id: string;
+    local_name: string | null;
+    location_id: string | null;
+    house_id: string | null;
+  }[];
+  const taken = new Set(existingRows.map((r) => (r.local_name ?? "").trim()));
   const clean: string[] = [];
+  const toPlace: string[] = [];
   let skipped = 0;
   for (const raw of names) {
     const name = raw.replace(/\s+/g, " ").trim();
     if (!name) continue;
     if (taken.has(name)) {
-      skipped++;
+      const waiting = houseId
+        ? existingRows.find((r) => (r.local_name ?? "").trim() === name && r.location_id === locationId && !r.house_id)
+        : undefined;
+      if (waiting && !toPlace.includes(waiting.id)) toPlace.push(waiting.id);
+      else skipped++;
       continue;
     }
     taken.add(name);
     clean.push(name);
   }
   if (clean.length) {
-    const { error } = await db
+    const { data: inserted, error } = await db
       .from("tournament_participants")
-      .insert(clean.map((local_name) => ({ tournament_id: tournamentId, local_name, location_id: locationId })));
+      .insert(clean.map((local_name) => ({ tournament_id: tournamentId, local_name, location_id: locationId })))
+      .select("id");
     if (error) throw new Error(error.message);
+    toPlace.push(...((inserted ?? []) as { id: string }[]).map((r) => r.id));
   }
-  return { added: clean.length, skipped };
+  if (houseId) {
+    // One at a time: each placement creates the matches against whoever is
+    // already in the house.
+    const { moveParticipantToHouse } = await import("./tournament-houses");
+    for (const id of toPlace) await moveParticipantToHouse(tournamentId, id, houseId);
+  }
+  return { added: houseId ? toPlace.length : clean.length, skipped };
 }
 
 export async function addTournamentParticipant(

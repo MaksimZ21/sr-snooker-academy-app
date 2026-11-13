@@ -22,6 +22,7 @@ const AddSchema = z
 const BulkSchema = z.object({
   localNames: z.array(z.string()).min(1).max(500),
   locationId: z.string().min(1).nullable().optional(),
+  houseId: z.string().min(1).nullable().optional(),
 });
 
 export async function POST(
@@ -39,7 +40,7 @@ export async function POST(
     const raw: unknown = await req.json();
     if (raw && typeof raw === "object" && "localNames" in raw) {
       const bulk = BulkSchema.parse(raw);
-      const result = await addLocalParticipantsBulk(id, bulk.localNames, bulk.locationId ?? null);
+      const result = await addLocalParticipantsBulk(id, bulk.localNames, bulk.locationId ?? null, bulk.houseId ?? null);
       return NextResponse.json(result);
     }
     const body = AddSchema.parse(raw);

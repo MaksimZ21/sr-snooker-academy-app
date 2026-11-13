@@ -567,7 +567,7 @@ export function TournamentDetailView({
           />
         )}
 
-        {participants.length > 0 && tournament.type === "multi_location" && (
+        {tournament.type === "multi_location" && (
           <TournamentLocationsView
             tournamentId={tournamentId}
             participants={participants}

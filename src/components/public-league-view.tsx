@@ -21,7 +21,47 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
   const scheduled = league.districts
     .flatMap((d) => d.matches)
     .filter((m) => m.scheduled_date !== null && m.scheduled_date >= startIso);
-  const scheduleDays = [...new Set(scheduled.map((m) => m.scheduled_date as string))].sort();
+
+  // The day strip for a set of matches; null when there's nothing scheduled.
+  function renderSchedule(matches: typeof scheduled): React.ReactNode | null {
+    const days = [...new Set(matches.map((m) => m.scheduled_date as string))].sort();
+    if (days.length === 0) return null;
+    return (
+      <div className="px-4 py-3">
+        <DayStrip
+          items={days.map((day) => {
+            const dayMatches = matches.filter((m) => m.scheduled_date === day);
+            return {
+              day,
+              count: dayMatches.length,
+              content: (
+                <div className="flex flex-col gap-2">
+                  {dayMatches.map((m) => {
+                    const played = m.frames_a !== null && m.frames_b !== null;
+                    return (
+                      <div key={m.id} className="flex items-center gap-2 text-sm">
+                        <span className="flex-1 min-w-0 truncate">
+                          {lookup(m.participant_a_id)?.name ?? "?"} נגד {lookup(m.participant_b_id)?.name ?? "?"}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground shrink-0">
+                          {districtLabel.get(m.district_id)}
+                        </span>
+                        {played ? (
+                          <span className="font-medium tabular-nums shrink-0">{m.frames_a} - {m.frames_b}</span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs shrink-0">טרם שוחק</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ),
+            };
+          })}
+        />
+      </div>
+    );
+  }
 
   const breakRows = computeBreakTable(
     [...league.participants].sort((a, b) => a.name.localeCompare(b.name, "he")).map((p) => p.id),
@@ -54,44 +94,11 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
         {league.districts.length > 0 || league.participants.length > 0 ? (
           <PublicLeagueBoard
             schedule={
-              scheduleDays.length > 0 ? (
-              <div className="px-4 py-3">
-                <DayStrip
-                  items={scheduleDays.map((day) => {
-                    const dayMatches = scheduled.filter((m) => m.scheduled_date === day);
-                    return {
-                      day,
-                      count: dayMatches.length,
-                      content: (
-                        <div className="flex flex-col gap-2">
-                          {dayMatches.map((m) => {
-                            const played = m.frames_a !== null && m.frames_b !== null;
-                            return (
-                              <div key={m.id} className="flex items-center gap-2 text-sm">
-                                <span className="flex-1 min-w-0 truncate">
-                                  {lookup(m.participant_a_id)?.name ?? "?"} נגד {lookup(m.participant_b_id)?.name ?? "?"}
-                                </span>
-                                <span className="text-[11px] text-muted-foreground shrink-0">
-                                  {districtLabel.get(m.district_id)}
-                                </span>
-                                {played ? (
-                                  <span className="font-medium tabular-nums shrink-0">{m.frames_a} - {m.frames_b}</span>
-                                ) : (
-                                  <span className="text-muted-foreground text-xs shrink-0">טרם שוחק</span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ),
-                    };
-                  })}
-                />
-              </div>
-              ) : null
+              renderSchedule(scheduled)
             }
             districts={league.districts.map((district) => {
               const standings = computeLeagueStandings(district.memberIds, district.matches);
+              const districtSchedule = renderSchedule(scheduled.filter((m) => m.district_id === district.id));
               // Only matches that already have a result.
               const playedMatches = district.matches.filter((m) => m.frames_a !== null && m.frames_b !== null);
               // Newest first; a result entered without a play date goes last.
@@ -101,6 +108,7 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
               return {
                 id: district.id,
                 label: district.label,
+                schedule: districtSchedule,
                 standings: (
                   <LeagueStandingsTable
                     rows={standings}

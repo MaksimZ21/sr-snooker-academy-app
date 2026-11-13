@@ -3,7 +3,16 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type DistrictPanel = { id: string; label: string; standings: React.ReactNode; rounds: React.ReactNode | null };
+type DistrictPanel = {
+  id: string;
+  label: string;
+  // This district's part of the schedule; null when none.
+  schedule: React.ReactNode | null;
+  standings: React.ReactNode;
+  rounds: React.ReactNode | null;
+};
+
+const ALL = "__all__";
 type Tab = "schedule" | "standings" | "breaks" | "rounds";
 type Panel = Tab;
 
@@ -41,6 +50,10 @@ export function PublicLeagueBoard({
 }) {
   const [districtId, setDistrictId] = useState(districts[0]?.id);
   const [tab, setTab] = useState<Tab>("standings");
+  // Which district the schedule shows; ALL = every district.
+  const [scheduleDistrict, setScheduleDistrict] = useState(ALL);
+  const scheduleBody =
+    scheduleDistrict === ALL ? schedule : (districts.find((d) => d.id === scheduleDistrict)?.schedule ?? null);
   const district = districts.find((d) => d.id === districtId) ?? districts[0];
 
   // Desktop only: each list can be folded away to cut the scrolling. The
@@ -105,7 +118,35 @@ export function PublicLeagueBoard({
 
       {/* Desktop: the schedule stays on top. Phone: it's one of the tabs. */}
       <div className={tab === "schedule" ? (schedule ? "block" : "block md:hidden") : schedule ? "hidden md:block" : "hidden"}>
-        {card("schedule", "לוז", schedule ?? <p className="pb-4 text-center text-sm text-muted-foreground">אין משחקים מתוכננים</p>)}
+        {card(
+          "schedule",
+          "לוז",
+          <>
+            {districts.length > 1 && (
+              <div className="flex gap-1.5 overflow-x-auto px-4 pb-1">
+                {[{ id: ALL, label: "כל המחוזות" }, ...districts].map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => setScheduleDistrict(d.id)}
+                    aria-pressed={d.id === scheduleDistrict}
+                    className={cn(
+                      "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                      d.id === scheduleDistrict
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card border-border/60 text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div key={scheduleDistrict}>
+              {scheduleBody ?? <p className="py-4 text-center text-sm text-muted-foreground">אין משחקים מתוכננים</p>}
+            </div>
+          </>,
+        )}
       </div>
 
       {districts.length > 1 && (

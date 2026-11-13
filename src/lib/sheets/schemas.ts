@@ -14,9 +14,8 @@ const Csv = z.preprocess(
   z.array(z.string()),
 );
 
-// Fixed, manually-assigned classification shown instead of the computed
-// rating-gap handicap in tournaments (no calculation reads this value).
-// Ordered best to worst for display purposes only.
+// The built-in level lists, best to worst. The real lists are editable on
+// the settings page (skill_levels table); these are only the fallback.
 export const SKILL_LEVELS = ["A", "B+", "B", "C+", "C", "D", "E"] as const;
 export type SkillLevel = (typeof SKILL_LEVELS)[number];
 
@@ -56,8 +55,9 @@ export const StudentRow = z.object({
   is_tournament_only: z.boolean().default(false),
   rating: z.number().int().default(1000),
   public_slug: z.string().nullable().default(null),
-  skill_level: z.enum(SKILL_LEVELS).nullable().default(null),
-  skill_level_9ft: z.enum(SKILL_LEVELS_9FT).nullable().default(null),
+  // Validated against the editable lists (skill_levels) when written.
+  skill_level: z.string().nullable().default(null),
+  skill_level_9ft: z.string().nullable().default(null),
 });
 export type Student = z.infer<typeof StudentRow>;
 

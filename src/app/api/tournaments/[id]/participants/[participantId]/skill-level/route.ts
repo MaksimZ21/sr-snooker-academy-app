@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchTournamentDetail, updateParticipantSkillLevel, isTournamentManager } from "@/lib/sheets/tournaments";
-import { SKILL_LEVELS } from "@/lib/sheets/schemas";
 
-const PatchSchema = z.object({ skillLevel: z.enum(SKILL_LEVELS).nullable() });
+const PatchSchema = z.object({ skillLevel: z.string().min(1).max(10).nullable() });
 
 export async function PATCH(
   req: Request,

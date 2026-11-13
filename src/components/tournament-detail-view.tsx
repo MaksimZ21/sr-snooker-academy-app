@@ -20,7 +20,8 @@ import { TournamentLocationsView } from "@/components/tournament-locations-view"
 import { TournamentKnockoutView } from "@/components/tournament-knockout-view";
 import { EditTournamentDialog } from "@/components/edit-tournament-dialog";
 import { ParticipantNote } from "@/components/participant-note";
-import { skillLevelsFor, type TableSize } from "@/lib/sheets/schemas";
+import { type TableSize } from "@/lib/sheets/schemas";
+import { useSkillLevels } from "@/components/use-skill-levels";
 import { TableSizeBadge } from "@/components/table-size";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
@@ -82,6 +83,7 @@ export function TournamentDetailView({
   isAdmin: boolean;
 }) {
   const qc = useQueryClient();
+  const { levelsFor } = useSkillLevels();
 
   const { data, isLoading } = useQuery({
     queryKey: ["tournament", tournamentId],
@@ -466,7 +468,7 @@ export function TournamentDetailView({
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="none">ללא</SelectItem>
-                                {skillLevelsFor(tournament.table_size).map((l) => (
+                                {levelsFor(tournament.table_size).map((l) => (
                                   <SelectItem key={l} value={l}>{l}</SelectItem>
                                 ))}
                               </SelectContent>

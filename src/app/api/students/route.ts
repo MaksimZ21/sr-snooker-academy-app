@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { createOrPromoteStudent, fetchStudents } from "@/lib/sheets/students";
-import { SKILL_LEVELS, SKILL_LEVELS_9FT } from "@/lib/sheets/schemas";
+import { assertValidLevel } from "@/lib/sheets/skill-levels";
 
 export async function GET() {
   try {
@@ -31,10 +31,12 @@ export async function POST(req: Request) {
         general_notes: z.string().optional(),
         birth_date: z.string().nullable().optional(),
         last_payment_date: z.string().nullable().optional(),
-        skill_level: z.enum(SKILL_LEVELS).nullable().optional(),
-        skill_level_9ft: z.enum(SKILL_LEVELS_9FT).nullable().optional(),
+        skill_level: z.string().nullable().optional(),
+        skill_level_9ft: z.string().nullable().optional(),
       })
       .parse(await req.json());
+    await assertValidLevel("12", body.skill_level);
+    await assertValidLevel("9-10", body.skill_level_9ft);
     const id = await createOrPromoteStudent(body);
     return NextResponse.json({ id });
   } catch (e) {

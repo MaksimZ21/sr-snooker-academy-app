@@ -1,6 +1,7 @@
 import { db } from "@/lib/db/client";
 import { generatePublicSlug } from "./tournaments-slug";
-import { levelForTable, SKILL_LEVELS_9FT, type TableSize } from "./schemas";
+import { levelForTable, type TableSize } from "./schemas";
+import { assertValidLevel } from "./skill-levels";
 
 export type Tournament = {
   id: string;
@@ -266,9 +267,7 @@ export async function updateParticipantSkillLevel(
   // Writes the rating for this tournament's table size.
   const { data: t } = await db.from("tournaments").select("table_size").eq("id", tournamentId).maybeSingle();
   const nineFoot = (t as { table_size: TableSize | null } | null)?.table_size === "9-10";
-  if (nineFoot && skillLevel && !(SKILL_LEVELS_9FT as readonly string[]).includes(skillLevel)) {
-    throw new Error("בשולחן 9-10 פיט הסיווג הוא A עד E בלבד");
-  }
+  await assertValidLevel(nineFoot ? "9-10" : "12", skillLevel);
   const { error } = await db
     .from("students")
     .update(nineFoot ? { skill_level_9ft: skillLevel } : { skill_level: skillLevel })

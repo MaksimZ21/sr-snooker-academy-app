@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { deleteStudent, updateStudent } from "@/lib/sheets/students";
-import { SKILL_LEVELS, SKILL_LEVELS_9FT } from "@/lib/sheets/schemas";
+import { assertValidLevel } from "@/lib/sheets/skill-levels";
 
 const PatchBody = z.object({
   first_name: z.string().optional(),
@@ -15,8 +15,8 @@ const PatchBody = z.object({
   birth_date: z.string().nullable().optional(),
   last_payment_date: z.string().nullable().optional(),
   active: z.boolean().optional(),
-  skill_level: z.enum(SKILL_LEVELS).nullable().optional(),
-  skill_level_9ft: z.enum(SKILL_LEVELS_9FT).nullable().optional(),
+  skill_level: z.string().nullable().optional(),
+  skill_level_9ft: z.string().nullable().optional(),
 });
 
 export async function PATCH(
@@ -28,6 +28,8 @@ export async function PATCH(
     if (user.role !== "admin") return new NextResponse("Forbidden", { status: 403 });
     const { id } = await params;
     const body = PatchBody.parse(await req.json());
+    await assertValidLevel("12", body.skill_level);
+    await assertValidLevel("9-10", body.skill_level_9ft);
     await updateStudent(id, body);
     return NextResponse.json({ ok: true });
   } catch (e) {

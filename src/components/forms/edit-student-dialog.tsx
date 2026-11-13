@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import type { Student } from "@/lib/sheets/schemas";
-import { SKILL_LEVELS, SKILL_LEVELS_9FT } from "@/lib/sheets/schemas";
+import { useSkillLevels } from "@/components/use-skill-levels";
 import type { College } from "@/lib/sheets/colleges";
 
 export function EditStudentDialog({
@@ -40,6 +40,7 @@ export function EditStudentDialog({
   const [skillLevel, setSkillLevel] = useState(student.skill_level ?? "__none__");
   const [skillLevel9, setSkillLevel9] = useState(student.skill_level_9ft ?? "__none__");
   const qc = useQueryClient();
+  const { lists: levelLists } = useSkillLevels();
 
   const collegesQ = useQuery({
     queryKey: ["colleges"],
@@ -160,7 +161,7 @@ export function EditStudentDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">ללא סיווג</SelectItem>
-                {SKILL_LEVELS_9FT.map((l) => (
+                {levelLists["9-10"].map((l) => (
                   <SelectItem key={l} value={l}>{l}</SelectItem>
                 ))}
               </SelectContent>
@@ -174,7 +175,7 @@ export function EditStudentDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">ללא סיווג</SelectItem>
-                {SKILL_LEVELS.map((l) => (
+                {levelLists["12"].map((l) => (
                   <SelectItem key={l} value={l}>{l}</SelectItem>
                 ))}
               </SelectContent>

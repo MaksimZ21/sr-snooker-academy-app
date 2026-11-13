@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import type { College } from "@/lib/sheets/colleges";
-import { SKILL_LEVELS, SKILL_LEVELS_9FT } from "@/lib/sheets/schemas";
+import { useSkillLevels } from "@/components/use-skill-levels";
 
 export function AddStudentDialog() {
   const [open, setOpen] = useState(false);
@@ -33,6 +33,7 @@ export function AddStudentDialog() {
   const [skillLevel, setSkillLevel] = useState("__none__");
   const [skillLevel9, setSkillLevel9] = useState("__none__");
   const qc = useQueryClient();
+  const { lists: levelLists } = useSkillLevels();
 
   const collegesQ = useQuery({
     queryKey: ["colleges"],
@@ -155,7 +156,7 @@ export function AddStudentDialog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">ללא סיווג</SelectItem>
-                {SKILL_LEVELS_9FT.map((l) => (
+                {levelLists["9-10"].map((l) => (
                   <SelectItem key={l} value={l}>{l}</SelectItem>
                 ))}
               </SelectContent>
@@ -169,7 +170,7 @@ export function AddStudentDialog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">ללא סיווג</SelectItem>
-                {SKILL_LEVELS.map((l) => (
+                {levelLists["12"].map((l) => (
                   <SelectItem key={l} value={l}>{l}</SelectItem>
                 ))}
               </SelectContent>

@@ -62,3 +62,20 @@ describe("nextLevel", () => {
     expect(nextLevel("A", "up")).toBeNull();
   });
 });
+
+describe("with a custom level list from the settings page", () => {
+  const levels = ["A", "B+", "B", "C+", "C", "D", "E", "F", "G+", "G", "H", "I"];
+  it("counts gaps using the custom list", () => {
+    // I beats A: 11 levels apart.
+    expect(levelChangePoints("I", "A", "win", levels)).toBe(4);
+    expect(levelChangePoints("F", "E", "win", levels)).toBe(1);
+  });
+  it("lets E go down to F, and stops at the last level", () => {
+    expect(nextLevel("E", "down", levels)).toBe("F");
+    expect(levelStatus("I", -6, 5, levels)).toBeNull();
+    expect(levelStatus("E", -6, 5, levels)).toBe("down");
+  });
+  it("ignores a level that isn't in the list", () => {
+    expect(levelChangePoints("Z", "A", "win", levels)).toBeNull();
+  });
+});

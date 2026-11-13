@@ -1,5 +1,6 @@
 import { db } from "@/lib/db/client";
 import { levelChangePoints, levelStatus, nextLevel, type LevelStatus } from "./league-level-logic";
+import { fetchSkillLevels } from "./skill-levels";
 
 export type LeagueLevelRow = {
   studentId: string;
@@ -28,6 +29,7 @@ type MatchRow = {
 // had when its result was entered.
 export async function fetchLevelTracking(studentIds: string[]): Promise<Record<string, LeagueLevelRow>> {
   if (!studentIds.length) return {};
+  const levels = (await fetchSkillLevels())["12"];
 
   const { data: studentRows } = await db
     .from("students")
@@ -83,7 +85,7 @@ export async function fetchLevelTracking(studentIds: string[]): Promise<Record<s
       const mine = side === "a" ? m.frames_a : m.frames_b;
       const theirs = side === "a" ? m.frames_b : m.frames_a;
       const outcome = mine === theirs ? "draw" : mine > theirs ? "win" : "loss";
-      const pts = levelChangePoints(side === "a" ? m.level_a : m.level_b, side === "a" ? m.level_b : m.level_a, outcome);
+      const pts = levelChangePoints(side === "a" ? m.level_a : m.level_b, side === "a" ? m.level_b : m.level_a, outcome, levels);
       if (pts === null) continue;
       const t = totals.get(studentId) ?? { points: 0, matches: 0 };
       totals.set(studentId, { points: t.points + pts, matches: t.matches + 1 });
@@ -94,7 +96,7 @@ export async function fetchLevelTracking(studentIds: string[]): Promise<Record<s
     students.map((s) => {
       const t = totals.get(s.id) ?? { points: 0, matches: 0 };
       const points = Math.round(t.points * 100) / 100;
-      const status = levelStatus(s.skill_level, points, t.matches);
+      const status = levelStatus(s.skill_level, points, t.matches, levels);
       return [
         s.id,
         {
@@ -104,7 +106,7 @@ export async function fetchLevelTracking(studentIds: string[]): Promise<Record<s
           points,
           matches: t.matches,
           status,
-          nextLevel: status && s.skill_level ? nextLevel(s.skill_level, status) : null,
+          nextLevel: status && s.skill_level ? nextLevel(s.skill_level, status, levels) : null,
         },
       ];
     }),

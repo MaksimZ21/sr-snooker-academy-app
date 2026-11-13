@@ -157,7 +157,7 @@ export function LeagueScheduleView({
           days.map((day) => (
             <div key={day} className="flex flex-col gap-1">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-muted-foreground">
+                <p className="text-sm font-semibold">
                   {dayLabelHe(day)} · {shortDate(day)}
                 </p>
                 {canEdit && (

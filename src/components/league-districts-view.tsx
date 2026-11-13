@@ -336,7 +336,7 @@ export function LeagueDistrictsView({
                   {groups.map((group) => (
                     <div key={group.key} className="flex flex-col gap-2">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-medium text-muted-foreground">{group.title}</p>
+                        <p className="text-sm font-semibold">{group.title}</p>
                         {canEdit && /^\d{4}-\d{2}-\d{2}$/.test(group.key) && (
                           <ClearDayButton
                             day={group.key}

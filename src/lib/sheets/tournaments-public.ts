@@ -32,6 +32,9 @@ export type PublicTournament = {
   name: string;
   rulesUrl: string | null;
   completed: boolean;
+  // An external (multi-location) tournament: shown without the academy's
+  // branding — just the tournament's own name.
+  multiLocation: boolean;
   participants: PublicParticipant[];
   houses: HouseWithMatches[];
   knockoutMatches: KnockoutMatch[];
@@ -90,6 +93,7 @@ export async function fetchPublicTournament(slug: string): Promise<PublicTournam
     name: tournament.name as string,
     rulesUrl: (tournament.rules_url as string | null) ?? null,
     completed: tournament.completed as boolean,
+    multiLocation: tournament.type === "multi_location",
     participants,
     houses,
     knockoutMatches,

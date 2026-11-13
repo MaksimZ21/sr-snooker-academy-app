@@ -33,6 +33,7 @@ export function PublicTournamentView({
   });
   const tournament = data;
   const [search, setSearch] = useState("");
+  const [locationId, setLocationId] = useState<string | null>(null);
   const participantById = new Map(tournament.participants.map((p) => [p.id, p]));
   function lookup(id: string | null): PublicParticipant | null {
     return id ? participantById.get(id) ?? null : null;
@@ -96,10 +97,12 @@ export function PublicTournamentView({
     <div className="min-h-dvh bg-background" dir="rtl">
       {/* Hero */}
       <div className="bg-brand-gradient px-5 py-8 flex flex-col items-center text-center gap-3">
-        <Image src="/logo.png" alt="" width={52} height={52} className="object-contain" />
+        {!tournament.multiLocation && <Image src="/logo.png" alt="" width={52} height={52} className="object-contain" />}
         <div className="flex flex-col gap-1.5">
           <h1 className="text-2xl font-bold text-white leading-tight">{tournament.name}</h1>
-          <p className="text-xs text-white/60 tracking-wide">האקדמיה לסנוקר של שחר רוברג</p>
+          {!tournament.multiLocation && (
+            <p className="text-xs text-white/60 tracking-wide">האקדמיה לסנוקר של שחר רוברג</p>
+          )}
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-center">
           {tournament.completed && (
@@ -135,26 +138,55 @@ export function PublicTournamentView({
                   className="w-full rounded-xl border border-border/60 bg-card px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
                 {(() => {
-                  const visibleLocations = tournament.locations.filter((location) =>
-                    locationHasMatch(tournament.houses.filter((h) => h.location_id === location.id)),
+                  // One button per location (like the league districts); only
+                  // the picked location's houses show. The search narrows the
+                  // buttons to locations where that name plays.
+                  const visibleLocations = tournament.locations.filter(
+                    (location) =>
+                      tournament.houses.some((h) => h.location_id === location.id) &&
+                      locationHasMatch(tournament.houses.filter((h) => h.location_id === location.id)),
                   );
-                  if (normalizedSearch && visibleLocations.length === 0) {
-                    return <p className="text-center text-sm text-muted-foreground py-6">לא נמצאה התאמה</p>;
-                  }
-                  return visibleLocations.map((location) => {
-                    const locationHouses = tournament.houses.filter((h) => h.location_id === location.id);
-                    if (locationHouses.length === 0) return null;
+                  if (visibleLocations.length === 0) {
                     return (
-                      <div key={location.id} className="flex flex-col gap-3">
-                        <h3 className="text-sm font-semibold text-muted-foreground">{location.label}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {locationHouses.map((house) => (
-                            <HouseCard key={house.id} house={house} lookup={lookup} />
+                      <p className="text-center text-sm text-muted-foreground py-6">
+                        {normalizedSearch ? "לא נמצאה התאמה" : "עוד אין בתים"}
+                      </p>
+                    );
+                  }
+                  const selected = visibleLocations.find((l) => l.id === locationId) ?? visibleLocations[0];
+                  const locationHouses = tournament.houses.filter((h) => h.location_id === selected.id);
+                  return (
+                    <>
+                      {visibleLocations.length > 1 && (
+                        <div className="flex flex-wrap gap-2">
+                          {visibleLocations.map((location) => (
+                            <button
+                              key={location.id}
+                              type="button"
+                              onClick={() => setLocationId(location.id)}
+                              aria-pressed={location.id === selected.id}
+                              className={cn(
+                                "rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
+                                location.id === selected.id
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-card border-border/60 text-muted-foreground hover:text-foreground",
+                              )}
+                            >
+                              {location.label}
+                            </button>
                           ))}
                         </div>
+                      )}
+                      {visibleLocations.length === 1 && (
+                        <h3 className="text-sm font-semibold text-muted-foreground">{selected.label}</h3>
+                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {locationHouses.map((house) => (
+                          <HouseCard key={house.id} house={house} lookup={lookup} />
+                        ))}
                       </div>
-                    );
-                  });
+                    </>
+                  );
                 })()}
               </>
             ) : (
@@ -225,9 +257,11 @@ export function PublicTournamentView({
           <p className="text-center text-sm text-muted-foreground py-10">הטורניר טרם החל</p>
         )}
 
-        <p className="text-center text-xs text-muted-foreground/60 pt-2">
-          האקדמיה לסנוקר של שחר רוברג
-        </p>
+        {!tournament.multiLocation && (
+          <p className="text-center text-xs text-muted-foreground/60 pt-2">
+            האקדמיה לסנוקר של שחר רוברג
+          </p>
+        )}
       </div>
     </div>
   );

@@ -385,7 +385,11 @@ export function TournamentDetailView({
         {canEdit && (
           <div className="rounded-2xl border border-border/60 bg-card p-4">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">הוספת משתתף</p>
-            <TournamentParticipantPicker tournamentId={tournamentId} multiLocation={tournament.type === "multi_location"} />
+            <TournamentParticipantPicker
+              tournamentId={tournamentId}
+              multiLocation={tournament.type === "multi_location"}
+              locations={locations}
+            />
           </div>
         )}
 

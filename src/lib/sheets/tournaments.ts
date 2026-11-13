@@ -168,6 +168,50 @@ export async function searchStudents(query: string): Promise<StudentSearchResult
   return (data ?? []) as StudentSearchResult[];
 }
 
+// Many names at once for a multi-location tournament (pasted list, one per
+// line), optionally straight into a location. Plain names only — never
+// the students table. Names already in the tournament are skipped.
+export async function addLocalParticipantsBulk(
+  tournamentId: string,
+  names: string[],
+  locationId: string | null,
+): Promise<{ added: number; skipped: number }> {
+  const { data: tournament } = await db.from("tournaments").select("id, type").eq("id", tournamentId).maybeSingle();
+  if (!tournament) throw new Error("tournament not found");
+  if (tournament.type !== "multi_location") throw new Error("bulk add is only for a multi-location tournament");
+  if (locationId) {
+    const { data: loc } = await db
+      .from("tournament_locations")
+      .select("id")
+      .eq("id", locationId)
+      .eq("tournament_id", tournamentId)
+      .maybeSingle();
+    if (!loc) throw new Error("location not found");
+  }
+
+  const { data: existing } = await db.from("tournament_participants").select("local_name").eq("tournament_id", tournamentId);
+  const taken = new Set(((existing ?? []) as { local_name: string | null }[]).map((r) => (r.local_name ?? "").trim()));
+  const clean: string[] = [];
+  let skipped = 0;
+  for (const raw of names) {
+    const name = raw.replace(/\s+/g, " ").trim();
+    if (!name) continue;
+    if (taken.has(name)) {
+      skipped++;
+      continue;
+    }
+    taken.add(name);
+    clean.push(name);
+  }
+  if (clean.length) {
+    const { error } = await db
+      .from("tournament_participants")
+      .insert(clean.map((local_name) => ({ tournament_id: tournamentId, local_name, location_id: locationId })));
+    if (error) throw new Error(error.message);
+  }
+  return { added: clean.length, skipped };
+}
+
 export async function addTournamentParticipant(
   tournamentId: string,
   input: { studentId?: string; newStudentName?: string; localName?: string },
@@ -442,10 +486,13 @@ export async function addTournamentParticipantFromCrm(
 ): Promise<{ action: "added" | "already_registered" | "registration_closed" }> {
   const { data: tournament } = await db
     .from("tournaments")
-    .select("registration_closed")
+    .select("registration_closed, type")
     .eq("id", tournamentId)
     .maybeSingle();
   if (tournament?.registration_closed) return { action: "registration_closed" };
+  // A multi-location tournament is entered by hand only and never touches
+  // the students table, so a CRM registration for it is ignored.
+  if (tournament?.type === "multi_location") return { action: "registration_closed" };
 
   const { appendStudent, findStudentIdByPhone } = await import("./students");
   let studentId = input.phone ? await findStudentIdByPhone(input.phone) : null;

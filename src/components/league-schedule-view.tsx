@@ -1,21 +1,19 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { addDays, format, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, ClipboardCopy, ClipboardPaste, X } from "lucide-react";
+import { ClipboardCopy, ClipboardPaste, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
 import {
   buildOpenMatchesText,
-  shortDate,
   type ScheduleMatch,
   type ScheduleParticipant,
 } from "@/lib/sheets/league-schedule-parse";
 import { LeagueSchedulePasteDialog } from "@/components/league-schedule-paste-dialog";
 import { ClearDayButton } from "@/components/league-clear-day-button";
+import { DayStrip } from "@/components/day-strip";
 
 type Participant = { id: string; student: { first_name: string; last_name: string } };
 type DistrictMatch = ScheduleMatch & { round: number; frames_b: number | null };
@@ -33,9 +31,7 @@ export function LeagueScheduleView({
   canEdit: boolean;
 }) {
   const qc = useQueryClient();
-  const [anchor, setAnchor] = useState(todayIsoTel());
   const [pasteOpen, setPasteOpen] = useState(false);
-  const { startIso, endIso } = weekRangeFor(anchor);
 
   // Same key and URL as LeagueDistrictsView, so the two share one cache entry.
   const { data, isLoading } = useQuery({
@@ -102,10 +98,8 @@ export function LeagueScheduleView({
     toast.success(`שובצו ${assignments.length} משחקים`);
   }
 
-  const weekMatches = allMatches.filter(
-    (m) => m.scheduled_date !== null && m.scheduled_date >= startIso && m.scheduled_date <= endIso,
-  );
-  const days = [...new Set(weekMatches.map((m) => m.scheduled_date as string))].sort();
+  const datedMatches = allMatches.filter((m) => m.scheduled_date !== null);
+  const days = [...new Set(datedMatches.map((m) => m.scheduled_date as string))].sort();
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
@@ -124,73 +118,53 @@ export function LeagueScheduleView({
         )}
       </div>
 
-      <div className="flex items-center justify-between px-4 pb-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => setAnchor(format(addDays(parseISO(startIso), -7), "yyyy-MM-dd"))}
-          aria-label="שבוע קודם"
-        >
-          <ChevronRight size={16} />
-        </Button>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {shortDate(startIso)} – {shortDate(endIso)}
-        </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => setAnchor(format(addDays(parseISO(startIso), 7), "yyyy-MM-dd"))}
-          aria-label="שבוע הבא"
-        >
-          <ChevronLeft size={16} />
-        </Button>
-      </div>
-
-      <div className="px-4 pb-4 flex flex-col gap-3">
+      <div className="px-4 pb-4">
         {isLoading ? (
           <Skeleton className="h-20 w-full rounded-xl" />
         ) : days.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">אין משחקים משובצים בשבוע הזה</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">אין משחקים משובצים</p>
         ) : (
-          days.map((day) => (
-            <div key={day} className="flex flex-col gap-1">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold">
-                  {dayLabelHe(day)} · {shortDate(day)}
-                </p>
-                {canEdit && (
-                  <ClearDayButton
-                    day={day}
-                    matches={weekMatches.filter((m) => m.scheduled_date === day)}
-                    busy={scheduleMut.isPending}
-                    onClear={(ids) =>
-                      scheduleMut.mutate(
-                        ids.map((matchId) => ({ matchId, date: null })),
-                        { onSuccess: () => toast.success(`בוטל שיבוץ של ${ids.length} משחקים`) },
-                      )
-                    }
-                  />
-                )}
-              </div>
-              {weekMatches
-                .filter((m) => m.scheduled_date === day)
-                .map((m) => (
-                  <ScheduleRow
-                    key={`${m.id}:${m.frames_a ?? ""}:${m.frames_b ?? ""}`}
-                    nameA={nameOf(m.participant_a_id)}
-                    nameB={nameOf(m.participant_b_id)}
-                    districtLabel={districtLabels.get(m.district_id) ?? ""}
-                    match={m}
-                    canEdit={canEdit}
-                    busy={resultMut.isPending || scheduleMut.isPending}
-                    onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
-                    onRemove={() => scheduleMut.mutate([{ matchId: m.id, date: null }])}
-                  />
-                ))}
-            </div>
-          ))
+          <DayStrip
+            items={days.map((day) => {
+              const dayMatches = datedMatches.filter((m) => m.scheduled_date === day);
+              return {
+                day,
+                count: dayMatches.length,
+                content: (
+                  <div className="flex flex-col gap-1">
+                    {canEdit && (
+                      <div className="flex justify-end">
+                        <ClearDayButton
+                          day={day}
+                          matches={dayMatches}
+                          busy={scheduleMut.isPending}
+                          onClear={(ids) =>
+                            scheduleMut.mutate(
+                              ids.map((matchId) => ({ matchId, date: null })),
+                              { onSuccess: () => toast.success(`בוטל שיבוץ של ${ids.length} משחקים`) },
+                            )
+                          }
+                        />
+                      </div>
+                    )}
+                    {dayMatches.map((m) => (
+                      <ScheduleRow
+                        key={`${m.id}:${m.frames_a ?? ""}:${m.frames_b ?? ""}`}
+                        nameA={nameOf(m.participant_a_id)}
+                        nameB={nameOf(m.participant_b_id)}
+                        districtLabel={districtLabels.get(m.district_id) ?? ""}
+                        match={m}
+                        canEdit={canEdit}
+                        busy={resultMut.isPending || scheduleMut.isPending}
+                        onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
+                        onRemove={() => scheduleMut.mutate([{ matchId: m.id, date: null }])}
+                      />
+                    ))}
+                  </div>
+                ),
+              };
+            })}
+          />
         )}
       </div>
 

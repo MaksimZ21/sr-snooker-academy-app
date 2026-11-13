@@ -180,9 +180,9 @@ export function PublicTournamentView({
                       {visibleLocations.length === 1 && (
                         <h3 className="text-sm font-semibold text-muted-foreground">{selected.label}</h3>
                       )}
-                      <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2">
+                      <div className="flex flex-col gap-3 md:flex-row md:overflow-x-auto md:snap-x md:snap-mandatory md:pb-2">
                         {locationHouses.map((house) => (
-                          <div key={house.id} className="snap-start shrink-0 w-[88%] sm:w-[440px]">
+                          <div key={house.id} className="md:snap-start md:shrink-0 md:w-[440px]">
                             <HouseCard house={house} lookup={lookup} />
                           </div>
                         ))}

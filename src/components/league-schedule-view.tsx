@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ClipboardCopy, ClipboardPaste, X } from "lucide-react";
+import { ClipboardCopy, ClipboardPaste, ImageDown, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,9 @@ import {
 import { LeagueSchedulePasteDialog } from "@/components/league-schedule-paste-dialog";
 import { ClearDayButton } from "@/components/league-clear-day-button";
 import { DayStrip } from "@/components/day-strip";
+import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
+import { shortDate } from "@/lib/sheets/league-schedule-parse";
+import { drawScheduleImage } from "@/lib/league-schedule-image";
 
 type Participant = { id: string; student: { first_name: string; last_name: string } };
 type DistrictMatch = ScheduleMatch & { round: number; frames_b: number | null };
@@ -93,6 +96,42 @@ export function LeagueScheduleView({
     }
   }
 
+  // The week (Sun-Sat) of the next day that has matches, from today on.
+  async function downloadWeekImage() {
+    const today = todayIsoTel();
+    const nextDay = days.find((d) => d >= today);
+    if (!nextDay) {
+      toast.error("אין משחקים משובצים מהיום והלאה");
+      return;
+    }
+    const { startIso, endIso } = weekRangeFor(nextDay);
+    const weekDays = days.filter((d) => d >= startIso && d <= endIso);
+    try {
+      const blob = await drawScheduleImage({
+        leagueName,
+        rangeLabel: `${shortDate(startIso)} – ${shortDate(endIso)}`,
+        days: weekDays.map((day) => ({
+          title: `${dayLabelHe(day)} · ${shortDate(day)}`,
+          matches: datedMatches
+            .filter((m) => m.scheduled_date === day)
+            .map((m) => ({
+              a: nameOf(m.participant_a_id),
+              b: nameOf(m.participant_b_id),
+              district: districts.length > 1 ? (districtLabels.get(m.district_id) ?? "") : "",
+            })),
+        })),
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `לוז ${leagueName} ${shortDate(startIso)}-${shortDate(endIso)}.png`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      toast.error("יצירת התמונה נכשלה");
+    }
+  }
+
   async function savePasted(assignments: { matchId: string; date: string }[]) {
     await scheduleMut.mutateAsync(assignments);
     toast.success(`שובצו ${assignments.length} משחקים`);
@@ -104,6 +143,10 @@ export function LeagueScheduleView({
   return (
     <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
       <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-2 flex-wrap">
+        <Button size="sm" variant="outline" onClick={downloadWeekImage} disabled={days.length === 0}>
+          <ImageDown size={14} className="ml-1.5" />
+          הורד תמונה של השבוע
+        </Button>
         {canEdit && (
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={copyOpenMatches} disabled={districts.length === 0}>

@@ -15,6 +15,7 @@ import {
   type ScheduleParticipant,
 } from "@/lib/sheets/league-schedule-parse";
 import { LeagueSchedulePasteDialog } from "@/components/league-schedule-paste-dialog";
+import { ClearDayButton } from "@/components/league-clear-day-button";
 
 type Participant = { id: string; student: { first_name: string; last_name: string } };
 type DistrictMatch = ScheduleMatch & { round: number; frames_b: number | null };
@@ -155,9 +156,24 @@ export function LeagueScheduleView({
         ) : (
           days.map((day) => (
             <div key={day} className="flex flex-col gap-1">
-              <p className="text-xs font-medium text-muted-foreground">
-                {dayLabelHe(day)} · {shortDate(day)}
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {dayLabelHe(day)} · {shortDate(day)}
+                </p>
+                {canEdit && (
+                  <ClearDayButton
+                    day={day}
+                    matches={weekMatches.filter((m) => m.scheduled_date === day)}
+                    busy={scheduleMut.isPending}
+                    onClear={(ids) =>
+                      scheduleMut.mutate(
+                        ids.map((matchId) => ({ matchId, date: null })),
+                        { onSuccess: () => toast.success(`בוטל שיבוץ של ${ids.length} משחקים`) },
+                      )
+                    }
+                  />
+                )}
+              </div>
               {weekMatches
                 .filter((m) => m.scheduled_date === day)
                 .map((m) => (

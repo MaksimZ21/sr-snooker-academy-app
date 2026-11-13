@@ -12,6 +12,7 @@ import { computeLeagueStandings } from "@/lib/sheets/tournament-logic";
 import { LeagueStandingsTable, remainingMatchesByParticipant, type StandingLevel } from "@/components/league-standings-table";
 import type { LeagueLevelRow } from "@/lib/sheets/league-levels";
 import { DistrictSwitcher } from "@/components/district-switcher";
+import { ClearDayButton } from "@/components/league-clear-day-button";
 import { dayLabelHe } from "@/lib/date";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 
@@ -183,11 +184,11 @@ export function LeagueDistrictsView({
   });
 
   const scheduleMut = useMutation({
-    mutationFn: async ({ matchId, date }: { matchId: string; date: string | null }) => {
+    mutationFn: async (assignments: { matchId: string; date: string | null }[]) => {
       const r = await fetch(`/api/leagues/${leagueId}/schedule`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ assignments: [{ matchId, date }] }),
+        body: JSON.stringify({ assignments }),
       });
       if (!r.ok) {
         const body = (await r.json().catch(() => null)) as { error?: string } | null;
@@ -334,7 +335,22 @@ export function LeagueDistrictsView({
                 <div className="flex flex-col gap-3 px-4 py-3 border-t border-border/40">
                   {groups.map((group) => (
                     <div key={group.key} className="flex flex-col gap-2">
-                      <p className="text-xs font-medium text-muted-foreground">{group.title}</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-medium text-muted-foreground">{group.title}</p>
+                        {canEdit && /^\d{4}-\d{2}-\d{2}$/.test(group.key) && (
+                          <ClearDayButton
+                            day={group.key}
+                            matches={group.matches}
+                            busy={scheduleMut.isPending}
+                            onClear={(ids) =>
+                              scheduleMut.mutate(
+                                ids.map((matchId) => ({ matchId, date: null })),
+                                { onSuccess: () => toast.success(`בוטל שיבוץ של ${ids.length} משחקים`) },
+                              )
+                            }
+                          />
+                        )}
+                      </div>
                       {group.matches
                         .map((m) => {
                           const nameA = participantName(m.participant_a_id);
@@ -359,7 +375,7 @@ export function LeagueDistrictsView({
                               canEdit={canEdit}
                               onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
                               saving={resultMut.isPending}
-                              onSchedule={(date) => scheduleMut.mutate({ matchId: m.id, date })}
+                              onSchedule={(date) => scheduleMut.mutate([{ matchId: m.id, date }])}
                             />
                           );
                         })}

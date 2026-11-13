@@ -5,7 +5,7 @@ import { PublicBreaksPanel } from "@/components/public-breaks-panel";
 import { PublicLeagueBoard } from "@/components/public-league-board";
 import type { PublicLeague, PublicLeagueParticipant } from "@/lib/sheets/leagues-public";
 import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
-import { DayStrip } from "@/components/day-strip";
+import { DayColumns } from "@/components/day-strip";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 
 export function PublicLeagueView({ league }: { league: PublicLeague }) {
@@ -28,7 +28,7 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
     if (days.length === 0) return null;
     return (
       <div className="px-4 py-3">
-        <DayStrip
+        <DayColumns
           items={days.map((day) => {
             const dayMatches = matches.filter((m) => m.scheduled_date === day);
             return {
@@ -39,13 +39,14 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
                   {dayMatches.map((m) => {
                     const played = m.frames_a !== null && m.frames_b !== null;
                     return (
-                      <div key={m.id} className="flex items-center gap-2 text-sm">
-                        <span className="flex-1 min-w-0 truncate">
-                          {lookup(m.participant_a_id)?.name ?? "?"} נגד {lookup(m.participant_b_id)?.name ?? "?"}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground shrink-0">
-                          {districtLabel.get(m.district_id)}
-                        </span>
+                      <div key={m.id} className="flex items-center gap-2 text-sm py-1 border-b border-border/30 last:border-b-0">
+                        <div className="flex-1 min-w-0">
+                          <p className="leading-snug">
+                            {lookup(m.participant_a_id)?.name ?? "?"} <span className="text-muted-foreground">נגד</span>{" "}
+                            {lookup(m.participant_b_id)?.name ?? "?"}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">{districtLabel.get(m.district_id)}</p>
+                        </div>
                         {played ? (
                           <span className="font-medium tabular-nums shrink-0">{m.frames_a} - {m.frames_b}</span>
                         ) : (

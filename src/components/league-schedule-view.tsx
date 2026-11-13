@@ -13,7 +13,8 @@ import {
 } from "@/lib/sheets/league-schedule-parse";
 import { LeagueSchedulePasteDialog } from "@/components/league-schedule-paste-dialog";
 import { ClearDayButton } from "@/components/league-clear-day-button";
-import { DayStrip } from "@/components/day-strip";
+import { DayColumns } from "@/components/day-strip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 import { drawScheduleImage } from "@/lib/league-schedule-image";
@@ -21,6 +22,8 @@ import { drawScheduleImage } from "@/lib/league-schedule-image";
 type Participant = { id: string; student: { first_name: string; last_name: string } };
 type DistrictMatch = ScheduleMatch & { round: number; frames_b: number | null };
 type District = { id: string; label: string; matches: DistrictMatch[] };
+
+const ALL_DISTRICTS = "__all__";
 
 export function LeagueScheduleView({
   leagueId,
@@ -35,6 +38,7 @@ export function LeagueScheduleView({
 }) {
   const qc = useQueryClient();
   const [pasteOpen, setPasteOpen] = useState(false);
+  const [districtFilter, setDistrictFilter] = useState(ALL_DISTRICTS);
 
   // Same key and URL as LeagueDistrictsView, so the two share one cache entry.
   const { data, isLoading } = useQuery({
@@ -108,7 +112,7 @@ export function LeagueScheduleView({
     const weekDays = days.filter((d) => d >= startIso && d <= endIso);
     try {
       const blob = await drawScheduleImage({
-        leagueName,
+        leagueName: filteredDistrict ? `${leagueName} · ${filteredDistrict.label}` : leagueName,
         rangeLabel: `${shortDate(startIso)} – ${shortDate(endIso)}`,
         days: weekDays.map((day) => ({
           title: `${dayLabelHe(day)} · ${shortDate(day)}`,
@@ -117,7 +121,7 @@ export function LeagueScheduleView({
             .map((m) => ({
               a: nameOf(m.participant_a_id),
               b: nameOf(m.participant_b_id),
-              district: districts.length > 1 ? (districtLabels.get(m.district_id) ?? "") : "",
+              district: showDistrict ? (districtLabels.get(m.district_id) ?? "") : "",
             })),
         })),
       });
@@ -137,7 +141,13 @@ export function LeagueScheduleView({
     toast.success(`שובצו ${assignments.length} משחקים`);
   }
 
-  const datedMatches = allMatches.filter((m) => m.scheduled_date !== null);
+  // Which district the schedule shows; ALL_DISTRICTS = every district.
+  const filteredDistrict = districts.find((d) => d.id === districtFilter);
+  const datedMatches = allMatches.filter(
+    (m) => m.scheduled_date !== null && (!filteredDistrict || m.district_id === filteredDistrict.id),
+  );
+  // The district name on each row only when several districts are mixed.
+  const showDistrict = !filteredDistrict && districts.length > 1;
   const days = [...new Set(datedMatches.map((m) => m.scheduled_date as string))].sort();
 
   return (
@@ -161,13 +171,33 @@ export function LeagueScheduleView({
         )}
       </div>
 
+      {districts.length > 1 && (
+        <div className="flex items-center gap-2 px-4 pb-2 text-sm">
+          <span className="text-muted-foreground">מחוז:</span>
+          <Select value={districtFilter} onValueChange={(v) => setDistrictFilter(v ?? ALL_DISTRICTS)}>
+            <SelectTrigger className="h-8 w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_DISTRICTS}>כל המחוזות</SelectItem>
+              {districts.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <div className="px-4 pb-4">
         {isLoading ? (
           <Skeleton className="h-20 w-full rounded-xl" />
         ) : days.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">אין משחקים משובצים</p>
         ) : (
-          <DayStrip
+          <DayColumns
+            key={districtFilter}
             items={days.map((day) => {
               const dayMatches = datedMatches.filter((m) => m.scheduled_date === day);
               return {
@@ -195,7 +225,7 @@ export function LeagueScheduleView({
                         key={`${m.id}:${m.frames_a ?? ""}:${m.frames_b ?? ""}`}
                         nameA={nameOf(m.participant_a_id)}
                         nameB={nameOf(m.participant_b_id)}
-                        districtLabel={districtLabels.get(m.district_id) ?? ""}
+                        districtLabel={showDistrict ? (districtLabels.get(m.district_id) ?? "") : ""}
                         match={m}
                         canEdit={canEdit}
                         busy={resultMut.isPending || scheduleMut.isPending}
@@ -263,11 +293,12 @@ function ScheduleRow({
   }
 
   return (
-    <div className="flex items-center gap-2 text-sm py-1">
-      <div className="flex-1 min-w-0">
-        <p className="truncate">{nameA} נגד {nameB}</p>
-        <p className="text-[11px] text-muted-foreground">{districtLabel}</p>
-      </div>
+    <div className="flex flex-col gap-1 text-sm py-1.5 border-b border-border/30 last:border-b-0">
+      <p className="leading-snug">
+        {nameA} <span className="text-muted-foreground">נגד</span> {nameB}
+      </p>
+      <div className="flex items-center gap-2">
+      <span className="flex-1 min-w-0 truncate text-[11px] text-muted-foreground">{districtLabel}</span>
       {canEdit ? (
         <>
           <Input
@@ -308,6 +339,7 @@ function ScheduleRow({
       ) : (
         <span className="text-muted-foreground text-xs">טרם שוחק</span>
       )}
+      </div>
     </div>
   );
 }

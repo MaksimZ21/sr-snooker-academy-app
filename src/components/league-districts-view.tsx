@@ -45,6 +45,9 @@ type DistrictWithMatches = {
 };
 
 const NO_HANDICAP = "__none__";
+const NO_PICK = "__pick__";
+const ALL_MATCHES = "__all__";
+const OPEN_MATCHES = "__open__";
 
 // Who gets how many points per frame, from the district's handicap table
 // and the two players' 12 ft levels. null when there's nothing to show.
@@ -81,6 +84,8 @@ export function LeagueDistrictsView({
   const [newNumCycles, setNewNumCycles] = useState("1");
   // null = not picked by hand: follows the handicap table with the same name.
   const [newHandicap, setNewHandicap] = useState<string | null>(null);
+  // Per district: whose matches are listed under the table ("" = none yet).
+  const [matchPick, setMatchPick] = useState<Record<string, string>>({});
 
   const { data: handicapData } = useQuery({
     queryKey: ["settings", "handicap"],
@@ -259,7 +264,17 @@ export function LeagueDistrictsView({
           ].sort();
           const playedNoDate = district.matches.filter((m) => !m.scheduled_date && m.frames_a !== null);
           const unscheduled = district.matches.filter((m) => !m.scheduled_date && m.frames_a === null);
-          const groups: { key: string; title: string; matches: DistrictMatch[] }[] = [
+          const pick = matchPick[district.id] ?? "";
+          const pickFilter = (m: DistrictMatch) =>
+            pick === ALL_MATCHES
+              ? true
+              : pick === OPEN_MATCHES
+                ? m.frames_a === null && !m.scheduled_date
+                : m.participant_a_id === pick || m.participant_b_id === pick;
+          const memberOptions = district.memberIds
+            .map((id) => ({ id, name: participantName(id) }))
+            .sort((a, b) => a.name.localeCompare(b.name, "he"));
+          const allGroups: { key: string; title: string; matches: DistrictMatch[] }[] = [
             ...datedDays.map((day) => ({
               key: day,
               title: `${dayLabelHe(day)} · ${shortDate(day)}`,
@@ -270,6 +285,11 @@ export function LeagueDistrictsView({
               ? [{ key: "open", title: `עוד לא שובצו (${unscheduled.length})`, matches: unscheduled }]
               : []),
           ];
+          const groups = pick
+            ? allGroups
+                .map((g) => ({ ...g, matches: g.matches.filter(pickFilter) }))
+                .filter((g) => g.matches.length > 0)
+            : [];
           return {
             id: district.id,
             label: district.label,
@@ -333,6 +353,37 @@ export function LeagueDistrictsView({
 
               {hasFixtures && (
                 <div className="flex flex-col gap-3 px-4 py-3 border-t border-border/40">
+                  <div className="flex items-center gap-2 flex-wrap text-sm">
+                    <span className="font-semibold">משחקים ותוצאות:</span>
+                    <Select
+                      value={pick || NO_PICK}
+                      onValueChange={(v) =>
+                        setMatchPick((prev) => ({ ...prev, [district.id]: !v || v === NO_PICK ? "" : v }))
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-52">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NO_PICK}>בחר שחקן…</SelectItem>
+                        <SelectItem value={OPEN_MATCHES}>עוד לא שובצו ({unscheduled.length})</SelectItem>
+                        <SelectItem value={ALL_MATCHES}>כל המשחקים ({district.matches.length})</SelectItem>
+                        {memberOptions.map((o) => (
+                          <SelectItem key={o.id} value={o.id}>
+                            {o.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {!pick && (
+                    <p className="text-xs text-muted-foreground">
+                      בחר שחקן כדי לראות את המשחקים שלו ולהזין תוצאה או תאריך. אפשר להזין תוצאות גם ישר מהלוז.
+                    </p>
+                  )}
+                  {pick && groups.length === 0 && (
+                    <p className="text-xs text-muted-foreground">אין משחקים</p>
+                  )}
                   {groups.map((group) => (
                     <div key={group.key} className="flex flex-col gap-2">
                       <div className="flex items-center justify-between gap-2">

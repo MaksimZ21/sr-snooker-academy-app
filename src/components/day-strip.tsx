@@ -1,15 +1,13 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { dayLabelHe, todayIsoTel } from "@/lib/date";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 
 export type DayColumnItem = { day: string; count: number; content: React.ReactNode };
 
-// The schedule as day columns side by side, swiped (phone) or scrolled with
-// the arrows (desktop). Opens scrolled to today or the next day with matches.
+// The schedule as day columns side by side: swiped sideways on a phone, all
+// visible in a grid on a wider screen (no scrolling). Opens scrolled to today or the next day with matches.
 // `content` may be server-rendered JSX (the public league page).
 export function DayColumns({ items }: { items: DayColumnItem[] }) {
   const today = todayIsoTel();
@@ -26,7 +24,7 @@ export function DayColumns({ items }: { items: DayColumnItem[] }) {
     if (!scroller || !col) return;
     let done = false;
     const align = () => {
-      if (done || scroller.clientWidth === 0) return;
+      if (done || scroller.clientWidth === 0 || scroller.scrollWidth <= scroller.clientWidth) return;
       done = true;
       scroller.scrollBy({ left: col.getBoundingClientRect().right - scroller.getBoundingClientRect().right });
     };
@@ -39,29 +37,12 @@ export function DayColumns({ items }: { items: DayColumnItem[] }) {
 
   if (items.length === 0) return null;
 
-  // One column's width plus the gap. RTL: later days are to the left.
-  function step(dir: 1 | -1) {
-    const scroller = scrollerRef.current;
-    const first = scroller?.firstElementChild as HTMLElement | null;
-    if (!scroller || !first) return;
-    scroller.scrollBy({ left: -dir * (first.offsetWidth + 12), behavior: "smooth" });
-  }
-
   return (
     <div className="relative">
-      {items.length > 1 && (
-        <div className="hidden md:flex justify-between gap-2 pb-2">
-          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => step(-1)}>
-            <ChevronRight size={14} className="ml-1" />
-            ימים קודמים
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => step(1)}>
-            ימים הבאים
-            <ChevronLeft size={14} className="mr-1" />
-          </Button>
-        </div>
-      )}
-      <div ref={scrollerRef} className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 [scrollbar-width:thin]">
+      <div
+        ref={scrollerRef}
+        className="flex gap-3 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-3 lg:grid-cols-4 md:overflow-visible"
+      >
         {items.map((item) => (
           <div
             key={item.day}
@@ -70,7 +51,7 @@ export function DayColumns({ items }: { items: DayColumnItem[] }) {
               else colRefs.current.delete(item.day);
             }}
             className={cn(
-              "snap-start shrink-0 w-[85%] sm:w-80 rounded-xl border bg-card flex flex-col",
+              "snap-start shrink-0 w-[85%] md:w-auto rounded-xl border bg-card flex flex-col",
               item.day === today ? "border-primary" : "border-border/60",
             )}
           >

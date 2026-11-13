@@ -77,7 +77,7 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
   );
 
   return (
-    <div className="min-h-dvh bg-background" dir="rtl">
+    <div className="min-h-dvh bg-background overflow-x-clip" dir="rtl">
       {/* Hero */}
       <div className="relative bg-brand-gradient px-5 py-8 flex flex-col items-center text-center gap-3">
         <PublicThemeToggle className="absolute top-3 left-3" />

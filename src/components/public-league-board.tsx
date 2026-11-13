@@ -12,7 +12,6 @@ type DistrictPanel = {
   rounds: React.ReactNode | null;
 };
 
-const ALL = "__all__";
 type Tab = "schedule" | "standings" | "breaks" | "rounds";
 type Panel = Tab;
 
@@ -50,11 +49,9 @@ export function PublicLeagueBoard({
 }) {
   const [districtId, setDistrictId] = useState(districts[0]?.id);
   const [tab, setTab] = useState<Tab>("standings");
-  // Which district the schedule shows; ALL = every district.
-  const [scheduleDistrict, setScheduleDistrict] = useState(ALL);
-  const scheduleBody =
-    scheduleDistrict === ALL ? schedule : (districts.find((d) => d.id === scheduleDistrict)?.schedule ?? null);
   const district = districts.find((d) => d.id === districtId) ?? districts[0];
+  // The schedule follows the district picked with the district buttons.
+  const scheduleBody = district ? district.schedule : schedule;
 
   // Desktop only: each list can be folded away to cut the scrolling. The
   // long breaks list starts folded. On a phone the tabs already show one
@@ -116,41 +113,8 @@ export function PublicLeagueBoard({
         ))}
       </div>
 
-      {/* Desktop: the schedule stays on top. Phone: it's one of the tabs. */}
-      <div className={tab === "schedule" ? (schedule ? "block" : "block md:hidden") : schedule ? "hidden md:block" : "hidden"}>
-        {card(
-          "schedule",
-          "לוז",
-          <>
-            {districts.length > 1 && (
-              <div className="flex gap-1.5 overflow-x-auto px-4 pb-1">
-                {[{ id: ALL, label: "כל המחוזות" }, ...districts].map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => setScheduleDistrict(d.id)}
-                    aria-pressed={d.id === scheduleDistrict}
-                    className={cn(
-                      "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                      d.id === scheduleDistrict
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-card border-border/60 text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div key={scheduleDistrict}>
-              {scheduleBody ?? <p className="py-4 text-center text-sm text-muted-foreground">אין משחקים מתוכננים</p>}
-            </div>
-          </>,
-        )}
-      </div>
-
       {districts.length > 1 && (
-        <div className={cn("flex flex-wrap gap-2", tab === "schedule" && "hidden md:flex")}>
+        <div className="flex flex-wrap gap-2">
           {districts.map((d) => (
             <Pill key={d.id} active={d.id === district?.id} onClick={() => setDistrictId(d.id)}>
               {d.label}
@@ -158,6 +122,19 @@ export function PublicLeagueBoard({
           ))}
         </div>
       )}
+
+      {/* Desktop: the schedule stays on top. Phone: it's one of the tabs. */}
+      <div className={tab === "schedule" ? (schedule ? "block" : "block md:hidden") : schedule ? "hidden md:block" : "hidden"}>
+        {card(
+          "schedule",
+          "לוז",
+          <>
+            <div key={district?.id ?? "all"}>
+              {scheduleBody ?? <p className="py-4 text-center text-sm text-muted-foreground">אין משחקים מתוכננים</p>}
+            </div>
+          </>,
+        )}
+      </div>
 
       {/* Desktop: district table with its results right under it, breaks beside. */}
       <div className="grid gap-4 md:grid-cols-[3fr_2fr] md:items-start">

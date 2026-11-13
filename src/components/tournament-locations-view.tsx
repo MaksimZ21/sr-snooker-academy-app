@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { computeHouseStandings, formatHandicapLabel } from "@/lib/sheets/tournament-logic";
+import { cn } from "@/lib/utils";
 
 type Participant = {
   id: string;
@@ -59,6 +60,8 @@ export function TournamentLocationsView({
   const [newHouseLabels, setNewHouseLabels] = useState<Record<string, string>>({});
   // Per house: the names typed/pasted to add straight into it (open = key present).
   const [houseNames, setHouseNames] = useState<Record<string, string>>({});
+  // One location at a time, picked with its button.
+  const [locationId, setLocationId] = useState<string | null>(null);
 
   const { data: locationsData, isLoading: locationsLoading } = useQuery({
     queryKey: ["tournament-locations", tournamentId],
@@ -208,7 +211,34 @@ export function TournamentLocationsView({
           עדיין אין מיקומים
         </div>
       ) : (
-        locations.map((location) => {
+        (() => {
+          const selected = locations.find((l) => l.id === locationId) ?? locations[0];
+          return (
+            <>
+              {locations.length > 1 && (
+                <div className="flex flex-wrap gap-2">
+                  {locations.map((l) => {
+                    const count = participants.filter((p) => p.location_id === l.id).length;
+                    return (
+                      <button
+                        key={l.id}
+                        type="button"
+                        onClick={() => setLocationId(l.id)}
+                        aria-pressed={l.id === selected.id}
+                        className={cn(
+                          "rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
+                          l.id === selected.id
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-card border-border/60 text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {l.label} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {[selected].map((location) => {
           const locationHouses = houses.filter((h) => h.location_id === location.id);
           const unassigned = participants.filter((p) => p.location_id === location.id && !p.house_id);
           return (
@@ -265,10 +295,15 @@ export function TournamentLocationsView({
                 </div>
               )}
 
+              {locationHouses.length > 0 && (
+              <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-4 pb-4 pt-3 border-t border-border/40">
               {locationHouses.map((house) => {
                 const standings = computeHouseStandings(house.memberIds, house.matches);
                 return (
-                  <div key={house.id} className="border-t border-border/40">
+                  <div
+                    key={house.id}
+                    className="snap-start shrink-0 w-[88%] sm:w-[440px] rounded-xl border border-border/60 bg-card overflow-hidden"
+                  >
                     <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
                       <p className="text-sm font-semibold">{house.label}</p>
                       {canEdit && (
@@ -394,9 +429,14 @@ export function TournamentLocationsView({
                   </div>
                 );
               })}
+              </div>
+              )}
             </div>
           );
-        })
+              })}
+            </>
+          );
+        })()
       )}
     </div>
   );

@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { HandicapDistrict } from "@/lib/sheets/handicap";
 import { computeLeagueStandings } from "@/lib/sheets/tournament-logic";
 import { LeagueStandingsTable, remainingMatchesByParticipant, type StandingLevel } from "@/components/league-standings-table";
 import type { LeagueLevelRow } from "@/lib/sheets/league-levels";
@@ -37,7 +39,32 @@ type DistrictWithMatches = {
   num_cycles: number;
   matches: DistrictMatch[];
   memberIds: string[];
+  handicap_district_id: string | null;
+  handicap: HandicapDistrict | null;
 };
+
+const NO_HANDICAP = "__none__";
+
+// Who gets how many points per frame, from the district's handicap table
+// and the two players' 12 ft levels. null when there's nothing to show.
+function handicapText(
+  handicap: HandicapDistrict | null,
+  levelA: string | null | undefined,
+  levelB: string | null | undefined,
+  nameA: string,
+  nameB: string,
+): string | null {
+  if (!handicap) return null;
+  if (!levelA || !levelB) return "פור: חסרה דרגה לאחד השחקנים";
+  const a = handicap.values[levelA];
+  const b = handicap.values[levelB];
+  if (a === undefined || b === undefined) {
+    const missing = a === undefined ? levelA : levelB;
+    return `פור: אין מספר לדרגה ${missing} בטבלה של ${handicap.name}`;
+  }
+  if (a === b) return "ללא פור";
+  return a > b ? `${nameA} מקבל ${a - b} נק׳ לפריים` : `${nameB} מקבל ${b - a} נק׳ לפריים`;
+}
 
 export function LeagueDistrictsView({
   leagueId,
@@ -51,6 +78,21 @@ export function LeagueDistrictsView({
   const qc = useQueryClient();
   const [newLabel, setNewLabel] = useState("");
   const [newNumCycles, setNewNumCycles] = useState("1");
+  // null = not picked by hand: follows the handicap table with the same name.
+  const [newHandicap, setNewHandicap] = useState<string | null>(null);
+
+  const { data: handicapData } = useQuery({
+    queryKey: ["settings", "handicap"],
+    queryFn: async () => {
+      const r = await fetch("/api/settings/handicap");
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()) as { districts: HandicapDistrict[] };
+    },
+    enabled: canEdit,
+  });
+  const handicapTables = handicapData?.districts ?? [];
+  const autoHandicap = handicapTables.find((h) => h.name === newLabel.trim())?.id ?? NO_HANDICAP;
+  const chosenHandicap = newHandicap ?? autoHandicap;
 
   const { data, isLoading } = useQuery({
     queryKey: ["league-districts", leagueId],
@@ -83,7 +125,11 @@ export function LeagueDistrictsView({
       const r = await fetch(`/api/leagues/${leagueId}/districts`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ label, numCycles }),
+        body: JSON.stringify({
+          label,
+          numCycles,
+          handicapDistrictId: chosenHandicap === NO_HANDICAP ? null : chosenHandicap,
+        }),
       });
       if (!r.ok) throw new Error("failed");
     },
@@ -91,6 +137,7 @@ export function LeagueDistrictsView({
       toast.success("המחוז נוסף");
       setNewLabel("");
       setNewNumCycles("1");
+      setNewHandicap(null);
       qc.invalidateQueries({ queryKey: ["league-districts", leagueId] });
       qc.invalidateQueries({ queryKey: ["league", leagueId] });
     },
@@ -107,6 +154,19 @@ export function LeagueDistrictsView({
       qc.invalidateQueries({ queryKey: ["league-districts", leagueId] });
     },
     onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה ביצירת לוח המשחקים"),
+  });
+
+  const handicapMut = useMutation({
+    mutationFn: async ({ districtId, handicapDistrictId }: { districtId: string; handicapDistrictId: string | null }) => {
+      const r = await fetch(`/api/leagues/${leagueId}/districts`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ districtId, handicapDistrictId }),
+      });
+      if (!r.ok) throw new Error("failed");
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["league-districts", leagueId] }),
+    onError: () => toast.error("שגיאה בשמירת טבלת הפור"),
   });
 
   const resultMut = useMutation({
@@ -159,6 +219,20 @@ export function LeagueDistrictsView({
             <label className="text-xs text-muted-foreground mb-1 block">מספר סיבובים</label>
             <Input type="number" min={1} value={newNumCycles} onChange={(e) => setNewNumCycles(e.target.value)} />
           </div>
+          <div className="w-36">
+            <label className="text-xs text-muted-foreground mb-1 block">טבלת פור</label>
+            <Select value={chosenHandicap} onValueChange={(v) => setNewHandicap(v ?? NO_HANDICAP)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="ללא" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_HANDICAP}>ללא</SelectItem>
+                {handicapTables.map((h) => (
+                  <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button
             onClick={() => addDistrictMut.mutate({ label: newLabel.trim(), numCycles: Number(newNumCycles) || 1 })}
             disabled={!newLabel.trim() || addDistrictMut.isPending}
@@ -206,6 +280,34 @@ export function LeagueDistrictsView({
                   <p className="text-xs text-muted-foreground">
                     {district.num_cycles === 1 ? "סיבוב אחד" : `${district.num_cycles} סיבובים`}
                   </p>
+                  {canEdit ? (
+                    <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+                      <span>טבלת פור:</span>
+                      <Select
+                        value={district.handicap_district_id ?? NO_HANDICAP}
+                        onValueChange={(v) =>
+                          handicapMut.mutate({
+                            districtId: district.id,
+                            handicapDistrictId: !v || v === NO_HANDICAP ? null : v,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-7 w-32 text-xs">
+                          <SelectValue placeholder="ללא" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NO_HANDICAP}>ללא</SelectItem>
+                          {handicapTables.map((h) => (
+                            <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    district.handicap && (
+                      <p className="text-xs text-muted-foreground">טבלת פור: {district.handicap.name}</p>
+                    )
+                  )}
                 </div>
                 {/* Matches are created automatically when players join the
                     district; this only covers a district filled before that. */}
@@ -242,6 +344,17 @@ export function LeagueDistrictsView({
                               key={`${m.id}:${m.frames_a ?? ""}:${m.frames_b ?? ""}`}
                               nameA={nameA}
                               nameB={nameB}
+                              handicap={
+                                m.frames_a === null
+                                  ? handicapText(
+                                      district.handicap,
+                                      levelsByParticipant[m.participant_a_id]?.level,
+                                      levelsByParticipant[m.participant_b_id]?.level,
+                                      nameA,
+                                      nameB,
+                                    )
+                                  : null
+                              }
                               match={m}
                               canEdit={canEdit}
                               onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
@@ -267,6 +380,7 @@ export function LeagueDistrictsView({
 function MatchRow({
   nameA,
   nameB,
+  handicap,
   match,
   canEdit,
   onSave,
@@ -275,6 +389,7 @@ function MatchRow({
 }: {
   nameA: string;
   nameB: string;
+  handicap: string | null;
   match: DistrictMatch;
   canEdit: boolean;
   onSave: (framesA: number, framesB: number) => void;
@@ -336,6 +451,7 @@ function MatchRow({
           <span className="text-muted-foreground text-xs">טרם שוחק</span>
         )}
       </div>
+      {handicap && <p className="text-[11px] text-primary">{handicap}</p>}
       {canEdit && !played ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>יום משחק:</span>

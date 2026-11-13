@@ -24,7 +24,7 @@ import { type TableSize } from "@/lib/sheets/schemas";
 import { useSkillLevels } from "@/components/use-skill-levels";
 import { TableSizeBadge } from "@/components/table-size";
 import { cn } from "@/lib/utils";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 function FieldGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -71,6 +71,9 @@ type TournamentQueryData = {
   participantNotes?: Record<string, string>;
 };
 
+const ALL_LOCATIONS = "__all__";
+const NO_LOCATION_KEY = "__none__";
+
 export function TournamentDetailView({
   tournamentId,
   backHref,
@@ -83,6 +86,8 @@ export function TournamentDetailView({
   isAdmin: boolean;
 }) {
   const qc = useQueryClient();
+  // Multi-location: which location's participants the list shows.
+  const [partsLocation, setPartsLocation] = useState<string>(ALL_LOCATIONS);
   const { levelsFor } = useSkillLevels();
 
   const { data, isLoading } = useQuery({
@@ -400,8 +405,8 @@ export function TournamentDetailView({
           {participants.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">אין משתתפים עדיין</div>
           ) : (
-            <div className="divide-y divide-border/40">
-              {participants.map((p) => {
+            (() => {
+              const renderRow = (p: (typeof participants)[number]) => {
                 const paymentValue = p.paid ? (p.payment_method ?? "cash") : "unpaid";
                 const isRealStudent = p.student.id !== "";
                 return (
@@ -554,8 +559,53 @@ export function TournamentDetailView({
                     </div>
                   </div>
                 );
-              })}
-            </div>
+              };
+              if (tournament.type !== "multi_location" || locations.length === 0) {
+                return <div className="divide-y divide-border/40">{participants.map(renderRow)}</div>;
+              }
+              const keyOf = (p: (typeof participants)[number]) => p.location_id ?? NO_LOCATION_KEY;
+              const groups = [
+                ...locations.map((l) => ({ key: l.id, label: l.label })),
+                { key: NO_LOCATION_KEY, label: "ללא מיקום" },
+              ]
+                .map((g) => ({ ...g, rows: participants.filter((p) => keyOf(p) === g.key) }))
+                .filter((g) => g.rows.length > 0 || g.key !== NO_LOCATION_KEY);
+              const shown = groups.filter((g) => partsLocation === ALL_LOCATIONS || g.key === partsLocation);
+              return (
+                <>
+                  <div className="flex flex-wrap gap-2 px-4 pb-3">
+                    {[{ key: ALL_LOCATIONS, label: "הכל", count: participants.length }, ...groups.map((g) => ({ key: g.key, label: g.label, count: g.rows.length }))].map((b) => (
+                      <button
+                        key={b.key}
+                        type="button"
+                        onClick={() => setPartsLocation(b.key)}
+                        aria-pressed={partsLocation === b.key}
+                        className={cn(
+                          "rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors",
+                          partsLocation === b.key
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-card border-border/60 text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {b.label} ({b.count})
+                      </button>
+                    ))}
+                  </div>
+                  {shown.map((g) => (
+                    <div key={g.key} className="border-t border-border/40">
+                      <p className="px-4 pt-3 pb-1 text-sm font-semibold">
+                        {g.label} <span className="text-xs font-normal text-muted-foreground">({g.rows.length})</span>
+                      </p>
+                      {g.rows.length === 0 ? (
+                        <p className="px-4 pb-3 text-xs text-muted-foreground">אין משתתפים במיקום הזה</p>
+                      ) : (
+                        <div className="divide-y divide-border/40">{g.rows.map(renderRow)}</div>
+                      )}
+                    </div>
+                  ))}
+                </>
+              );
+            })()
           )}
         </div>
 

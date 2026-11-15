@@ -4,6 +4,7 @@ import {
   fetchSessionsForCoachWeek,
   fetchSessionsForDateRange,
 } from "@/lib/sheets/sessions";
+import { withAttendanceMarked } from "@/lib/sheets/attendance";
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
     const data = user.role === "admin"
       ? await fetchSessionsForDateRange(start, end, coach ?? undefined)
       : await fetchSessionsForCoachWeek(user.email, start, end);
-    return NextResponse.json({ sessions: data });
+    return NextResponse.json({ sessions: await withAttendanceMarked(data) });
   } catch (e) {
     if (e instanceof Response) return e;
     return new NextResponse("error", { status: 500 });

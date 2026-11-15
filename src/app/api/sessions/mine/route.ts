@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
 import { fetchSessionsForCoach } from "@/lib/sheets/sessions";
+import { withAttendanceMarked } from "@/lib/sheets/attendance";
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,7 +9,7 @@ export async function GET(req: NextRequest) {
     const coachParam = req.nextUrl.searchParams.get("coach");
     const email = user.role === "admin" && coachParam ? coachParam : user.email;
     const sessions = await fetchSessionsForCoach(email);
-    return NextResponse.json({ sessions });
+    return NextResponse.json({ sessions: await withAttendanceMarked(sessions) });
   } catch (e) {
     if (e instanceof Response) return e;
     return new NextResponse("error", { status: 500 });

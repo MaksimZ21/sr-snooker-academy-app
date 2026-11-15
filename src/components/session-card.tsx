@@ -3,9 +3,9 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, ChevronLeft, Banknote } from "lucide-react";
+import { Users, ChevronLeft, Banknote, CheckCircle2, CircleDashed } from "lucide-react";
 import type { Group, Session } from "@/lib/sheets/schemas";
-import { formatHebrewDate } from "@/lib/date";
+import { formatHebrewDate, todayIsoTel } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +32,8 @@ export function SessionCard({
   session,
   basePath,
 }: {
-  session: Session;
+  // attendance_marked: only on the schedule's lists (week / mine).
+  session: Session & { attendance_marked?: boolean };
   basePath: "coach" | "admin";
 }) {
   const { label, className } = trainingTypeBadge(session.training_type);
@@ -53,6 +54,15 @@ export function SessionCard({
     ? groupsQ.data?.groups.find((g) => g.id === session.group_id)?.name
     : undefined;
   const subLabel = session.name || groupName || formatHebrewDate(session.date);
+  // "Not taken" only matters once the session's day has come.
+  const attendanceNote =
+    cancelled || session.attendance_marked === undefined
+      ? null
+      : session.attendance_marked
+        ? "marked"
+        : session.date <= todayIsoTel()
+          ? "missing"
+          : null;
 
   return (
     <Link href={`/${basePath}/sessions/${session.id}`}>
@@ -95,6 +105,18 @@ export function SessionCard({
                 )}
               </div>
             </div>
+
+            {attendanceNote && (
+              <p
+                className={cn(
+                  "flex items-center gap-1 text-[11px] font-medium -mt-0.5",
+                  attendanceNote === "marked" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400",
+                )}
+              >
+                {attendanceNote === "marked" ? <CheckCircle2 size={11} /> : <CircleDashed size={11} />}
+                {attendanceNote === "marked" ? "נוכחות סומנה" : "נוכחות לא סומנה"}
+              </p>
+            )}
 
             {/* Bottom row: name/date + price + students */}
             <div className="flex items-center justify-between gap-2">

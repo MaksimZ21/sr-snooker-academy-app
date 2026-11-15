@@ -144,7 +144,12 @@ function useAttendanceMutation(sessionId: string, studentId: string) {
     // Only once the last press finished, so a refetch can't briefly undo a
     // press that is still on its way.
     onSettled: () => {
-      if (qc.isMutating({ mutationKey }) === 1) qc.invalidateQueries({ queryKey });
+      if (qc.isMutating({ mutationKey }) === 1) {
+        qc.invalidateQueries({ queryKey });
+        // The schedule cards show whether attendance was taken.
+        qc.invalidateQueries({ queryKey: ["sessions:week"] });
+        qc.invalidateQueries({ queryKey: ["sessions:mine"] });
+      }
     },
   });
 }

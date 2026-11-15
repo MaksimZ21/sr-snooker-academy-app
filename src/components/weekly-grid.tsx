@@ -156,7 +156,7 @@ export function WeeklyGrid({
         </Button>
 
         <div className="flex-1 flex items-center justify-center gap-3">
-          <span className="bc-num text-lg md:text-xl">
+          <span className="bc-num text-lg md:text-xl" dir="ltr">
             {startDisplay} – {endDisplay}
           </span>
           {!(today >= startIso && today <= endIso) && (

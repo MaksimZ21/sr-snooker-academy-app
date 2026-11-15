@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Users, Banknote, CheckCircle2, CircleDashed } from "lucide-react";
 import type { Group, Session } from "@/lib/sheets/schemas";
-import { formatHebrewDate, todayIsoTel } from "@/lib/date";
+import { todayIsoTel } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { TYPE_COLORS } from "@/components/broadcast";
 import { ScheduleSlot, shortSlotTitle } from "@/components/schedule-slot";
@@ -30,7 +30,8 @@ export function SessionCard({
   const groupName = session.group_id
     ? groupsQ.data?.groups.find((g) => g.id === session.group_id)?.name
     : undefined;
-  const title = shortSlotTitle(session.name || groupName || formatHebrewDate(session.date));
+  // A session with no name or group (a private lesson): its type says what it is.
+  const title = shortSlotTitle(session.name || groupName || `אימון ${label}`);
   // "Not taken" only matters once the session's day has come.
   const attendance =
     cancelled || session.attendance_marked === undefined

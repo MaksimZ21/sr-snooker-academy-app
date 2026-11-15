@@ -3,7 +3,6 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -19,6 +18,7 @@ import { formatHebrewDate } from "@/lib/date";
 import { monthOf } from "@/lib/sheets/monthly-goals-shared";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
+import { TYPE_COLORS } from "@/components/broadcast";
 import { User, Users, Trash2 } from "lucide-react";
 
 type Coach = { email: string; name: string; active: boolean };
@@ -102,7 +102,7 @@ export function SessionDetail({
   }
 
   const { session, students, attendance, notesByStudent, goalsByStudent } = data;
-  const { label, className } = trainingTypeBadge(session.training_type);
+  const { label } = trainingTypeBadge(session.training_type);
   const cancelled = session.status === "cancelled";
   const coachName = session.coach_email
     ? ((coachesQ.data?.coaches ?? []).find((c) => c.email === session.coach_email)?.name ?? session.coach_email.split("@")[0])
@@ -112,27 +112,6 @@ export function SessionDetail({
     <div className="flex flex-col">
       {/* Header */}
       <div className="bg-brand-gradient relative overflow-hidden">
-        {/* Orbs — inline animation to guarantee browser picks it up */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="session-orb absolute rounded-full" style={{
-            top: "-40px", right: "-40px", width: "220px", height: "220px",
-            background: "radial-gradient(circle, rgba(255,255,255,0.32) 0%, transparent 65%)",
-            filter: "blur(36px)",
-            animation: "drift-1 10s ease-in-out infinite",
-          }} />
-          <div className="session-orb absolute rounded-full" style={{
-            bottom: "-30px", left: "-10px", width: "180px", height: "180px",
-            background: "radial-gradient(circle, rgba(251,191,36,0.42) 0%, transparent 65%)",
-            filter: "blur(28px)",
-            animation: "drift-2 14s ease-in-out infinite 4s",
-          }} />
-          <div className="session-orb absolute rounded-full" style={{
-            top: "30px", left: "42%", width: "90px", height: "90px",
-            background: "radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 70%)",
-            filter: "blur(18px)",
-            animation: "drift-3 9s ease-in-out infinite 1.5s",
-          }} />
-        </div>
 
         {/* Admin action buttons — absolute top corner */}
         {isAdmin && (
@@ -153,18 +132,18 @@ export function SessionDetail({
         {/* Centered content */}
         <div className="relative z-10 flex flex-col items-center text-center px-5 pt-5 pb-7">
           {/* Date */}
-          <p className="text-white/55 text-xs tracking-widest mb-5">
+          <p className="font-display font-bold text-white/75 text-sm mb-4">
             {formatHebrewDate(session.date)}
           </p>
 
           {/* Times */}
           <div className={cn("flex items-baseline gap-3 mb-5", cancelled && "opacity-40")}>
-            <span className="text-6xl font-bold tabular-nums text-white leading-none tracking-tight scoreboard-num">
+            <span className="bc-num text-6xl md:text-7xl text-white leading-none">
               {session.start_time}
             </span>
-            <span className="text-white/30 text-3xl font-extralight select-none">—</span>
+            <span className="text-white/40 text-3xl font-extralight select-none">—</span>
             <span className={cn(
-              "text-6xl font-bold tabular-nums leading-none tracking-tight scoreboard-num",
+              "bc-num text-6xl md:text-7xl leading-none",
               session.end_time ? "text-white/85" : "text-white/30",
             )}>
               {session.end_time || "--:--"}
@@ -173,26 +152,24 @@ export function SessionDetail({
 
           {/* Info chips */}
           <div className="flex items-center gap-2 flex-wrap justify-center">
-            <Badge
-              className={cn("border text-xs font-medium px-2.5 py-0.5", className)}
-              variant="outline"
-            >
+            <span className="flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1 font-display text-xs font-bold text-white">
+              <i className="w-2 h-2 rounded-full" style={{ background: TYPE_COLORS[session.training_type] ?? "#94a3b8" }} />
               {label}
-            </Badge>
+            </span>
             {cancelled && (
               <span className="text-red-300/80 text-xs font-medium border border-red-300/30 rounded-full px-2 py-0.5">
                 לא התקיים
               </span>
             )}
             {coachName && (
-              <span className="flex items-center gap-1.5 text-white/65 text-xs">
-                <User size={11} className="shrink-0" />
+              <span className="flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1 font-display text-xs font-bold text-white">
+                <User size={12} className="shrink-0" />
                 {coachName}
               </span>
             )}
-            <span className="flex items-center gap-1.5 text-white/45 text-xs">
-              <Users size={11} className="shrink-0" />
-              {session.student_ids.length}
+            <span className="flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1 font-display text-xs font-bold text-white">
+              <Users size={12} className="shrink-0" />
+              {session.student_ids.length} מתאמנים
             </span>
           </div>
         </div>
@@ -223,7 +200,7 @@ export function SessionDetail({
       </Dialog>
 
       {/* Tabs */}
-      <div className="p-4 flex flex-col gap-4">
+      <div className="p-4 flex flex-col gap-4 w-full max-w-4xl mx-auto">
         {(isAdmin || canEditAttendance) && (
           <div className="flex justify-end -mb-1">
             <SessionHeldButton sessionId={sessionId} cancelled={cancelled} />

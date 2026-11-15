@@ -300,12 +300,13 @@ function AttendanceRow({
           </div>
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
             <div className="font-semibold text-[15px] truncate">{studentFullName(s)}</div>
-            {isConfirmed && (
+            {/* An admin sees the RSVP on its own buttons. */}
+            {isConfirmed && !isAdmin && (
               <Badge variant="outline" className="text-xs border-blue-400 text-blue-600 dark:text-blue-400 shrink-0">
                 אישר הגעה
               </Badge>
             )}
-            {isDeclined && (
+            {isDeclined && !isAdmin && (
               <Badge variant="outline" className="text-xs border-red-400 text-red-600 dark:text-red-400 shrink-0">
                 דחה הגעה
               </Badge>

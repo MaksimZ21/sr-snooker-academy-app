@@ -80,7 +80,7 @@ export function AdminDashboard({ displayName = "" }: { displayName?: string }) {
       {/* Header */}
       <div className="flex items-end justify-between animate-fade-in-up">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-2xl font-semibold">
             {displayName ? `שלום, ${displayName}` : "שלום"}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -96,7 +96,7 @@ export function AdminDashboard({ displayName = "" }: { displayName?: string }) {
       <PushNotificationBanner />
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatCard
           icon={<Users size={18} />}
           label="תלמידים פעילים"
@@ -145,7 +145,7 @@ export function AdminDashboard({ displayName = "" }: { displayName?: string }) {
       <AdminChartsRow data={data} isLoading={isLoading} />
 
       {/* Today's sessions */}
-      <Card className="animate-fade-in-up" style={{ animationDelay: "180ms" } as React.CSSProperties}>
+      <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold">מפגשים היום</CardTitle>
@@ -289,11 +289,11 @@ function StatCard({
     <Link href={href} className="block h-full">
       <div className={cn(
         "group relative h-full rounded-2xl p-4 flex flex-col justify-between gap-3 overflow-hidden",
-        "transition-all duration-200 hover:-translate-y-1.5",
+        "transition-[filter] hover:brightness-105",
         colorClass,
       )}>
         <div className="flex items-start justify-between relative">
-          <span className="p-2 rounded-xl bg-white/20 text-white transition-transform duration-200 group-hover:scale-110 group-hover:bg-white/30">
+          <span className="p-2 rounded-xl bg-white/20 text-white">
             {icon}
           </span>
           {alert && (
@@ -308,11 +308,11 @@ function StatCard({
           </div>
         ) : (
           <div className="relative">
-            <div className="text-4xl font-extrabold tabular-nums leading-none text-white scoreboard-num">
+            <div className="text-4xl font-semibold tabular-nums leading-none text-white scoreboard-num">
               {value ?? 0}
             </div>
-            <div className="text-xs mt-2 font-medium text-white/75">{label}</div>
-            {sub && <div className="text-[10px] mt-0.5 text-white/50">{sub}</div>}
+            <div className="text-xs mt-2 font-medium text-white/80">{label}</div>
+            {sub && <div className="text-[11px] mt-0.5 text-white/65">{sub}</div>}
           </div>
         )}
       </div>

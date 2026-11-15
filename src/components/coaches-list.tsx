@@ -109,7 +109,7 @@ export function CoachesList() {
       <div className="px-4 md:px-6 flex flex-col gap-4">
 
       {/* List */}
-      <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm shadow-foreground/[0.04] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
+      <div className="rounded-[18px] border bg-card overflow-hidden w-full max-w-3xl">
         {isLoading ? (
           <div className="divide-y divide-border/50">
             {Array.from({ length: 4 }).map((_, i) => (

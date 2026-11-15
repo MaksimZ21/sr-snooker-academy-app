@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { fetchStudents } from "@/lib/sheets/students";
 import { fetchGroupsAll } from "@/lib/sheets/groups";
 import { db } from "@/lib/db/client";
-import { todayIsoTel, weekRangeFor, dayLabelHe } from "@/lib/date";
+import { todayIsoTel, weekRangeFor, dayLabelHe, dayLetterHe } from "@/lib/date";
 import { addDays, format, parseISO } from "date-fns";
 import { TRAINING_TYPE_LABEL } from "@/lib/training-type";
 import { countNewContactRequests } from "@/lib/sheets/contact";
@@ -101,7 +101,7 @@ const fetchAdminStatsData = unstable_cache(
       const date = format(addDays(parseISO(startIso), i), "yyyy-MM-dd");
       return {
         date,
-        day: dayLabelHe(date).slice(0, 3),
+        day: dayLetterHe(date),
         count: weekSessions.filter((s) => s.date === date).length,
       };
     });

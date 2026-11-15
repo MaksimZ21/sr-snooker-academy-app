@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquarePlus } from "lucide-react";
+import { CheckCheck, Loader2, MessageSquarePlus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Attendance, Note, NoteVisibility, Student } from "@/lib/sheets/schemas";
@@ -169,8 +169,58 @@ export function AttendancePanel({
   readOnly: boolean;
   isAdmin?: boolean;
 }) {
+  const qc = useQueryClient();
+  const statusOf = (id: string) => attendance.find((a) => a.student_id === id)?.status;
+  const marked = students.filter((s) => ["present", "late", "absent"].includes(statusOf(s.id) ?? "")).length;
+  const here = students.filter((s) => ["present", "late"].includes(statusOf(s.id) ?? "")).length;
+  // Not marked yet; someone who declined in advance isn't marked present.
+  const unmarked = students.filter((s) => !["present", "late", "absent", "declined"].includes(statusOf(s.id) ?? ""));
+
+  // One press marks everyone not yet marked as present; the coach then fixes
+  // the few who didn't come.
+  const allPresent = useMutation({
+    mutationFn: async () => {
+      for (const st of unmarked) {
+        const r = await fetch(`/api/sessions/${sessionId}/attendance`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ student_id: st.id, status: "present" }),
+        });
+        if (!r.ok) throw new Error("write failed");
+      }
+    },
+    onError: () => toast.error("שגיאה בשמירת הנוכחות"),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["session", sessionId] });
+      qc.invalidateQueries({ queryKey: ["sessions:week"] });
+      qc.invalidateQueries({ queryKey: ["sessions:mine"] });
+    },
+  });
+
   return (
     <div className="flex flex-col gap-2.5 mt-4">
+      {students.length > 0 && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-sidebar text-white px-4 py-3">
+          <div className="flex items-baseline gap-2">
+            <span className="bc-num text-3xl leading-none">{here}</span>
+            <span className="text-sm text-white/70">מתוך {students.length} הגיעו</span>
+            {marked < students.length && (
+              <span className="text-xs text-amber-300">· {students.length - marked} לא סומנו</span>
+            )}
+          </div>
+          {!readOnly && unmarked.length > 0 && (
+            <Button
+              size="sm"
+              onClick={() => allPresent.mutate()}
+              disabled={allPresent.isPending}
+              className="h-9 px-3 bg-primary text-white hover:bg-primary/85"
+            >
+              {allPresent.isPending ? <Loader2 size={15} className="animate-spin" /> : <CheckCheck size={15} />}
+              כל השאר נוכחים
+            </Button>
+          )}
+        </div>
+      )}
       {students.map((s) => (
         <AttendanceRow
           key={s.id}
@@ -238,7 +288,7 @@ function AttendanceRow({
               : "border-border",
       )}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
         <div className="flex items-center gap-3 sm:flex-1 min-w-0">
           <div
             className={cn(
@@ -249,7 +299,7 @@ function AttendanceRow({
             {getInitials(studentFullName(s))}
           </div>
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <div className="font-medium text-sm truncate">{studentFullName(s)}</div>
+            <div className="font-semibold text-[15px] truncate">{studentFullName(s)}</div>
             {isConfirmed && (
               <Badge variant="outline" className="text-xs border-blue-400 text-blue-600 dark:text-blue-400 shrink-0">
                 אישר הגעה
@@ -263,35 +313,41 @@ function AttendanceRow({
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-          {STATUSES.map((st) => (
-            <Button
-              key={st.key}
-              size="sm"
-              variant="outline"
-              disabled={readOnly}
-              aria-pressed={cur === st.key}
-              onClick={() => press(st.key)}
-              className={cn("text-xs h-8 px-3 transition-none", cur === st.key && st.activeClass)}
-            >
-              {st.label}
-            </Button>
-          ))}
+          {/* Attendance as one segmented control */}
+          <div className="flex flex-1 sm:flex-none rounded-xl border bg-muted/40 p-0.5">
+            {STATUSES.map((st) => (
+              <button
+                key={st.key}
+                type="button"
+                disabled={readOnly}
+                aria-pressed={cur === st.key}
+                onClick={() => press(st.key)}
+                className={cn(
+                  "flex-1 sm:flex-none h-9 px-3.5 rounded-[10px] font-display text-[13px] font-bold transition-colors disabled:opacity-50",
+                  cur === st.key ? st.activeClass : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
           {isAdmin && !readOnly && (
-            <>
-              <span className="w-px h-5 bg-border mx-0.5" aria-hidden />
+            <div className="flex rounded-xl border bg-muted/40 p-0.5">
               {RSVP_STATUSES.map((st) => (
-                <Button
+                <button
                   key={st.key}
-                  size="sm"
-                  variant="outline"
+                  type="button"
                   aria-pressed={cur === st.key}
                   onClick={() => press(st.key)}
-                  className={cn("text-xs h-8 px-3 transition-none", cur === st.key && st.activeClass)}
+                  className={cn(
+                    "h-9 px-2.5 rounded-[10px] font-display text-[12px] font-bold transition-colors",
+                    cur === st.key ? st.activeClass : "text-muted-foreground hover:text-foreground",
+                  )}
                 >
                   {st.label}
-                </Button>
+                </button>
               ))}
-            </>
+            </div>
           )}
           <Button
             size="icon"

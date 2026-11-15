@@ -69,12 +69,16 @@ export function AppShell({
 
         <nav className="flex-1 px-3 py-3 flex flex-col gap-0.5 overflow-y-auto">
           {items.map((it, i) => (
-            <NavLink
-              key={it.href}
-              item={it}
-              active={isActiveRoute(pathname, it.href)}
-              style={{ animationDelay: `${i * 30}ms` }}
-            />
+            <div key={it.href} className="contents">
+              {it.section && (
+                <p className="font-display text-[11px] font-bold text-sidebar-foreground/40 px-3 pt-4 pb-1">{it.section}</p>
+              )}
+              <NavLink
+                item={it}
+                active={isActiveRoute(pathname, it.href)}
+                style={{ animationDelay: `${i * 30}ms` }}
+              />
+            </div>
           ))}
         </nav>
 

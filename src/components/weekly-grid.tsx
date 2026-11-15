@@ -100,21 +100,26 @@ export function WeeklyGrid({
       ...introEventsToday.map((e) => ({ start: e.start_time, card: <IntroEventScheduleCard key={e.id} event={e} basePath={basePath} /> })),
     ].sort((a, b) => a.start.localeCompare(b.start));
     const isToday = iso === today;
+    const count = timed.length + tournamentsToday.length;
     return (
-      <div
-        key={iso}
-        className={cn(
-          "flex flex-col gap-2 rounded-xl p-2 transition-colors",
-          isToday && "bg-primary/5 ring-1 ring-primary/20",
-        )}
-      >
-        <div className="flex items-baseline justify-between gap-1">
-          <div className={cn("font-semibold text-sm", isToday && "text-primary")}>
-            {dayLabelHe(iso)}
+      <div key={iso} className="flex flex-col gap-2 min-w-0">
+        <div
+          className={cn(
+            "flex items-center justify-between gap-1 rounded-xl px-3 py-2",
+            isToday ? "bg-primary text-white" : "bg-card border",
+          )}
+        >
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-display font-extrabold text-sm">{dayLabelHe(iso)}</span>
+            <span className={cn("bc-num text-sm", isToday ? "text-white/80" : "text-muted-foreground")}>
+              {iso.slice(8, 10)}.{iso.slice(5, 7)}
+            </span>
           </div>
-          <div className={cn("text-xs tabular-nums", isToday ? "text-primary/70" : "text-muted-foreground")}>
-            {iso.slice(8, 10)}.{iso.slice(5, 7)}
-          </div>
+          {isToday ? (
+            <span className="font-display text-[11px] font-bold bg-white/20 rounded-md px-1.5 py-0.5">היום</span>
+          ) : count > 0 ? (
+            <span className="font-display text-[11px] font-bold text-muted-foreground tabular-nums">{count}</span>
+          ) : null}
         </div>
         {isLoading ? (
           <>
@@ -124,7 +129,7 @@ export function WeeklyGrid({
         ) : (
           <>
             {timed.length === 0 && tournamentsToday.length === 0 && (
-              <div className="text-xs text-muted-foreground/50 text-center py-2">—</div>
+              <div className="text-xs text-muted-foreground text-center py-6 rounded-xl border border-dashed">אין אימונים</div>
             )}
             {tournamentsToday.map((t) => (
               <TournamentScheduleCard key={t.id} tournament={t} basePath={basePath} />
@@ -138,39 +143,41 @@ export function WeeklyGrid({
 
   return (
     <div className="p-4 flex flex-col gap-4">
-      <div className="flex items-center gap-1.5 bg-muted/60 border border-border/50 rounded-xl p-1.5">
+      {/* Week bar: the dark control-room strip of the broadcast look. */}
+      <div className="flex items-center gap-2 bg-sidebar text-white rounded-2xl p-1.5">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => goToWeek(format(addDays(parseISO(anchor), -7), "yyyy-MM-dd"))}
-          className="h-8 px-3 rounded-lg flex items-center gap-1 hover:bg-background hover:shadow-sm"
+          className="h-9 px-3 rounded-xl text-white/80 hover:bg-white/10 hover:text-white"
         >
-          <ChevronRight size={15} />
-          <span className="hidden sm:inline text-xs">שבוע קודם</span>
+          <ChevronRight size={16} />
+          <span className="hidden sm:inline">שבוע קודם</span>
         </Button>
 
-        <div className="flex-1 flex flex-col items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => goToWeek(todayIsoTel())}
-            className="h-7 px-3 rounded-lg text-xs font-semibold hover:bg-background hover:shadow-sm"
-          >
-            היום
-          </Button>
-          <span className="text-xs text-muted-foreground tabular-nums">
+        <div className="flex-1 flex items-center justify-center gap-3">
+          <span className="bc-num text-lg md:text-xl">
             {startDisplay} – {endDisplay}
           </span>
+          {!(today >= startIso && today <= endIso) && (
+            <Button
+              size="sm"
+              onClick={() => goToWeek(todayIsoTel())}
+              className="h-7 px-3 rounded-lg bg-primary text-white hover:bg-primary/85"
+            >
+              חזרה להיום
+            </Button>
+          )}
         </div>
 
         <Button
           variant="ghost"
           size="sm"
           onClick={() => goToWeek(format(addDays(parseISO(anchor), 7), "yyyy-MM-dd"))}
-          className="h-8 px-3 rounded-lg flex items-center gap-1 hover:bg-background hover:shadow-sm"
+          className="h-9 px-3 rounded-xl text-white/80 hover:bg-white/10 hover:text-white"
         >
-          <span className="hidden sm:inline text-xs">שבוע הבא</span>
-          <ChevronLeft size={15} />
+          <span className="hidden sm:inline">שבוע הבא</span>
+          <ChevronLeft size={16} />
         </Button>
       </div>
 
@@ -182,29 +189,33 @@ export function WeeklyGrid({
           const isSelected = iso === selectedDay;
           const isToday = iso === today;
           const weekday = parseISO(iso).getDay();
+          const busy =
+            (data?.sessions ?? []).some((x) => x.date === iso) ||
+            (tournamentsData?.tournaments ?? []).some((t) => t.event_date === iso);
           return (
             <button
               key={iso}
               type="button"
               onClick={() => setSelectedDay(iso)}
               className={cn(
-                "flex-1 flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-xs transition-colors",
+                "flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2 transition-colors border",
                 isSelected
-                  ? "bg-primary text-primary-foreground font-semibold"
+                  ? "bg-primary border-primary text-white"
                   : isToday
-                    ? "text-primary font-medium hover:bg-muted"
-                    : "text-muted-foreground hover:bg-muted",
+                    ? "bg-card border-primary/50 text-primary"
+                    : "bg-card text-muted-foreground",
               )}
             >
-              <span>{SHORT_DAY_LABELS[weekday]}</span>
-              <span className="tabular-nums">{iso.slice(8, 10)}</span>
+              <span className="font-display text-xs font-bold">{SHORT_DAY_LABELS[weekday]}</span>
+              <span className="bc-num text-base leading-none">{iso.slice(8, 10)}</span>
+              <i className={cn("w-1 h-1 rounded-full", busy ? (isSelected ? "bg-white" : "bg-primary") : "bg-transparent")} />
             </button>
           );
         })}
       </div>
       <div className="md:hidden">{renderDay(selectedDay)}</div>
 
-      <div className="hidden md:grid md:grid-cols-7 gap-3">
+      <div className="hidden md:grid md:grid-cols-7 gap-2.5">
         {days.map((iso) => renderDay(iso))}
       </div>
     </div>

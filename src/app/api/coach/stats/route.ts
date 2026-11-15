@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 import { requireUser } from "@/lib/auth/requireUser";
 import { db } from "@/lib/db/client";
 import { fetchStudents } from "@/lib/sheets/students";
-import { todayIsoTel, weekRangeFor, dayLabelHe } from "@/lib/date";
+import { todayIsoTel, weekRangeFor, dayLabelHe, dayLetterHe } from "@/lib/date";
 import { addDays, format, parseISO } from "date-fns";
 import type { Session } from "@/lib/sheets/schemas";
 import type { DayBar } from "@/app/api/admin/stats/route";
@@ -43,7 +43,7 @@ const fetchCoachStatsData = unstable_cache(
       const date = format(addDays(parseISO(startIso), i), "yyyy-MM-dd");
       return {
         date,
-        day: dayLabelHe(date).slice(0, 3),
+        day: dayLetterHe(date),
         count: weekSessions.filter((s) => s.date === date).length,
       };
     });

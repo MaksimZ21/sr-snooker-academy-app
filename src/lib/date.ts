@@ -33,3 +33,8 @@ export function dayLabelHe(iso: string): string {
     timeZone: "Asia/Jerusalem",
   }).format(parseISO(iso));
 }
+
+// "א׳" … "ש׳" for a date, for short day labels on charts.
+export function dayLetterHe(iso: string): string {
+  return ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"][parseISO(iso).getDay()];
+}

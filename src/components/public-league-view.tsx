@@ -9,27 +9,45 @@ import { DayColumns } from "@/components/day-strip";
 import { PublicThemeToggle } from "@/components/public-theme-toggle";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 
-// A district's handicap ("פור") table: points per frame for each level.
-function HandicapTable({ values, levelOrder }: { values: Record<string, number>; levelOrder: string[] }) {
-  const levels = [
-    ...levelOrder.filter((l) => l in values),
-    ...Object.keys(values).filter((l) => !levelOrder.includes(l)),
-  ];
-  if (levels.length === 0) return null;
+// A district's handicap ("פור") table: each player with their level and
+// points per frame, grouped by level (best first), like the club's sheet.
+function HandicapTable({
+  players,
+  values,
+  levelOrder,
+}: {
+  players: { id: string; name: string; level: string | null }[];
+  values: Record<string, number>;
+  levelOrder: string[];
+}) {
+  const rank = (level: string | null) => {
+    if (!level) return Number.MAX_SAFE_INTEGER;
+    const i = levelOrder.indexOf(level);
+    return i === -1 ? levelOrder.length : i;
+  };
+  const sorted = [...players].sort((a, b) => rank(a.level) - rank(b.level) || a.name.localeCompare(b.name, "he"));
+  if (sorted.length === 0) return <p className="pb-4 text-center text-sm text-muted-foreground">אין שחקנים במחוז</p>;
   return (
     <div className="flex flex-col gap-2 px-4 pb-4">
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-2">
-        {levels.map((level) => (
-          <div key={level} className="flex flex-col items-center rounded-xl border border-border/60 bg-muted/40 py-2">
-            <span className="text-sm font-bold" dir="ltr">
-              {level}
-            </span>
-            <span className="text-xs tabular-nums text-muted-foreground">{values[level]} נק׳</span>
-          </div>
-        ))}
-      </div>
+      <table className="w-full text-sm">
+        <tbody>
+          {sorted.map((p, i) => {
+            const newGroup = i > 0 && sorted[i - 1].level !== p.level;
+            const points = p.level ? values[p.level] : undefined;
+            return (
+              <tr key={p.id} className={newGroup ? "border-t-[6px] border-transparent" : undefined}>
+                <td className="py-1 pe-2">{p.name}</td>
+                <td className="w-14 py-1 text-center font-bold" dir="ltr">
+                  {p.level ?? "—"}
+                </td>
+                <td className="w-12 py-1 text-center tabular-nums">{points ?? "—"}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
       <p className="text-[11px] text-muted-foreground">
-        נקודות לכל פריים לפי דרגה. במשחק בין שני שחקנים, החלש מקבל את ההפרש בכל פריים.
+        המספר הוא נקודות לכל פריים. במשחק בין שני שחקנים, החלש מקבל את ההפרש בכל פריים.
       </p>
     </div>
   );
@@ -139,7 +157,15 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
                 label: district.label,
                 schedule: districtSchedule,
                 handicap: district.handicap ? (
-                  <HandicapTable values={district.handicap.values} levelOrder={league.levelOrder} />
+                  <HandicapTable
+                    players={district.memberIds.map((id) => ({
+                      id,
+                      name: lookup(id)?.name ?? "?",
+                      level: lookup(id)?.level ?? null,
+                    }))}
+                    values={district.handicap.values}
+                    levelOrder={league.levelOrder}
+                  />
                 ) : null,
                 standings: (
                   <LeagueStandingsTable

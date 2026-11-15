@@ -1,6 +1,7 @@
 import { db } from "@/lib/db/client";
 import { fetchLevelTracking } from "./league-levels";
 import { fetchLeagueDistricts, type DistrictWithMatches } from "./league-districts";
+import { fetchSkillLevels } from "./skill-levels";
 
 // Deliberately separate from leagues.ts's own internal types, mirroring the
 // same isolation `tournaments-public.ts` keeps from `tournaments.ts`: these
@@ -35,6 +36,8 @@ export type PublicLeague = {
   participants: PublicLeagueParticipant[];
   districts: DistrictWithMatches[];
   breaks: PublicLeagueBreak[];
+  // 12 ft levels, best first: the row order of each district's handicap table.
+  levelOrder: string[];
 };
 
 export type PublicLeagueBreak = { id: string; participant_id: string; value: number };
@@ -75,6 +78,7 @@ export async function fetchPublicLeague(slug: string): Promise<PublicLeague | nu
   });
 
   const districts = await fetchLeagueDistricts(leagueId);
+  const levelOrder = districts.some((d) => d.handicap) ? (await fetchSkillLevels())["12"] : [];
 
   const { data: breakRows } = await db
     .from("league_breaks")
@@ -88,5 +92,6 @@ export async function fetchPublicLeague(slug: string): Promise<PublicLeague | nu
     participants,
     districts,
     breaks: (breakRows ?? []) as PublicLeagueBreak[],
+    levelOrder,
   };
 }

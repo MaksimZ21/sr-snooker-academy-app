@@ -10,10 +10,12 @@ type DistrictPanel = {
   schedule: React.ReactNode | null;
   standings: React.ReactNode;
   rounds: React.ReactNode | null;
+  // The district's handicap table; null when it has none.
+  handicap: React.ReactNode | null;
 };
 
 type Tab = "schedule" | "standings" | "breaks" | "rounds";
-type Panel = Tab;
+type Panel = Tab | "handicap";
 
 function Pill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
@@ -144,6 +146,11 @@ export function PublicLeagueBoard({
               ? card("standings", district.label, district.standings)
               : card("standings", "טבלת ליגה", <p className="py-6 text-center text-sm text-muted-foreground">הליגה טרם החלה</p>)}
           </div>
+          {district?.handicap && (
+            <div className={cn(tab !== "standings" && "hidden md:block")}>
+              {card("handicap", `טבלת פור · ${district.label}`, district.handicap)}
+            </div>
+          )}
           {district && (
             <div className={cn(tab !== "rounds" && "hidden md:block")}>
               {card(

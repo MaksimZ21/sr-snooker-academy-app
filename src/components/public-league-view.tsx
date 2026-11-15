@@ -9,6 +9,32 @@ import { DayColumns } from "@/components/day-strip";
 import { PublicThemeToggle } from "@/components/public-theme-toggle";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 
+// A district's handicap ("פור") table: points per frame for each level.
+function HandicapTable({ values, levelOrder }: { values: Record<string, number>; levelOrder: string[] }) {
+  const levels = [
+    ...levelOrder.filter((l) => l in values),
+    ...Object.keys(values).filter((l) => !levelOrder.includes(l)),
+  ];
+  if (levels.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-2 px-4 pb-4">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-2">
+        {levels.map((level) => (
+          <div key={level} className="flex flex-col items-center rounded-xl border border-border/60 bg-muted/40 py-2">
+            <span className="text-sm font-bold" dir="ltr">
+              {level}
+            </span>
+            <span className="text-xs tabular-nums text-muted-foreground">{values[level]} נק׳</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        נקודות לכל פריים לפי דרגה. במשחק בין שני שחקנים, החלש מקבל את ההפרש בכל פריים.
+      </p>
+    </div>
+  );
+}
+
 export function PublicLeagueView({ league }: { league: PublicLeague }) {
   const participantById = new Map(league.participants.map((p) => [p.id, p]));
   function lookup(id: string | null): PublicLeagueParticipant | null {
@@ -112,6 +138,9 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
                 id: district.id,
                 label: district.label,
                 schedule: districtSchedule,
+                handicap: district.handicap ? (
+                  <HandicapTable values={district.handicap.values} levelOrder={league.levelOrder} />
+                ) : null,
                 standings: (
                   <LeagueStandingsTable
                     rows={standings}

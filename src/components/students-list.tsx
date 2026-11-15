@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddStudentDialog } from "@/components/forms/add-student-dialog";
 import { EditStudentDialog } from "@/components/forms/edit-student-dialog";
 import { StudentHistoryDialog } from "@/components/student-history-dialog";
-import { History, Pencil, Search, Trash2, X, Check, GraduationCap, ChevronLeft, Mail } from "lucide-react";
+import { History, Pencil, Search, Trash2, X, Check, GraduationCap, ChevronLeft, Mail , MessageCircle } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -189,7 +189,7 @@ export function StudentsList() {
       </div>
 
       {/* List */}
-      <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm shadow-foreground/[0.04] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
+      <div className="rounded-[18px] border bg-card overflow-hidden">
         {isLoading ? (
           <div className="divide-y divide-border/50">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -213,6 +213,13 @@ export function StudentsList() {
           </div>
         ) : (
           <div className="divide-y divide-border/40">
+            <div className="hidden md:grid grid-cols-[minmax(0,2fr)_72px_minmax(0,1.2fr)_minmax(0,1fr)_120px] gap-4 px-4 py-2 bg-muted/40 font-display text-[11px] font-bold text-muted-foreground">
+              <span>שם</span>
+              <span>דרגה</span>
+              <span>טלפון</span>
+              <span>תשלום אחרון</span>
+              <span />
+            </div>
             {filtered.map((s) => (
               <StudentRow
                 key={s.id}
@@ -278,37 +285,70 @@ function StudentRow({
   const name = studentFullName(s);
   const initials = name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
   const isConfirming = confirmDelete === s.id;
-
-  const info = [s.phone, s.email, s.college_name].filter(Boolean).join(" · ");
+  const paid = paymentAge(s.last_payment_date);
+  const wa = whatsappLink(s.phone);
 
   return (
     <div className={cn(
-      "group flex items-center gap-3 px-4 py-2.5 transition-colors duration-150",
+      "group grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[minmax(0,2fr)_72px_minmax(0,1.2fr)_minmax(0,1fr)_120px] items-center gap-x-4 gap-y-1 px-4 py-3 transition-colors duration-150",
       "hover:bg-muted/40 dark:hover:bg-white/[0.03]",
-      isConfirming && "bg-destructive/5 dark:bg-destructive/10",
+      !s.active && !hideInactiveBadge && "opacity-60",
+      isConfirming && "bg-destructive/5 dark:bg-destructive/10 opacity-100",
     )}>
-      {/* Avatar + name — link to detail page */}
-      <Link href={`/admin/students/${s.id}`} className="flex items-center gap-3 flex-1 min-w-0 group/link">
-        <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/15 text-primary flex items-center justify-center text-[11px] font-bold shrink-0 select-none group-hover/link:bg-primary/20 transition-colors">
+      {/* Name — link to the student's page */}
+      <Link href={`/admin/students/${s.id}`} className="flex items-center gap-3 min-w-0 group/link">
+        <div className="w-9 h-9 rounded-full bg-sidebar text-[#7ee2a4] flex items-center justify-center font-display text-xs font-bold shrink-0 select-none">
           {initials}
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium leading-none group-hover/link:text-primary transition-colors">{name}</span>
+            <span className="text-[15px] font-semibold truncate group-hover/link:text-primary transition-colors">{name}</span>
+            {s.skill_level && (
+              <span className="md:hidden font-display text-[11px] font-bold rounded-md bg-muted px-1.5 py-0.5" dir="ltr">{s.skill_level}</span>
+            )}
             {!hideInactiveBadge && !s.active && (
-              <Badge variant="secondary" className="text-[10px] h-4 px-1.5 py-0">לא פעיל</Badge>
+              <Badge variant="secondary" className="text-[11px] h-5 px-1.5 py-0">לא פעיל</Badge>
             )}
           </div>
-          {info && (
-            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{info}</p>
-          )}
+          <p className="text-xs text-muted-foreground truncate">
+            {[s.college_name, s.subscription_type].filter(Boolean).join(" · ") || s.email || "\u00a0"}
+          </p>
         </div>
-        <ChevronLeft size={13} className="text-muted-foreground/20 group-hover/link:text-primary/40 transition-colors shrink-0" />
       </Link>
+
+      {/* Level */}
+      <span className="hidden md:block">
+        {s.skill_level ? (
+          <span className="inline-flex min-w-9 justify-center font-display text-sm font-extrabold rounded-lg bg-sidebar text-white px-2 py-1" dir="ltr">
+            {s.skill_level}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </span>
+
+      {/* Phone: tap to call, WhatsApp beside it */}
+      <span className="hidden md:flex items-center gap-2 min-w-0 text-sm tabular-nums">
+        {s.phone ? (
+          <>
+            <a href={`tel:${s.phone}`} className="truncate hover:text-primary" dir="ltr">{s.phone}</a>
+            {wa && (
+              <a href={wa} target="_blank" rel="noopener noreferrer" title="WhatsApp" className="text-[#25d366] hover:opacity-80 shrink-0">
+                <MessageCircle size={16} />
+              </a>
+            )}
+          </>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </span>
+
+      {/* Last payment, colored by how long ago */}
+      <span className={cn("hidden md:block text-sm", paid.tone)}>{paid.label}</span>
 
       {/* Actions */}
       {isConfirming ? (
-        <div className="flex items-center gap-1 shrink-0 animate-scale-in">
+        <div className="flex items-center justify-end gap-1 shrink-0 animate-scale-in">
           <span className="text-xs text-destructive font-medium ml-1">למחוק?</span>
           <Button
             variant="ghost"
@@ -329,7 +369,7 @@ function StudentRow({
           </Button>
         </div>
       ) : (
-        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+        <div className="flex items-center justify-end gap-0.5 shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150">
           <Button
             variant="ghost"
             size="icon"
@@ -369,6 +409,37 @@ function StudentRow({
           </Button>
         </div>
       )}
+
+      {/* Phone (mobile): number, WhatsApp and the payment on one line */}
+      <div className="md:hidden col-span-2 flex items-center gap-3 text-xs ps-12">
+        {s.phone && (
+          <a href={`tel:${s.phone}`} className="tabular-nums text-muted-foreground" dir="ltr">{s.phone}</a>
+        )}
+        {wa && (
+          <a href={wa} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 font-bold text-[#1da851]">
+            <MessageCircle size={13} />
+            WhatsApp
+          </a>
+        )}
+        <span className={cn("ms-auto", paid.tone)}>{paid.label}</span>
+      </div>
     </div>
   );
+}
+
+// "שולם היום" / "לפני 12 ימים", amber after a month, red after two.
+function paymentAge(iso: string | null): { label: string; tone: string } {
+  if (!iso) return { label: "אין תשלום", tone: "text-muted-foreground" };
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  const label = days <= 0 ? "שולם היום" : days === 1 ? "לפני יום" : `לפני ${days} ימים`;
+  const tone = days > 60 ? "text-destructive font-semibold" : days > 30 ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-foreground";
+  return { label, tone };
+}
+
+// wa.me link from an Israeli number (05X… or 972…); null when it isn't one.
+function whatsappLink(phone: string): string | null {
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return null;
+  const intl = digits.startsWith("972") ? digits : digits.startsWith("0") ? `972${digits.slice(1)}` : null;
+  return intl ? `https://wa.me/${intl}` : null;
 }

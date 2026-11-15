@@ -9,6 +9,7 @@ import { StudentGoalSummary } from "@/components/student-goal-summary";
 import { studentFullName } from "@/lib/sheets/schemas";
 import type { Student, Note } from "@/lib/sheets/schemas";
 import { cn } from "@/lib/utils";
+import { AttendanceForm } from "@/components/attendance-form";
 
 type Detail = {
   student: Student;
@@ -55,20 +56,6 @@ export default function CoachStudentDetailPage({ params }: { params: Promise<{ i
     <div className="flex flex-col">
       {/* Header */}
       <div className="bg-brand-gradient relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="session-orb absolute rounded-full" style={{
-            top: "-30px", right: "-30px", width: "180px", height: "180px",
-            background: "radial-gradient(circle, rgba(255,255,255,0.28) 0%, transparent 65%)",
-            filter: "blur(32px)",
-            animation: "drift-1 12s ease-in-out infinite",
-          }} />
-          <div className="session-orb absolute rounded-full" style={{
-            bottom: "-20px", left: "10px", width: "140px", height: "140px",
-            background: "radial-gradient(circle, rgba(251,191,36,0.35) 0%, transparent 65%)",
-            filter: "blur(24px)",
-            animation: "drift-2 16s ease-in-out infinite 3s",
-          }} />
-        </div>
 
         <div className="relative z-10 px-5 pt-4 pb-6">
           {/* Back */}
@@ -79,7 +66,7 @@ export default function CoachStudentDetailPage({ params }: { params: Promise<{ i
 
           {/* Avatar + name */}
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 text-white flex items-center justify-center text-xl font-bold shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-sidebar text-[#7ee2a4] flex items-center justify-center font-display text-xl font-extrabold shrink-0 bc-slant">
               {getInitials(name)}
             </div>
             <div>
@@ -101,7 +88,7 @@ export default function CoachStudentDetailPage({ params }: { params: Promise<{ i
               </span>
             )}
             {student.subscription_type && (
-              <span className="bg-white/15 text-white/85 text-xs px-2.5 py-0.5 rounded-full">
+              <span className="rounded-lg bg-white/15 px-2.5 py-1 font-display text-xs font-bold text-white">
                 {student.subscription_type}
               </span>
             )}
@@ -115,21 +102,13 @@ export default function CoachStudentDetailPage({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      <div className="p-4 flex flex-col gap-4">
+      <div className="p-4 flex flex-col gap-4 w-full max-w-4xl mx-auto">
         {/* Attendance stats */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: "נוכח", value: attendance_summary.present, icon: CheckCircle, color: "text-green-600 bg-green-500/10" },
-            { label: "נעדר", value: attendance_summary.absent, icon: XCircle, color: "text-red-500 bg-red-500/10" },
-            { label: "נוכחות", value: attendancePct !== null ? `${attendancePct}%` : "—", icon: null, color: "text-primary bg-primary/10" },
-          ].map((stat) => (
-            <div key={stat.label} className={cn("rounded-2xl p-3 flex flex-col items-center gap-1", stat.color)}>
-              {stat.icon && <stat.icon size={16} />}
-              <span className="bc-num text-2xl leading-none">{stat.value}</span>
-              <span className="text-[11px] font-medium opacity-70">{stat.label}</span>
-            </div>
-          ))}
-        </div>
+        <AttendanceForm
+          present={attendance_summary.present}
+          absent={attendance_summary.absent}
+          total={attendance_summary.total}
+        />
 
         {/* Monthly goal */}
         <StudentGoalSummary studentId={student.id} />

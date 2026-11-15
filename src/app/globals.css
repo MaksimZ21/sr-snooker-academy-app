@@ -146,7 +146,7 @@
     @apply font-sans;
   }
   /* Broadcast look: titles in the display face, page titles slanted. */
-  h1, h2, h3 {
+  h1, h2, h3, th {
     font-family: var(--font-rubik), var(--font-assistant), sans-serif;
   }
   h1 {

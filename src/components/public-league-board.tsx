@@ -91,7 +91,7 @@ export function PublicLeagueBoard({
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex gap-1 rounded-xl bg-muted p-1 md:hidden">
+      <div className="flex gap-1 rounded-xl bg-sidebar p-1 md:hidden">
         {(
           [
             ["schedule", "לוז"],
@@ -106,8 +106,8 @@ export function PublicLeagueBoard({
             onClick={() => setTab(key)}
             aria-pressed={tab === key}
             className={cn(
-              "flex-1 rounded-lg py-2 text-sm font-medium transition-colors",
-              tab === key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
+              "flex-1 rounded-lg py-2 font-display text-sm font-bold transition-colors",
+              tab === key ? "bg-primary text-white" : "text-white/60 hover:text-white",
             )}
           >
             {label}

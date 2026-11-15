@@ -170,7 +170,7 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-white leading-tight">{name}</h1>
+                <h1 className="bc-num text-[28px] md:text-[36px] text-white leading-tight">{name}</h1>
                 {!student.active && (
                   <span className="bg-white/20 text-white/80 text-[10px] px-2 py-0.5 rounded-full">
                     לא פעיל
@@ -273,7 +273,7 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
               className={cn("rounded-2xl p-3 flex flex-col items-center gap-1", stat.color)}
             >
               {stat.icon && <stat.icon size={16} />}
-              <span className="text-xl font-bold tabular-nums">{stat.value}</span>
+              <span className="bc-num text-2xl leading-none">{stat.value}</span>
               <span className="text-[11px] font-medium opacity-70">{stat.label}</span>
             </div>
           ))}

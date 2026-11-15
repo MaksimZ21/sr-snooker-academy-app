@@ -284,7 +284,7 @@ export default function LoginPage() {
                 height={75}
                 className="object-contain"
               />
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight text-center">
+              <h1 className="bc-num text-[34px] md:text-[44px] leading-tight text-center">
                 האקדמיה לסנוקר<br />של שחר רוברג
               </h1>
             </div>

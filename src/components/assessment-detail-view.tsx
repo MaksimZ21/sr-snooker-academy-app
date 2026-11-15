@@ -194,7 +194,7 @@ export function AssessmentDetailView({
                 .toUpperCase()}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white leading-tight">{a.participant_name}</h1>
+              <h1 className="bc-num text-[28px] md:text-[36px] text-white leading-tight">{a.participant_name}</h1>
               <p className="text-white/65 text-sm mt-0.5">{formatDate(a.event_date)}</p>
               {showCoach && (
                 <p className="text-white/45 text-xs mt-0.5">{a.coach_email}</p>

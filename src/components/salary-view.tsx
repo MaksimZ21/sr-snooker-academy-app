@@ -163,7 +163,7 @@ function StatCards({
             </>
           ) : (
             <>
-              <span className="text-xl font-bold tabular-nums scoreboard-num leading-none">
+              <span className="bc-num text-2xl leading-none">
                 {card.value !== undefined ? card.format(card.value) : "—"}
               </span>
               <span className="text-[11px] text-muted-foreground leading-tight">{card.label}</span>

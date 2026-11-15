@@ -66,7 +66,7 @@ export function StudentGoalView({ studentId }: { studentId: string }) {
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
-      <h1 className="text-lg font-semibold">המטרה שלי</h1>
+      <h1 className="bc-num text-[24px] md:text-[28px] leading-[1.05]">המטרה שלי</h1>
 
       {!current ? (
         <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3">

@@ -4,7 +4,7 @@ export function PublicPlayerView({ player }: { player: PublicPlayer }) {
   return (
     <div className="min-h-dvh bg-background px-4 py-6 flex flex-col gap-6 max-w-md mx-auto" dir="rtl">
       <div className="text-center flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">{player.name}</h1>
+        <h1 className="bc-num text-[28px] md:text-[36px] leading-[1.05]">{player.name}</h1>
         <p className="text-sm text-muted-foreground">דירוג נוכחי: {player.rating}</p>
       </div>
       <div className="flex flex-col gap-2">

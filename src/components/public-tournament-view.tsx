@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { computeHouseStandings, knockoutRoundLabel } from "@/lib/sheets/tournament-logic";
 import type { PublicTournament, PublicParticipant } from "@/lib/sheets/tournaments-public";
 import type { HouseWithMatches } from "@/lib/sheets/tournament-houses";
+import { LiveTicker } from "@/components/broadcast";
 
 // Polled instead of a one-time server fetch so a spectator watching results
 // come in sees them without manually refreshing the page. 15s keeps it
@@ -106,7 +107,7 @@ export function PublicTournamentView({
           <Image src="/logo.png" alt="" width={52} height={52} className="object-contain" />
         )}
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-2xl font-bold text-white leading-tight">{tournament.name}</h1>
+          <h1 className="bc-num text-[28px] md:text-[36px] text-white leading-tight">{tournament.name}</h1>
           {!tournament.multiLocation && (
             <p className="text-xs text-white/60 tracking-wide">האקדמיה לסנוקר של שחר רוברג</p>
           )}
@@ -129,6 +130,26 @@ export function PublicTournamentView({
           )}
         </div>
       </div>
+
+      {/* Played results running like a sports channel; knockout first, then the houses. */}
+      {(() => {
+        const played = [
+          ...[...tournament.knockoutMatches].sort((a, b) => b.round - a.round),
+          ...tournament.houses.flatMap((h) => h.matches),
+        ].filter((m) => m.frames_a !== null && m.frames_b !== null && m.participant_a_id && m.participant_b_id);
+        if (!played.length) return null;
+        return (
+          <LiveTicker
+            isLoading={false}
+            label="תוצאות"
+            items={played.slice(0, 30).map((m) => ({
+              id: m.id,
+              time: `${m.frames_a} - ${m.frames_b}`,
+              text: `${lookup(m.participant_a_id)?.name ?? "?"} נגד ${lookup(m.participant_b_id)?.name ?? "?"}`,
+            }))}
+          />
+        );
+      })()}
 
       <div className="px-4 py-6 flex flex-col gap-8 max-w-4xl mx-auto">
         {tournament.houses.length > 0 && (

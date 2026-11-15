@@ -29,7 +29,7 @@ export default function SetPasswordPage() {
       <Card className="w-full max-w-md bg-background/80 backdrop-blur-xl border-border/50 shadow-2xl">
         <CardContent className="flex flex-col gap-6 p-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold">הגדרת סיסמה</h1>
+            <h1 className="bc-num text-[28px] md:text-[36px] leading-[1.05]">הגדרת סיסמה</h1>
             <p className="text-sm text-muted-foreground mt-1">בחר סיסמה לכניסה למערכת</p>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">

@@ -83,7 +83,7 @@ export default function CoachStudentDetailPage({ params }: { params: Promise<{ i
               {getInitials(name)}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white leading-tight">{name}</h1>
+              <h1 className="bc-num text-[28px] md:text-[36px] text-white leading-tight">{name}</h1>
               {groups.length > 0 && (
                 <p className="text-white/65 text-sm mt-0.5">
                   {groups.map((g) => g.name).join(", ")}
@@ -125,7 +125,7 @@ export default function CoachStudentDetailPage({ params }: { params: Promise<{ i
           ].map((stat) => (
             <div key={stat.label} className={cn("rounded-2xl p-3 flex flex-col items-center gap-1", stat.color)}>
               {stat.icon && <stat.icon size={16} />}
-              <span className="text-xl font-bold tabular-nums">{stat.value}</span>
+              <span className="bc-num text-2xl leading-none">{stat.value}</span>
               <span className="text-[11px] font-medium opacity-70">{stat.label}</span>
             </div>
           ))}

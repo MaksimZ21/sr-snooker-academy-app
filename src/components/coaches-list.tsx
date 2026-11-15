@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { History, Trash2, Pencil, Users, Mail } from "lucide-react";
+import { History, Trash2, Pencil, Users, Mail , MessageCircle } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -198,32 +198,45 @@ function CoachRow({ coach: c, onEdit, onDelete, onInvite }: {
   onDelete: () => void;
   onInvite: () => void;
 }) {
-  const info = [c.email, c.phone].filter(Boolean).join(" · ");
+  const digits = c.phone.replace(/\D/g, "");
+  const wa = digits ? `https://wa.me/${digits.startsWith("972") ? digits : digits.startsWith("0") ? `972${digits.slice(1)}` : digits}` : null;
 
   return (
-    <div className="group flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-muted/40 dark:hover:bg-white/[0.03]">
+    <div className={cn(
+      "group flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-muted/40 dark:hover:bg-white/[0.03]",
+      !c.active && "opacity-60",
+    )}>
       {/* Avatar */}
-      <div className="w-8 h-8 rounded-full bg-brand-gradient text-white flex items-center justify-center text-[11px] font-bold shrink-0 select-none shadow-sm">
+      <div className="w-10 h-10 rounded-xl bg-sidebar text-[#7ee2a4] flex items-center justify-center font-display text-xs font-extrabold shrink-0 select-none bc-slant">
         {getInitials(c.name)}
       </div>
 
-      {/* Name + info */}
+      {/* Name + contact */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium leading-none">{c.name}</span>
+          <span className="text-[15px] font-semibold">{c.name}</span>
           {!c.active && (
-            <Badge variant="secondary" className="text-[10px] h-4 px-1.5 py-0">לא פעיל</Badge>
+            <Badge variant="secondary" className="text-[11px] h-5 px-1.5 py-0">לא פעיל</Badge>
           )}
         </div>
-        {info && (
-          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{info}</p>
-        )}
+        <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground min-w-0">
+          {c.phone && (
+            <a href={`tel:${c.phone}`} className="tabular-nums hover:text-primary" dir="ltr">{c.phone}</a>
+          )}
+          {wa && (
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 font-bold text-[#1da851]">
+              <MessageCircle size={13} />
+              WhatsApp
+            </a>
+          )}
+          {c.email && <span className="hidden md:inline truncate">{c.email}</span>}
+        </div>
       </div>
 
-      {/* Actions — visible on hover */}
+      {/* Actions — always on a phone, on hover on a desktop */}
       <div className={cn(
         "flex items-center gap-0.5 shrink-0 transition-opacity duration-150",
-        "opacity-0 group-hover:opacity-100",
+        "md:opacity-0 md:group-hover:opacity-100",
       )}>
         <Link
           href={`/admin/coaches/sessions?coach=${encodeURIComponent(c.email)}`}

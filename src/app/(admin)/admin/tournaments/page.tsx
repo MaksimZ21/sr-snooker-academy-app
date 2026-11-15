@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { TournamentListRow } from "@/components/tournament-list-row";
 import { useRouter } from "next/navigation";
 import { Trophy, Plus, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -185,7 +186,7 @@ function TournamentGroup({ title, items, basePath }: { title: string; items: Tou
   if (items.length === 0) {
     return (
       <div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{title}</p>
+        <h2 className="font-display text-base font-extrabold mb-2">{title}</h2>
         <div className="py-8 text-center text-sm text-muted-foreground rounded-2xl border border-border/60 bg-card">
           אין טורנירים
         </div>
@@ -194,17 +195,10 @@ function TournamentGroup({ title, items, basePath }: { title: string; items: Tou
   }
   return (
     <div>
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{title}</p>
-      <div className="rounded-2xl border border-border/60 bg-card overflow-hidden divide-y divide-border/40">
+      <h2 className="font-display text-base font-extrabold mb-2">{title}</h2>
+      <div className="rounded-[18px] border bg-card overflow-hidden divide-y">
         {items.map((t) => (
-          <Link
-            key={t.id}
-            href={`${basePath}/tournaments/${t.id}`}
-            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors"
-          >
-            <span className="flex-1 text-sm font-medium">{t.name}</span>
-            <ChevronLeft size={14} className="text-muted-foreground/30 shrink-0" />
-          </Link>
+          <TournamentListRow key={t.id} tournament={t} href={`${basePath}/tournaments/${t.id}`} />
         ))}
       </div>
     </div>

@@ -66,9 +66,15 @@ export function isTournamentManager(tournament: Tournament, user: { email: strin
   return user.role === "admin" || tournament.manager_email?.trim().toLowerCase() === user.email.trim().toLowerCase();
 }
 
-export async function fetchTournaments(): Promise<Tournament[]> {
-  const { data } = await db.from("tournaments").select("*").order("created_at", { ascending: false });
-  return (data ?? []) as Tournament[];
+// With how many have signed up, for the tournament lists.
+export async function fetchTournaments(): Promise<(Tournament & { participant_count: number })[]> {
+  const { data } = await db
+    .from("tournaments")
+    .select("*, tournament_participants(count)")
+    .order("created_at", { ascending: false });
+  return ((data ?? []) as (Tournament & { tournament_participants?: { count: number }[] })[]).map(
+    ({ tournament_participants, ...t }) => ({ ...t, participant_count: tournament_participants?.[0]?.count ?? 0 }),
+  );
 }
 
 export async function fetchTournamentDetail(id: string): Promise<TournamentDetail | null> {

@@ -113,54 +113,60 @@ export function GroupsList() {
 
   function GroupCard({ g }: { g: Group }) {
     const coachName = g.coach_email ? (coachMap.get(g.coach_email) ?? g.coach_email) : null;
+    const names = g.student_ids.map((id) => studentMap.get(id) ?? id);
+    const shown = names.slice(0, 8);
     return (
-      <Card>
-        <CardContent className="p-4 flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold">
-              {g.name}{" "}
-              <span className="text-xs text-muted-foreground font-normal">
-                ({g.student_ids.length} מתאמנים)
-              </span>
-            </div>
-            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+      <div className="rounded-[18px] border bg-card p-4 flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-display text-[15px] font-extrabold leading-snug">{g.name}</p>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+              {g.start_time && (
+                <span className="flex items-center gap-1 rounded-md bg-sidebar text-white px-2 py-0.5 font-display text-[11px] font-bold tabular-nums">
+                  <Clock size={11} />
+                  {g.start_time}–{addMinutes(g.start_time, 90)}
+                </span>
+              )}
               {coachName && (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 rounded-md bg-muted text-muted-foreground px-2 py-0.5 font-display text-[11px] font-bold">
                   <User size={11} />
                   {coachName}
                 </span>
               )}
-              {g.start_time && (
-                <span className="flex items-center gap-1">
-                  <Clock size={11} />
-                  {g.start_time} — {addMinutes(g.start_time, 90)}
-                </span>
-              )}
-            </div>
-            <div className="text-sm text-muted-foreground mt-1.5 flex flex-wrap gap-1">
-              {g.student_ids.map((id) => (
-                <span
-                  key={id}
-                  className="bg-muted px-1.5 py-0.5 rounded text-xs"
-                >
-                  {studentMap.get(id) ?? id}
-                </span>
-              ))}
             </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <EditGroupDialog group={g} />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => deleteMut.mutate(g.id)}
-              disabled={deleteMut.isPending}
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
+          <div className="text-center shrink-0">
+            <p className="bc-num text-3xl leading-none">{g.student_ids.length}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">מתאמנים</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        {names.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {shown.map((n, i) => (
+              <span key={`${n}-${i}`} className="bg-muted/70 px-2 py-0.5 rounded-md text-xs">
+                {n}
+              </span>
+            ))}
+            {names.length > shown.length && (
+              <span className="px-2 py-0.5 rounded-md text-xs font-bold text-muted-foreground">+{names.length - shown.length}</span>
+            )}
+          </div>
+        )}
+        <div className="flex items-center justify-end gap-1 border-t pt-2 -mb-1">
+          <EditGroupDialog group={g} />
+          <Button
+            variant="ghost"
+            size="icon"
+            title="מחיקת קבוצה"
+            onClick={() => {
+              if (window.confirm(`למחוק את הקבוצה ${g.name}?`)) deleteMut.mutate(g.id);
+            }}
+            disabled={deleteMut.isPending}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      </div>
     );
   }
 
@@ -195,29 +201,30 @@ export function GroupsList() {
       {Array.from(collegeMap.entries())
         .sort(([a], [b]) => a.localeCompare(b, "he"))
         .map(([college, groups]) => (
-          <div key={college} className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 mt-1">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-xs font-medium text-muted-foreground px-1">{college}</span>
-              <div className="h-px flex-1 bg-border" />
+          <section key={college} className="flex flex-col gap-2.5 mt-2">
+            <h2 className="bc-kicker text-sm text-primary">
+              {college}
+              <span className="text-muted-foreground font-medium">· {groups.length} קבוצות</span>
+            </h2>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {groups.map((g) => (
+                <GroupCard key={g.id} g={g} />
+              ))}
             </div>
-            {groups.map((g) => (
-              <GroupCard key={g.id} g={g} />
-            ))}
-          </div>
+          </section>
         ))}
 
       {/* Standalone groups */}
       {standaloneGroups.length > 0 && collegeMap.size > 0 && (
-        <div className="flex items-center gap-2 mt-1">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-xs font-medium text-muted-foreground px-1">קבוצות כלליות</span>
-          <div className="h-px flex-1 bg-border" />
+        <h2 className="bc-kicker text-sm text-primary mt-2">קבוצות כלליות</h2>
+      )}
+      {standaloneGroups.length > 0 && (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {standaloneGroups.map((g) => (
+            <GroupCard key={g.id} g={g} />
+          ))}
         </div>
       )}
-      {standaloneGroups.map((g) => (
-        <GroupCard key={g.id} g={g} />
-      ))}
     </div>
   );
 }

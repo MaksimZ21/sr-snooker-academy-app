@@ -213,11 +213,10 @@ export function StudentsList() {
           </div>
         ) : (
           <div className="divide-y divide-border/40">
-            <div className="hidden md:grid grid-cols-[minmax(0,2fr)_72px_minmax(0,1.2fr)_minmax(0,1fr)_120px] gap-4 px-4 py-2 bg-muted/40 font-display text-[11px] font-bold text-muted-foreground">
+            <div className="hidden md:grid grid-cols-[minmax(0,2fr)_72px_minmax(0,1.2fr)_120px] gap-4 px-4 py-2 bg-muted/40 font-display text-[11px] font-bold text-muted-foreground">
               <span>שם</span>
               <span>דרגה</span>
               <span>טלפון</span>
-              <span>תשלום אחרון</span>
               <span />
             </div>
             {filtered.map((s) => (
@@ -285,12 +284,11 @@ function StudentRow({
   const name = studentFullName(s);
   const initials = name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
   const isConfirming = confirmDelete === s.id;
-  const paid = paymentAge(s.last_payment_date);
   const wa = whatsappLink(s.phone);
 
   return (
     <div className={cn(
-      "group grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[minmax(0,2fr)_72px_minmax(0,1.2fr)_minmax(0,1fr)_120px] items-center gap-x-4 gap-y-1 px-4 py-3 transition-colors duration-150",
+      "group grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[minmax(0,2fr)_72px_minmax(0,1.2fr)_120px] items-center gap-x-4 gap-y-1 px-4 py-3 transition-colors duration-150",
       "hover:bg-muted/40 dark:hover:bg-white/[0.03]",
       !s.active && !hideInactiveBadge && "opacity-60",
       isConfirming && "bg-destructive/5 dark:bg-destructive/10 opacity-100",
@@ -342,9 +340,6 @@ function StudentRow({
           <span className="text-xs text-muted-foreground">—</span>
         )}
       </span>
-
-      {/* Last payment, colored by how long ago */}
-      <span className={cn("hidden md:block text-sm", paid.tone)}>{paid.label}</span>
 
       {/* Actions */}
       {isConfirming ? (
@@ -410,7 +405,7 @@ function StudentRow({
         </div>
       )}
 
-      {/* Phone (mobile): number, WhatsApp and the payment on one line */}
+      {/* Phone (mobile): number and WhatsApp on one line */}
       <div className="md:hidden col-span-2 flex items-center gap-3 text-xs ps-12">
         {s.phone && (
           <a href={`tel:${s.phone}`} className="tabular-nums text-muted-foreground" dir="ltr">{s.phone}</a>
@@ -421,20 +416,11 @@ function StudentRow({
             WhatsApp
           </a>
         )}
-        <span className={cn("ms-auto", paid.tone)}>{paid.label}</span>
       </div>
     </div>
   );
 }
 
-// "שולם היום" / "לפני 12 ימים", amber after a month, red after two.
-function paymentAge(iso: string | null): { label: string; tone: string } {
-  if (!iso) return { label: "אין תשלום", tone: "text-muted-foreground" };
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  const label = days <= 0 ? "שולם היום" : days === 1 ? "לפני יום" : `לפני ${days} ימים`;
-  const tone = days > 60 ? "text-destructive font-semibold" : days > 30 ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-foreground";
-  return { label, tone };
-}
 
 // wa.me link from an Israeli number (05X… or 972…); null when it isn't one.
 function whatsappLink(phone: string): string | null {

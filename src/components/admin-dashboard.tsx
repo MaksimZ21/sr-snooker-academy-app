@@ -9,19 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { PushNotificationBanner } from "@/components/push-notification-banner";
 import dynamic from "next/dynamic";
-import {
-  Users,
-  User,
-  CalendarDays,
-  AlertCircle,
-  ChevronLeft,
-  Layers,
-  MessageSquare,
-  Send,
-  Loader2,
-  UserX,
-  CircleDollarSign,
-} from "lucide-react";
+import { Users, AlertCircle, ChevronLeft, Send, Loader2, UserX, CircleDollarSign } from "lucide-react";
 import { formatHebrewDate, dayLabelHe } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
@@ -29,11 +17,6 @@ import type { AdminStats, AbsentStudent, PaymentDueStudent } from "@/app/api/adm
 import type { Session } from "@/lib/sheets/schemas";
 const CollegesCard = dynamic(
   () => import("@/components/colleges-card").then((m) => m.CollegesCard),
-  { ssr: false },
-);
-
-const AdminChartsRow = dynamic(
-  () => import("@/components/admin-charts").then((m) => m.AdminChartsRow),
   { ssr: false },
 );
 
@@ -75,80 +58,68 @@ export function AdminDashboard({ displayName = "" }: { displayName?: string }) {
 
   const hasMessages = (data?.newMessages ?? 0) > 0;
 
+  const now = nowHHMM();
+  const todaySessions = data?.todaySessions ?? [];
+  const live = todaySessions.filter((x) => x.status !== "cancelled");
+  const next = live.find((x) => x.end_time > now);
+  const alerts = data
+    ? [
+        { n: data.alerts.absentStudents.length, label: "לא הגיעו 3 שבועות", color: "#e2408a" },
+        { n: data.alerts.paymentDue.length, label: "צריכים לשלם", color: "#d99a00" },
+        { n: data.alerts.noCoach.length, label: "מפגשים בלי מאמן", color: "#d61f2c" },
+      ]
+    : [];
+
   return (
-    <div className="p-4 md:p-6 flex flex-col gap-5">
+    <div className="flex flex-col">
+      <LiveTicker sessions={live} coachMap={data?.coachMap ?? {}} isLoading={isLoading} />
+
+      <div className="p-4 md:p-6 flex flex-col gap-5">
       {/* Header */}
-      <div className="flex items-end justify-between animate-fade-in-up">
+      <div className="flex items-end justify-between gap-4 bc-slide">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <p className="bc-kicker text-[13px] text-primary">לוח בקרה</p>
+          <h1 className="bc-num text-[32px] md:text-[44px] leading-[1.05] mt-1.5">
             {displayName ? `שלום, ${displayName}` : "שלום"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {isLoading || !data ? <Skeleton className="h-4 w-40 inline-block" /> : formatHebrewDate(data.today)}
-          </p>
         </div>
-        <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 border border-border/50 rounded-full px-3 py-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 status-dot" />
-          מחובר
+        <div className="hidden md:block font-display font-bold text-[15px] text-muted-foreground bg-card border rounded-xl px-4 py-2.5">
+          {isLoading || !data ? <Skeleton className="h-4 w-40" /> : formatHebrewDate(data.today)}
         </div>
       </div>
 
       <PushNotificationBanner />
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
-        <StatCard
-          icon={<Users size={18} />}
-          label="תלמידים פעילים"
-          value={data?.students.active}
-          sub={data ? `מתוך ${data.students.total}` : undefined}
-          href="/admin/students"
-          isLoading={isLoading}
-          colorClass="ball-card-yellow"
-        />
-        <StatCard
-          icon={<User size={18} />}
-          label="מאמנים פעילים"
-          value={data?.coaches.active}
-          href="/admin/coaches"
-          isLoading={isLoading}
-          colorClass="ball-card-green"
-        />
-        <StatCard
-          icon={<CalendarDays size={18} />}
-          label="מפגשים היום"
-          value={data?.todaySessions.length}
+      {/* Tiles: today's sessions leads, the rest are balls */}
+      <div className="grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3.5">
+        <Link
           href="/admin/schedule"
-          isLoading={isLoading}
-          colorClass="ball-card-red"
-        />
-        <StatCard
-          icon={<Layers size={18} />}
-          label="קבוצות"
-          value={data?.groups}
-          href="/admin/groups"
-          isLoading={isLoading}
-          colorClass="ball-card-blue"
-        />
-        <StatCard
-          icon={<MessageSquare size={18} />}
-          label="פניות חדשות"
-          value={data?.newMessages}
-          href="/admin/messages"
-          isLoading={isLoading}
-          colorClass={hasMessages ? "ball-card-pink" : "ball-card-dark"}
-          alert={hasMessages}
-        />
+          className="col-span-2 md:col-span-1 relative overflow-hidden rounded-[18px] p-[18px] text-white bg-linear-to-br from-[#0e8f45] to-[#075a2b] bc-slide transition-transform duration-200 hover:-translate-y-1"
+        >
+          <div className="absolute inset-0 bc-stripes" />
+          <div className="relative">
+            <p className="font-display font-bold text-[13px] text-white/75">מפגשים היום</p>
+            {isLoading ? (
+              <Skeleton className="h-20 w-24 mt-2 bg-white/20" />
+            ) : (
+              <p className="bc-num text-[84px] leading-none mt-2.5">{live.length}</p>
+            )}
+            <p className="text-[13px] text-white/75 mt-1 min-h-5">
+              {next ? `הבא: ${next.start_time} · ${trainingTypeBadge(next.training_type).label}` : !isLoading ? "אין עוד מפגשים היום" : ""}
+            </p>
+          </div>
+        </Link>
+        <BallTile label="תלמידים פעילים" value={data?.students.active} sub={data ? `מתוך ${data.students.total}` : undefined} href="/admin/students" ball="yellow" isLoading={isLoading} delay={0.12} />
+        <BallTile label="מאמנים פעילים" value={data?.coaches.active} href="/admin/coaches" ball="green" isLoading={isLoading} delay={0.19} />
+        <BallTile label="קבוצות" value={data?.groups} href="/admin/groups" ball="blue" isLoading={isLoading} delay={0.26} />
+        <BallTile label="פניות חדשות" value={data?.newMessages} href="/admin/messages" ball={hasMessages ? "pink" : "black"} isLoading={isLoading} delay={0.33} />
       </div>
 
-      {/* Charts row */}
-      <AdminChartsRow data={data} isLoading={isLoading} />
-
-      {/* Today's sessions */}
-      <Card className="animate-fade-in-up" style={{ animationDelay: "180ms" } as React.CSSProperties}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold">מפגשים היום</CardTitle>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3.5">
+        {/* Today's sessions */}
+        <section className="bg-card border rounded-[18px] overflow-hidden">
+          <div className="flex items-center justify-between gap-3 px-[18px] py-3.5 border-b">
+            <h2 className="font-display font-extrabold text-base">מפגשים היום</h2>
             <div className="flex items-center gap-3">
               <Button
                 size="sm"
@@ -157,40 +128,58 @@ export function AdminDashboard({ displayName = "" }: { displayName?: string }) {
                 disabled={reminderState === "loading"}
                 onClick={sendReminders}
               >
-                {reminderState === "loading" ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : (
-                  <Send size={12} />
-                )}
+                {reminderState === "loading" ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
                 {reminderState === "done"
                   ? `נשלח ל-${sentCount} מאמנים`
                   : reminderState === "error"
                     ? "שגיאה בשליחה"
                     : "שלח תזכורות"}
               </Button>
-              <Link href="/admin/schedule" className="text-xs text-primary hover:underline flex items-center gap-0.5">
-                לוז מלא <ChevronLeft size={12} />
+              <Link href="/admin/schedule" className="text-[13px] font-bold text-primary hover:underline flex items-center gap-0.5">
+                לו״ז מלא <ChevronLeft size={13} />
               </Link>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="pt-0">
           {isLoading ? (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 p-4">
               <Skeleton className="h-14 w-full rounded-lg" />
               <Skeleton className="h-14 w-full rounded-lg" />
             </div>
-          ) : !data?.todaySessions.length ? (
-            <p className="text-sm text-muted-foreground text-center py-6">אין מפגשים היום</p>
+          ) : !todaySessions.length ? (
+            <p className="text-sm text-muted-foreground text-center py-10">אין מפגשים היום</p>
           ) : (
-            <div className="flex flex-col divide-y divide-border/60">
-              {data.todaySessions.map((s) => (
-                <SessionRow key={s.id} session={s} coachMap={data.coachMap} />
+            <div className="flex flex-col">
+              {todaySessions.map((x) => (
+                <BroadcastRow key={x.id} session={x} coachMap={data!.coachMap} now={now} />
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </section>
+
+        {/* The week in numbers */}
+        <section className="bg-card border rounded-[18px] overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between px-[18px] py-3.5 border-b">
+            <h2 className="font-display font-extrabold text-base">השבוע במספרים</h2>
+            {data && <span className="font-display font-bold text-[13px] text-muted-foreground">{data.weekSessionCount} מפגשים</span>}
+          </div>
+          {isLoading || !data ? (
+            <Skeleton className="h-44 m-4 rounded-lg" />
+          ) : (
+            <>
+              <WeekBars days={data.sessionsByDay} today={data.today} />
+              {data.sessionsByType.length > 0 && <TypeSplit slices={data.sessionsByType} />}
+              <div className="grid grid-cols-3 border-t mt-auto">
+                {alerts.map((al, i) => (
+                  <div key={al.label} className={cn("px-[18px] py-3.5", i > 0 && "border-s")}>
+                    <span className="bc-num text-[30px] leading-none block" style={{ color: al.color }}>{al.n}</span>
+                    <p className="text-[13px] text-muted-foreground mt-1">{al.label}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+      </div>
 
       {/* Upcoming */}
       {(isLoading || (data?.upcomingSessions.length ?? 0) > 0) && (
@@ -267,55 +256,157 @@ export function AdminDashboard({ displayName = "" }: { displayName?: string }) {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }
 
 /* ─── Sub-components ─────────────────────────────────────────── */
 
-function StatCard({
-  icon, label, value, sub, href, isLoading, colorClass, alert,
+// Current time in Israel as "HH:MM", for "now" / "next" against session times.
+function nowHHMM(): string {
+  return new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jerusalem" }).format(new Date());
+}
+
+// The red "on the table today" strip that runs across the top, like a sports channel.
+function LiveTicker({ sessions, coachMap, isLoading }: { sessions: Session[]; coachMap: Record<string, string>; isLoading: boolean }) {
+  const items = (copy: string) => sessions.map((x) => (
+    <span key={`${x.id}${copy}`} className="text-sm whitespace-nowrap">
+      <b className="font-display font-bold text-[#7ee2a4] me-2 tabular-nums">{x.start_time}</b>
+      {trainingTypeBadge(x.training_type).label}
+      {" · "}
+      {x.coach_email ? (coachMap[x.coach_email] ?? x.coach_email.split("@")[0]) : "ללא מאמן"}
+      {" · "}
+      {x.student_ids.length} מתאמנים
+    </span>
+  ));
+  return (
+    <div className="bc-ticker bg-sidebar text-white flex items-stretch h-11 overflow-hidden">
+      <span className="bg-[#d61f2c] font-display font-extrabold text-sm flex items-center gap-2 ps-[18px] pe-[26px] shrink-0 [clip-path:polygon(0_0,100%_0,100%_100%,12px_100%)]">
+        <i className="w-2 h-2 rounded-full bg-white bc-blink" />
+        היום על השולחן
+      </span>
+      {isLoading ? null : sessions.length === 0 ? (
+        <span className="flex items-center ps-6 text-sm text-white/60">אין מפגשים היום</span>
+      ) : (
+        <div className="bc-track flex items-center gap-10 ps-6">
+          {items("")}
+          {/* A second copy, so the strip loops without a gap. */}
+          {items("-again")}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BallTile({
+  label, value, sub, href, ball, isLoading, delay,
 }: {
-  icon: React.ReactNode;
   label: string;
   value?: number;
   sub?: string;
   href: string;
+  ball: "red" | "yellow" | "green" | "blue" | "pink" | "black";
   isLoading: boolean;
-  colorClass: string;
-  alert?: boolean;
+  delay: number;
 }) {
   return (
-    <Link href={href} className="block h-full">
-      <div className={cn(
-        "group relative h-full rounded-2xl p-4 flex flex-col justify-between gap-3 overflow-hidden",
-        "transition-all duration-200 hover:-translate-y-1.5",
-        colorClass,
-      )}>
-        <div className="flex items-start justify-between relative">
-          <span className="p-2 rounded-xl bg-white/20 text-white transition-transform duration-200 group-hover:scale-110 group-hover:bg-white/30">
-            {icon}
-          </span>
-          {alert && (
-            <span className="w-2 h-2 rounded-full bg-white status-dot" />
-          )}
-        </div>
+    <Link
+      href={href}
+      className={cn(
+        "bc-ball bc-slide block bg-card border rounded-[18px] p-[18px] min-h-36 transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_16px_30px_-18px_rgb(13_21_16/0.35)]",
+        `bc-ball-${ball}`,
+      )}
+      style={{ animationDelay: `${delay}s` }}
+    >
+      <p className="font-display font-bold text-[13px] text-muted-foreground">{label}</p>
+      {isLoading ? (
+        <Skeleton className="h-12 w-16 mt-2.5" />
+      ) : (
+        <p className="bc-num text-[56px] leading-none mt-2.5">{value ?? 0}</p>
+      )}
+      {sub && <p className="text-[13px] text-muted-foreground mt-1">{sub}</p>}
+    </Link>
+  );
+}
 
-        {isLoading ? (
-          <div className="relative">
-            <Skeleton className="h-9 w-14 mb-1.5 rounded-lg bg-white/20" />
-            <Skeleton className="h-3 w-20 rounded bg-white/20" />
+function WeekBars({ days, today }: { days: { date: string; day: string; count: number }[]; today: string }) {
+  const max = Math.max(1, ...days.map((d) => d.count));
+  return (
+    <div className="flex items-end gap-2.5 h-44 px-[18px] pt-8 pb-3">
+      {days.map((d, i) => (
+        <div key={d.date} className="flex-1 h-full flex flex-col items-center justify-end gap-2">
+          <div
+            className={cn("w-full rounded-md relative bc-grow", d.date === today ? "bc-bar-today" : "bg-muted dark:bg-white/10")}
+            style={{ height: `${Math.max(3, (d.count / max) * 88)}%`, animationDelay: `${0.3 + i * 0.06}s` }}
+          >
+            {d.count > 0 && (
+              <span className="absolute -top-5 inset-x-0 text-center font-display font-extrabold text-[13px] text-muted-foreground">{d.count}</span>
+            )}
           </div>
-        ) : (
-          <div className="relative">
-            <div className="text-4xl font-extrabold tabular-nums leading-none text-white scoreboard-num">
-              {value ?? 0}
-            </div>
-            <div className="text-xs mt-2 font-medium text-white/75">{label}</div>
-            {sub && <div className="text-[10px] mt-0.5 text-white/50">{sub}</div>}
-          </div>
-        )}
+          <span className={cn("font-display font-bold text-xs", d.date === today ? "text-primary" : "text-muted-foreground")}>{d.day}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// This week's sessions by type: one stacked bar in ball colors, with a legend.
+function TypeSplit({ slices }: { slices: { type: string; label: string; count: number }[] }) {
+  const total = slices.reduce((n, x) => n + x.count, 0) || 1;
+  return (
+    <div className="px-[18px] pb-4 flex flex-col gap-2">
+      <div className="flex h-2.5 rounded-full overflow-hidden gap-0.5">
+        {slices.map((x) => (
+          <span key={x.type} style={{ width: `${(x.count / total) * 100}%`, background: TYPE_COLORS[x.type] ?? "#94a3b8" }} />
+        ))}
       </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {slices.map((x) => (
+          <span key={x.type} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <i className="w-2 h-2 rounded-full" style={{ background: TYPE_COLORS[x.type] ?? "#94a3b8" }} />
+            {x.label}
+            <b className="font-display text-foreground tabular-nums">{x.count}</b>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// A row of today's list: ball-colored stripe, slanted time, who and a pill.
+function BroadcastRow({ session, coachMap, now }: { session: Session; coachMap: Record<string, string>; now: string }) {
+  const { label } = trainingTypeBadge(session.training_type);
+  const cancelled = session.status === "cancelled";
+  const isNow = !cancelled && session.start_time <= now && now < session.end_time;
+  const coachName = session.coach_email
+    ? (coachMap[session.coach_email] ?? session.coach_email.split("@")[0])
+    : "ללא מאמן";
+  return (
+    <Link
+      href={`/admin/sessions/${session.id}`}
+      className={cn(
+        "grid grid-cols-[6px_72px_1fr_auto] items-center gap-3.5 px-[18px] py-3 border-b last:border-b-0 transition-colors",
+        isNow ? "bg-primary/8" : "hover:bg-muted/50",
+      )}
+    >
+      <span className="self-stretch rounded-md" style={{ background: cancelled ? "#94a3b8" : (TYPE_COLORS[session.training_type] ?? "#94a3b8") }} />
+      <div className={cn(cancelled && "opacity-40 line-through")}>
+        <p className="bc-num text-[22px] leading-none">{session.start_time}</p>
+        <p className="text-xs text-muted-foreground mt-1 tabular-nums">עד {session.end_time}</p>
+      </div>
+      <div className="min-w-0">
+        <p className="font-bold text-[15px] truncate">{label} · {session.student_ids.length} מתאמנים</p>
+        <p className="text-[13px] text-muted-foreground truncate">{coachName}</p>
+      </div>
+      <span
+        className={cn(
+          "font-display font-bold text-xs px-2.5 py-1 rounded-lg",
+          cancelled ? "bg-destructive/10 text-destructive" : isNow ? "bg-[#d61f2c] text-white" : "bg-muted text-muted-foreground",
+        )}
+      >
+        {cancelled ? "לא התקיים" : isNow ? "עכשיו" : label}
+      </span>
     </Link>
   );
 }

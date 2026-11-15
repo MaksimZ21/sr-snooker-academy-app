@@ -49,7 +49,7 @@ export function AppShell({
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-sidebar-primary/60 to-transparent" />
 
         <div className="p-4 pb-2">
-          <div className="bg-brand-gradient rounded-2xl px-3.5 py-3 flex items-center gap-3 shadow-lg shadow-primary/20">
+          <div className="bg-primary bc-slant rounded-2xl ps-3.5 pe-6 py-3 flex items-center gap-3">
             <div className="relative shrink-0">
               <div className="absolute inset-0 rounded-full bg-white/30 blur-md scale-110" />
               <Image
@@ -61,7 +61,7 @@ export function AppShell({
               />
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-bold text-white tracking-wide">האקדמיה לסנוקר</div>
+              <div className="font-display text-sm font-bold text-white">האקדמיה לסנוקר</div>
               <div className="text-[11px] text-white/60 font-medium">של שחר רוברג</div>
             </div>
           </div>
@@ -103,14 +103,14 @@ export function AppShell({
         className="fixed bottom-0 inset-x-0 md:hidden pointer-events-none"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <nav className="mx-3 mb-3 pointer-events-auto bg-background/95 backdrop-blur-2xl border border-border/50 rounded-2xl flex justify-around shadow-2xl shadow-black/15">
+        <nav className="mx-3 mb-3 p-1.5 gap-1 pointer-events-auto bg-sidebar text-white rounded-2xl flex justify-around shadow-2xl shadow-black/25">
           {quickItems.map((it) => (
             <NavLink key={it.href} item={it} active={isActiveRoute(pathname, it.href)} compact />
           ))}
           {hasMore && (
             <button
               onClick={() => setMoreOpen(true)}
-              className="flex flex-col flex-1 items-center gap-0.5 py-2.5 px-1 text-[10px] text-muted-foreground/60 hover:text-foreground transition-colors"
+              className="flex flex-col flex-1 items-center gap-0.5 py-1.5 px-1 rounded-xl text-[10px] font-semibold text-white/55 hover:text-white transition-colors"
             >
               <span className="w-10 h-8 rounded-xl flex items-center justify-center">
                 <LayoutGrid size={20} strokeWidth={1.75} />
@@ -214,13 +214,13 @@ function NavLink({
       <Link
         href={item.href}
         className={cn(
-          "flex flex-col flex-1 items-center gap-0.5 py-2.5 px-1 text-[10px] transition-all duration-200 relative",
-          active ? "text-primary font-semibold" : "text-muted-foreground/60 hover:text-foreground",
+          "flex flex-col flex-1 items-center gap-0.5 py-1.5 px-1 rounded-xl text-[10px] font-semibold transition-colors duration-200 relative",
+          active ? "bg-primary text-white" : "text-white/55 hover:text-white",
         )}
       >
         <span className={cn(
           "w-10 h-8 rounded-xl flex items-center justify-center transition-all duration-200",
-          active && "bg-primary/12 dark:bg-primary/15 shadow-sm",
+
         )}>
           {Icon && (
             <Icon
@@ -239,14 +239,14 @@ function NavLink({
       href={item.href}
       style={style}
       className={cn(
-        "animate-fade-in-up flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 relative group",
+        "animate-fade-in-up flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 relative group",
         active
-          ? "bg-sidebar-primary/12 text-sidebar-accent-foreground font-medium"
-          : "text-sidebar-foreground/45 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/80",
+          ? "bg-linear-to-l from-primary/50 to-transparent text-white"
+          : "text-sidebar-foreground/55 hover:bg-white/6 hover:text-white",
       )}
     >
       {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-sidebar-primary shadow-[0_0_8px_oklch(0.72_0.22_145/0.5)]" />
+        <span className="absolute start-0 inset-y-0 w-1 rounded-e bg-primary" />
       )}
       {Icon && (
         <Icon
@@ -254,7 +254,7 @@ function NavLink({
           strokeWidth={active ? 2.5 : 1.75}
           className={cn(
             "transition-all duration-200 shrink-0",
-            active ? "text-sidebar-primary" : "group-hover:text-sidebar-foreground/70",
+            active ? "text-white" : "group-hover:text-white",
           )}
         />
       )}

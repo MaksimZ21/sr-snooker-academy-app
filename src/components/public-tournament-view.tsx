@@ -106,9 +106,9 @@ export function PublicTournamentView({
           <Image src="/logo.png" alt="" width={52} height={52} className="object-contain" />
         )}
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-2xl font-bold text-white leading-tight">{tournament.name}</h1>
+          <h1 className="text-2xl font-semibold text-white leading-tight">{tournament.name}</h1>
           {!tournament.multiLocation && (
-            <p className="text-xs text-white/60 tracking-wide">האקדמיה לסנוקר של שחר רוברג</p>
+            <p className="text-xs text-white/60">האקדמיה לסנוקר של שחר רוברג</p>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-center">

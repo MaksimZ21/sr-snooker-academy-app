@@ -3,25 +3,36 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronDown, ExternalLink, FolderOpen, AlertCircle } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronDown,
+  ExternalLink,
+  FolderOpen,
+  AlertCircle,
+  FileText,
+  FileSpreadsheet,
+  Presentation,
+  FileVideo,
+  FileImage,
+  FileAudio,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DriveFolder, DriveFile } from "@/lib/google/drive";
 
-const MIME_ICONS: Record<string, string> = {
-  "application/vnd.google-apps.document": "📄",
-  "application/vnd.google-apps.spreadsheet": "📊",
-  "application/vnd.google-apps.presentation": "📽️",
-  "application/pdf": "📕",
-  "video/mp4": "🎬",
-  "video/quicktime": "🎬",
+const MIME_ICONS: Record<string, LucideIcon> = {
+  "application/vnd.google-apps.document": FileText,
+  "application/vnd.google-apps.spreadsheet": FileSpreadsheet,
+  "application/vnd.google-apps.presentation": Presentation,
+  "application/pdf": FileText,
 };
 
-function mimeIcon(mimeType: string) {
+function mimeIcon(mimeType: string): LucideIcon {
   if (MIME_ICONS[mimeType]) return MIME_ICONS[mimeType];
-  if (mimeType.startsWith("video/")) return "🎬";
-  if (mimeType.startsWith("image/")) return "🖼️";
-  if (mimeType.startsWith("audio/")) return "🎵";
-  return "📄";
+  if (mimeType.startsWith("video/")) return FileVideo;
+  if (mimeType.startsWith("image/")) return FileImage;
+  if (mimeType.startsWith("audio/")) return FileAudio;
+  return FileText;
 }
 
 function FileRow({ file }: { file: DriveFile }) {
@@ -32,7 +43,10 @@ function FileRow({ file }: { file: DriveFile }) {
       rel="noopener noreferrer"
       className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 transition-colors group"
     >
-      <span className="text-lg shrink-0 leading-none">{mimeIcon(file.mimeType)}</span>
+      {(() => {
+        const Icon = mimeIcon(file.mimeType);
+        return <Icon size={16} strokeWidth={1.75} className="shrink-0 text-muted-foreground" />;
+      })()}
       <span className="flex-1 text-sm truncate">{file.name}</span>
       <ExternalLink
         size={13}

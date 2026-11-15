@@ -24,16 +24,16 @@ export default async function StudentTournamentsPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-1">הטורנירים שלי</h1>
+      <h1 className="text-2xl font-semibold mb-1">הטורנירים שלי</h1>
       <p className="text-muted-foreground mb-2">הסיווג שלי</p>
       <div className="flex gap-8 mb-6">
         <div>
           <p className="text-xs text-muted-foreground">9-10 פיט</p>
-          <p className="text-3xl font-bold">{student.skill_level_9ft ?? "—"}</p>
+          <p className="text-3xl font-semibold">{student.skill_level_9ft ?? "—"}</p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">12 פיט</p>
-          <p className="text-3xl font-bold">{student.skill_level ?? "—"}</p>
+          <p className="text-3xl font-semibold">{student.skill_level ?? "—"}</p>
         </div>
       </div>
 
@@ -71,7 +71,7 @@ export default async function StudentTournamentsPage() {
         </div>
       )}
 
-      <h2 className="text-xl font-bold mt-10 mb-4">הליגות שלי</h2>
+      <h2 className="text-xl font-semibold mt-10 mb-4">הליגות שלי</h2>
       {leagueEntries.length === 0 ? (
         <p className="text-muted-foreground text-center py-12">עדיין לא השתתפת בליגה</p>
       ) : (

@@ -46,7 +46,7 @@ function TournamentList({ title, items }: { title: string; items: Tournament[] }
   if (items.length === 0) return null;
   return (
     <div>
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{title}</p>
+      <p className="text-xs font-medium text-muted-foreground mb-2">{title}</p>
       <div className="rounded-2xl border border-border/60 bg-card overflow-hidden divide-y divide-border/40">
         {items.map((t) => (
           <Link

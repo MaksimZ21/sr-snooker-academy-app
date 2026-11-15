@@ -134,7 +134,7 @@ function FinanceRow({
         {session.source && session.source !== "אחר" && (
           <Badge
             variant="outline"
-            className={cn("text-[10px] px-1.5 py-0 h-4 border shrink-0",
+            className={cn("text-[11px] px-1.5 py-0 h-4 border shrink-0",
               SOURCE_STYLE[session.source] ?? "border-border/60 text-muted-foreground")}
           >
             {session.source}
@@ -143,7 +143,7 @@ function FinanceRow({
       </div>
 
       {/* Price */}
-      <span className="text-xs font-bold tabular-nums shrink-0">
+      <span className="text-xs font-semibold tabular-nums shrink-0">
         {session.price_nis != null ? `${session.price_nis} ₪` : "—"}
       </span>
 
@@ -153,7 +153,7 @@ function FinanceRow({
         disabled={toggling}
         onClick={() => onToggle(session.id, paid ? "pending" : "paid")}
         className={cn(
-          "shrink-0 flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-md border transition-all duration-150",
+          "shrink-0 flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-md border transition-colors duration-150",
           "disabled:opacity-50",
           paid
             ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800"
@@ -176,9 +176,9 @@ function DateGroupHeader({ date, sessions }: { date: string; sessions: Session[]
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/40 border-y border-border/30 sticky top-0 z-10">
-      <span className="text-xs font-bold tabular-nums">{shortDt}</span>
-      <span className="text-[10px] text-muted-foreground">{dayName}</span>
-      <span className="text-[10px] text-muted-foreground/50 mr-auto">
+      <span className="text-xs font-semibold tabular-nums">{shortDt}</span>
+      <span className="text-[11px] text-muted-foreground">{dayName}</span>
+      <span className="text-[11px] text-muted-foreground/50 mr-auto">
         {paidCount}/{sessions.length} שולמו
         {total > 0 && ` · ${total.toLocaleString("he-IL")} ₪`}
       </span>
@@ -193,7 +193,7 @@ function MonthGroupHeader({ monthKey, sessions }: { monthKey: string; sessions: 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/40 border-y border-border/30">
       <span className="text-xs font-semibold">{monthLabelFromKey(monthKey)}</span>
-      <span className="text-[10px] text-muted-foreground/60 mr-auto">
+      <span className="text-[11px] text-muted-foreground/60 mr-auto">
         {paidCount}/{sessions.length} שולמו
         {total > 0 && ` · ${total.toLocaleString("he-IL")} ₪`}
       </span>
@@ -211,9 +211,9 @@ function OffsetsBar({ offsets }: { offsets: OffsetEntry[] }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 text-rose-700 dark:text-rose-400">
           <Minus size={11} />
-          <span className="text-[10px] font-medium">קיזוזים</span>
+          <span className="text-[11px] font-medium">קיזוזים</span>
         </div>
-        <span className="text-sm font-bold tabular-nums text-rose-800 dark:text-rose-300">
+        <span className="text-sm font-semibold tabular-nums text-rose-800 dark:text-rose-300">
           -{total.toLocaleString("he-IL")} ₪
         </span>
       </div>
@@ -244,21 +244,21 @@ function SummaryBar({ sessions }: { sessions: Session[] }) {
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20 px-3 py-2.5 flex flex-col gap-0.5">
         <div className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
           <Check size={11} />
-          <span className="text-[10px] font-medium">שולם</span>
+          <span className="text-[11px] font-medium">שולם</span>
         </div>
-        <span className="text-sm font-bold tabular-nums text-emerald-800 dark:text-emerald-300 scoreboard-num">
+        <span className="text-sm font-semibold tabular-nums text-emerald-800 dark:text-emerald-300 scoreboard-num">
           {paidAmt.toLocaleString("he-IL")} ₪
         </span>
-        <span className="text-[10px] text-emerald-600/70 dark:text-emerald-500">{paid.length} אימונים</span>
+        <span className="text-[11px] text-emerald-600/70 dark:text-emerald-500">{paid.length} אימונים</span>
       </div>
       <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20 px-3 py-2.5 flex flex-col gap-0.5">
         <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
-          <span className="text-[10px] font-medium">⏳ ממתין לתשלום</span>
+          <span className="text-[11px] font-medium">⏳ ממתין לתשלום</span>
         </div>
-        <span className="text-sm font-bold tabular-nums text-amber-800 dark:text-amber-300 scoreboard-num">
+        <span className="text-sm font-semibold tabular-nums text-amber-800 dark:text-amber-300 scoreboard-num">
           {pendAmt.toLocaleString("he-IL")} ₪
         </span>
-        <span className="text-[10px] text-amber-600/70 dark:text-amber-500">{pending.length} אימונים</span>
+        <span className="text-[11px] text-amber-600/70 dark:text-amber-500">{pending.length} אימונים</span>
       </div>
     </div>
   );
@@ -279,14 +279,14 @@ function FilterChips<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider shrink-0">{label}</span>
+      <span className="text-[11px] font-medium text-muted-foreground/70 shrink-0">{label}</span>
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           onClick={() => onChange(o.value)}
           className={cn(
-            "text-[11px] px-2.5 py-0.5 rounded-full border transition-all duration-150 font-medium",
+            "text-[11px] px-2.5 py-0.5 rounded-full border transition-colors duration-150 font-medium",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary"
               : "bg-background text-muted-foreground border-border/60 hover:border-primary/50 hover:text-foreground",
@@ -447,7 +447,7 @@ export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
               setMode(m);
             }}
             className={cn(
-              "flex-1 text-sm py-1.5 rounded-lg font-medium transition-all duration-200",
+              "flex-1 text-sm py-1.5 rounded-lg font-medium transition-colors duration-200",
               mode === m ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
             )}
           >
@@ -464,7 +464,7 @@ export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
           </button>
           <div className="text-center">
             <div className="font-semibold text-sm leading-tight">{label}</div>
-            {rangeLabel && <div className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">{rangeLabel}</div>}
+            {rangeLabel && <div className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">{rangeLabel}</div>}
           </div>
           <button onClick={prevPeriod} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors" aria-label="הקודם">
             <ChevronLeft size={17} />

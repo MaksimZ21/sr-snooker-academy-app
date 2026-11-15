@@ -11,7 +11,7 @@ export function AppSplash({ message = "טוען..." }: { message?: string }) {
     >
       <Image src="/logo.png" alt="" width={140} height={88} priority className="object-contain drop-shadow-lg" />
       <div className="text-center">
-        <p className="text-xl font-bold text-white">האקדמיה לסנוקר</p>
+        <p className="text-xl font-semibold text-white">האקדמיה לסנוקר</p>
         <p className="text-sm text-white/70">של שחר רוברג</p>
       </div>
       <div className="h-9 w-9 animate-spin rounded-full border-[3px] border-white/30 border-t-white" />

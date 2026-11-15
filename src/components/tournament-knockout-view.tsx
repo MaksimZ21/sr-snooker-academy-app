@@ -229,7 +229,7 @@ export function TournamentKnockoutView({
     <div className="flex flex-col gap-4">
       {canEdit && (
         <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground">
             {matches.length === 0 ? "בניית בראקט נוקאאוט" : "בניית בראקט מחדש"}
           </p>
           <div className="flex items-end gap-2">
@@ -294,7 +294,7 @@ export function TournamentKnockoutView({
             </svg>
             {rounds.map(({ round, label, matches: roundMatches }) => (
               <div key={round} className="relative flex flex-col w-56 shrink-0">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center pb-2">
+                <p className="text-xs font-semibold text-muted-foreground text-center pb-2">
                   {label}
                 </p>
                 <div className="flex-1 flex flex-col justify-around gap-6">

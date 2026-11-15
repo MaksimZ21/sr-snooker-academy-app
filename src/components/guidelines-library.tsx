@@ -48,7 +48,7 @@ export function GuidelinesLibrary({ showAdd = false }: { showAdd?: boolean }) {
       </div>
       {Object.entries(grouped).map(([cat, items]) => (
         <section key={cat}>
-          <h2 className="font-bold mb-2">{cat}</h2>
+          <h2 className="font-semibold mb-2">{cat}</h2>
           <div className="flex flex-col gap-2">
             {items.map((g) => (
               <div key={g.id} className="border rounded p-3">

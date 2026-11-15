@@ -148,32 +148,6 @@ export function AssessmentDetailView({
     <div className="flex flex-col">
       {/* Header */}
       <div className="bg-brand-gradient relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div
-            className="session-orb absolute rounded-full"
-            style={{
-              top: "-30px",
-              right: "-30px",
-              width: "180px",
-              height: "180px",
-              background: "radial-gradient(circle, rgba(255,255,255,0.28) 0%, transparent 65%)",
-              filter: "blur(32px)",
-              animation: "drift-1 12s ease-in-out infinite",
-            }}
-          />
-          <div
-            className="session-orb absolute rounded-full"
-            style={{
-              bottom: "-20px",
-              left: "10px",
-              width: "140px",
-              height: "140px",
-              background: "radial-gradient(circle, rgba(251,191,36,0.35) 0%, transparent 65%)",
-              filter: "blur(24px)",
-              animation: "drift-2 16s ease-in-out infinite 3s",
-            }}
-          />
-        </div>
 
         <div className="relative z-10 px-5 pt-4 pb-6">
           <Link
@@ -185,7 +159,7 @@ export function AssessmentDetailView({
           </Link>
 
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 text-white flex items-center justify-center text-lg font-bold shrink-0">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 text-white flex items-center justify-center text-lg font-semibold shrink-0">
               {a.participant_name
                 .split(" ")
                 .map((w) => w[0])
@@ -194,7 +168,7 @@ export function AssessmentDetailView({
                 .toUpperCase()}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white leading-tight">{a.participant_name}</h1>
+              <h1 className="text-2xl font-semibold text-white leading-tight">{a.participant_name}</h1>
               <p className="text-white/65 text-sm mt-0.5">{formatDate(a.event_date)}</p>
               {showCoach && (
                 <p className="text-white/45 text-xs mt-0.5">{a.coach_email}</p>

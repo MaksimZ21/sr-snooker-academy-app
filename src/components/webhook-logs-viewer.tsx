@@ -123,7 +123,7 @@ export function WebhookLogsViewer() {
                 key={r}
                 onClick={() => setRouteFilter(r)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
+                  "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors",
                   routeFilter === r
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-background text-muted-foreground border-border/60 hover:border-primary/50",
@@ -141,7 +141,7 @@ export function WebhookLogsViewer() {
                 key={s}
                 onClick={() => setStatusFilter(s)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
+                  "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors",
                   statusFilter === s
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-background text-muted-foreground border-border/60 hover:border-primary/50",
@@ -186,7 +186,7 @@ export function WebhookLogsViewer() {
                   className="w-full flex items-center gap-3 px-4 py-3 text-right hover:bg-muted/30 transition-colors"
                 >
                   {/* Status pill */}
-                  <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0", STATUS_STYLES[log.status] ?? STATUS_STYLES.skipped)}>
+                  <span className={cn("text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0", STATUS_STYLES[log.status] ?? STATUS_STYLES.skipped)}>
                     {log.status}
                   </span>
 
@@ -212,14 +212,14 @@ export function WebhookLogsViewer() {
                   <div className="px-4 pb-4 flex flex-col gap-3 text-xs" dir="ltr">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <p className="font-semibold text-muted-foreground mb-1 uppercase tracking-wide text-[10px]">Params</p>
+                        <p className="font-semibold text-muted-foreground mb-1 text-[11px]">Params</p>
                         <pre className="bg-muted/40 rounded-lg p-3 overflow-x-auto text-[11px] leading-relaxed whitespace-pre-wrap break-all">
                           {JSON.stringify(log.params, null, 2)}
                         </pre>
                       </div>
                       {log.result !== null && (
                         <div>
-                          <p className="font-semibold text-muted-foreground mb-1 uppercase tracking-wide text-[10px]">Result</p>
+                          <p className="font-semibold text-muted-foreground mb-1 text-[11px]">Result</p>
                           <pre className="bg-muted/40 rounded-lg p-3 overflow-x-auto text-[11px] leading-relaxed whitespace-pre-wrap break-all">
                             {JSON.stringify(log.result, null, 2)}
                           </pre>

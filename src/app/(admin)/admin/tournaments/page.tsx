@@ -185,7 +185,7 @@ function TournamentGroup({ title, items, basePath }: { title: string; items: Tou
   if (items.length === 0) {
     return (
       <div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{title}</p>
+        <p className="text-xs font-medium text-muted-foreground mb-2">{title}</p>
         <div className="py-8 text-center text-sm text-muted-foreground rounded-2xl border border-border/60 bg-card">
           אין טורנירים
         </div>
@@ -194,7 +194,7 @@ function TournamentGroup({ title, items, basePath }: { title: string; items: Tou
   }
   return (
     <div>
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{title}</p>
+      <p className="text-xs font-medium text-muted-foreground mb-2">{title}</p>
       <div className="rounded-2xl border border-border/60 bg-card overflow-hidden divide-y divide-border/40">
         {items.map((t) => (
           <Link

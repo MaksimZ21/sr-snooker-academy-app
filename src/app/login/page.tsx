@@ -136,7 +136,7 @@ function WhatsAppLoginForm() {
           required
           maxLength={6}
           dir="ltr"
-          className="text-center text-lg tracking-widest"
+          className="text-center text-lg"
           autoFocus
         />
         {error && <p className="text-sm text-destructive text-center">{error}</p>}
@@ -284,7 +284,7 @@ export default function LoginPage() {
                 height={75}
                 className="object-contain"
               />
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight text-center">
+              <h1 className="text-3xl md:text-4xl font-semibold tracking-tight leading-tight text-center">
                 האקדמיה לסנוקר<br />של שחר רוברג
               </h1>
             </div>

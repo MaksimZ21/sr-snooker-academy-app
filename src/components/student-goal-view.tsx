@@ -95,7 +95,7 @@ export function StudentGoalView({ studentId }: { studentId: string }) {
         </div>
       ) : (
         <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-2">
-          <p className="text-xs font-medium text-muted-foreground">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             המטרה שלי החודש · {GOAL_CATEGORIES.find((c) => c.key === current.goal.category)?.label}
           </p>
           <GoalChart entries={current.entries} category={current.goal.category} />
@@ -104,7 +104,7 @@ export function StudentGoalView({ studentId }: { studentId: string }) {
 
       {past.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium text-muted-foreground">חודשים קודמים</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">חודשים קודמים</p>
           {past.map((g) => (
             <PastGoalRow key={g.goal.id} item={g} />
           ))}

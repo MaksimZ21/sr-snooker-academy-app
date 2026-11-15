@@ -112,6 +112,27 @@ export function SessionDetail({
     <div className="flex flex-col">
       {/* Header */}
       <div className="bg-brand-gradient relative overflow-hidden">
+        {/* Orbs — inline animation to guarantee browser picks it up */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="session-orb absolute rounded-full" style={{
+            top: "-40px", right: "-40px", width: "220px", height: "220px",
+            background: "radial-gradient(circle, rgba(255,255,255,0.32) 0%, transparent 65%)",
+            filter: "blur(36px)",
+            animation: "drift-1 10s ease-in-out infinite",
+          }} />
+          <div className="session-orb absolute rounded-full" style={{
+            bottom: "-30px", left: "-10px", width: "180px", height: "180px",
+            background: "radial-gradient(circle, rgba(251,191,36,0.42) 0%, transparent 65%)",
+            filter: "blur(28px)",
+            animation: "drift-2 14s ease-in-out infinite 4s",
+          }} />
+          <div className="session-orb absolute rounded-full" style={{
+            top: "30px", left: "42%", width: "90px", height: "90px",
+            background: "radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 70%)",
+            filter: "blur(18px)",
+            animation: "drift-3 9s ease-in-out infinite 1.5s",
+          }} />
+        </div>
 
         {/* Admin action buttons — absolute top corner */}
         {isAdmin && (
@@ -132,18 +153,18 @@ export function SessionDetail({
         {/* Centered content */}
         <div className="relative z-10 flex flex-col items-center text-center px-5 pt-5 pb-7">
           {/* Date */}
-          <p className="text-white/55 text-xs mb-5">
+          <p className="text-white/55 text-xs tracking-widest mb-5">
             {formatHebrewDate(session.date)}
           </p>
 
           {/* Times */}
           <div className={cn("flex items-baseline gap-3 mb-5", cancelled && "opacity-40")}>
-            <span className="text-6xl font-semibold tabular-nums text-white leading-none tracking-tight scoreboard-num">
+            <span className="text-6xl font-bold tabular-nums text-white leading-none tracking-tight scoreboard-num">
               {session.start_time}
             </span>
             <span className="text-white/30 text-3xl font-extralight select-none">—</span>
             <span className={cn(
-              "text-6xl font-semibold tabular-nums leading-none tracking-tight scoreboard-num",
+              "text-6xl font-bold tabular-nums leading-none tracking-tight scoreboard-num",
               session.end_time ? "text-white/85" : "text-white/30",
             )}>
               {session.end_time || "--:--"}
@@ -226,7 +247,7 @@ export function SessionDetail({
           <TabsContent value="notes">
             <div className="flex flex-col gap-5">
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
                   מטרה חודשית
                 </p>
                 <GoalPanel
@@ -238,7 +259,7 @@ export function SessionDetail({
                 />
               </div>
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
                   הערות
                 </p>
                 <NotesPanel

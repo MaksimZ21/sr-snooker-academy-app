@@ -101,7 +101,7 @@ export default function AdminAssessmentsPage() {
                   href={`/admin/assessments/${a.id}`}
                   className="group flex items-center gap-3 px-4 py-3 hover:bg-muted/40 dark:hover:bg-white/[0.03] transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-full bg-primary/10 dark:bg-primary/15 text-primary flex items-center justify-center text-[11px] font-semibold shrink-0 select-none">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 dark:bg-primary/15 text-primary flex items-center justify-center text-[11px] font-bold shrink-0 select-none">
                     {a.participant_name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
                   </div>
 
@@ -111,7 +111,7 @@ export default function AdminAssessmentsPage() {
                       {rated > 0 && (
                         <Badge
                           variant={pass >= rated * 0.7 ? "default" : "secondary"}
-                          className="text-[11px] h-4 px-1.5"
+                          className="text-[10px] h-4 px-1.5"
                         >
                           {pass}/{rated} ✓
                         </Badge>

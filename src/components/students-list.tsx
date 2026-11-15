@@ -289,14 +289,14 @@ function StudentRow({
     )}>
       {/* Avatar + name — link to detail page */}
       <Link href={`/admin/students/${s.id}`} className="flex items-center gap-3 flex-1 min-w-0 group/link">
-        <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/15 text-primary flex items-center justify-center text-[11px] font-semibold shrink-0 select-none group-hover/link:bg-primary/20 transition-colors">
+        <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/15 text-primary flex items-center justify-center text-[11px] font-bold shrink-0 select-none group-hover/link:bg-primary/20 transition-colors">
           {initials}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium leading-none group-hover/link:text-primary transition-colors">{name}</span>
             {!hideInactiveBadge && !s.active && (
-              <Badge variant="secondary" className="text-[11px] h-4 px-1.5 py-0">לא פעיל</Badge>
+              <Badge variant="secondary" className="text-[10px] h-4 px-1.5 py-0">לא פעיל</Badge>
             )}
           </div>
           {info && (

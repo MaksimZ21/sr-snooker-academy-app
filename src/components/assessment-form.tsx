@@ -123,7 +123,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
 
           {/* Participant info + photo */}
           <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
-            <p className="text-xs font-medium text-muted-foreground">פרטי משתתף</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">פרטי משתתף</p>
             <div className="flex gap-4 items-start">
 
               {/* Photo */}
@@ -133,7 +133,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className={cn(
-                    "relative w-20 h-24 rounded-xl border-2 border-dashed transition-colors duration-150 overflow-hidden flex flex-col items-center justify-center gap-1",
+                    "relative w-20 h-24 rounded-xl border-2 border-dashed transition-all duration-150 overflow-hidden flex flex-col items-center justify-center gap-1",
                     photoDataUrl ? "border-transparent" : "border-border/60 hover:border-primary/50 bg-muted/30 hover:bg-muted/50",
                   )}
                 >
@@ -143,12 +143,12 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                   ) : (
                     <>
                       <Camera size={20} className="text-muted-foreground" />
-                      <span className="text-[11px] text-muted-foreground">תמונה</span>
+                      <span className="text-[10px] text-muted-foreground">תמונה</span>
                     </>
                   )}
                 </button>
                 {photoDataUrl && (
-                  <button type="button" onClick={removePhoto} className="text-[11px] text-muted-foreground hover:text-destructive transition-colors">
+                  <button type="button" onClick={removePhoto} className="text-[10px] text-muted-foreground hover:text-destructive transition-colors">
                     הסר
                   </button>
                 )}
@@ -181,7 +181,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
 
           {/* Player attributes */}
           <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-4 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
-            <p className="text-xs font-medium text-muted-foreground">מאפייני השחקן</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">מאפייני השחקן</p>
             <div className="grid grid-cols-2 gap-4">
               <HandEyePicker label="יד חזקה" value={strongHand} onChange={setStrongHand} />
               <HandEyePicker label="עין חזקה" value={strongEye}  onChange={setStrongEye}  />
@@ -190,7 +190,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
 
           {/* Notes + phrase suggestions */}
           <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
-            <p className="text-xs font-medium text-muted-foreground">נקודות עיקריות לשיפור</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">נקודות עיקריות לשיפור</p>
             <Textarea
               rows={6}
               value={notes}
@@ -212,7 +212,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                 className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 {phrasesOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                <span>משפטים מוכנים</span>
+                <span>💡 משפטים מוכנים</span>
               </button>
 
               {phrasesOpen && (
@@ -233,7 +233,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                             type="button"
                             onClick={() => setSelectedCategory(cat)}
                             className={cn(
-                              "text-[11px] px-2.5 py-1 rounded-full border transition-colors font-medium",
+                              "text-[11px] px-2.5 py-1 rounded-full border transition-all font-medium",
                               selectedCategory === cat
                                 ? "bg-primary text-primary-foreground border-primary"
                                 : "bg-background text-muted-foreground border-border/60 hover:border-primary/50 hover:text-foreground",
@@ -250,7 +250,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                               key={i}
                               type="button"
                               onClick={() => appendPhrase(phrase.text)}
-                              className="text-right text-xs px-3 py-2 rounded-lg bg-muted/40 hover:bg-primary/8 hover:text-primary border border-transparent hover:border-primary/20 transition-colors text-muted-foreground leading-relaxed"
+                              className="text-right text-xs px-3 py-2 rounded-lg bg-muted/40 hover:bg-primary/8 hover:text-primary border border-transparent hover:border-primary/20 transition-all text-muted-foreground leading-relaxed"
                             >
                               {phrase.text}
                             </button>
@@ -276,7 +276,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
         {/* ── Left column — technique ── */}
         <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-muted-foreground">טכניקה</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">טכניקה</p>
             {ratedCount > 0 && (
               <span className="text-xs text-muted-foreground tabular-nums">
                 ✓ {goodCount}　○ {mediumCount}　✗ {badCount}
@@ -294,7 +294,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                       type="button"
                       onClick={() => setTech(c.key, "good")}
                       className={cn(
-                        "h-8 w-8 rounded-lg border transition-colors duration-150 flex items-center justify-center",
+                        "h-8 w-8 rounded-lg border transition-all duration-150 flex items-center justify-center",
                         val === "good" ? "bg-emerald-500 border-emerald-500 text-white shadow-sm" : "border-border/60 text-muted-foreground hover:border-emerald-400 hover:text-emerald-600",
                       )}
                     >
@@ -304,7 +304,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                       type="button"
                       onClick={() => setTech(c.key, "medium")}
                       className={cn(
-                        "h-8 w-8 rounded-lg border transition-colors duration-150 flex items-center justify-center",
+                        "h-8 w-8 rounded-lg border transition-all duration-150 flex items-center justify-center",
                         val === "medium" ? "bg-amber-500 border-amber-500 text-white shadow-sm" : "border-border/60 text-muted-foreground hover:border-amber-400 hover:text-amber-600",
                       )}
                     >
@@ -314,7 +314,7 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                       type="button"
                       onClick={() => setTech(c.key, "bad")}
                       className={cn(
-                        "h-8 w-8 rounded-lg border transition-colors duration-150 flex items-center justify-center",
+                        "h-8 w-8 rounded-lg border transition-all duration-150 flex items-center justify-center",
                         val === "bad" ? "bg-red-500 border-red-500 text-white shadow-sm" : "border-border/60 text-muted-foreground hover:border-red-400 hover:text-red-600",
                       )}
                     >
@@ -376,7 +376,7 @@ function HandEyePicker({
             type="button"
             onClick={() => onChange(side)}
             className={cn(
-              "flex-1 py-2 rounded-xl border text-sm font-medium transition-colors duration-150",
+              "flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-150",
               value === side
                 ? "border-primary bg-primary/5 text-primary dark:bg-primary/10"
                 : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border",

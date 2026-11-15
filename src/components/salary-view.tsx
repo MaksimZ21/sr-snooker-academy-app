@@ -96,7 +96,7 @@ function exportCsv(data: SalaryResponse, nameMap: Record<string, string>, label:
 
 function DeltaBadge({ current, prev }: { current: number; prev: number | undefined }) {
   if (prev === undefined || prev === null) return null;
-  if (prev === 0) return <span className="text-[11px] text-muted-foreground font-medium">אין השוואה</span>;
+  if (prev === 0) return <span className="text-[10px] text-muted-foreground font-medium">אין השוואה</span>;
   const pct = Math.round(((current - prev) / prev) * 100);
   const up  = pct >= 0;
   return (
@@ -163,7 +163,7 @@ function StatCards({
             </>
           ) : (
             <>
-              <span className="text-xl font-semibold tabular-nums scoreboard-num leading-none">
+              <span className="text-xl font-bold tabular-nums scoreboard-num leading-none">
                 {card.value !== undefined ? card.format(card.value) : "—"}
               </span>
               <span className="text-[11px] text-muted-foreground leading-tight">{card.label}</span>
@@ -184,7 +184,7 @@ function SessionRow({ session }: { session: SessionDetail }) {
         {session.source !== "אחר" && (
           <Badge
             variant="outline"
-            className={cn("text-[11px] px-1.5 py-0 h-[18px] border shrink-0",
+            className={cn("text-[10px] px-1.5 py-0 h-[18px] border shrink-0",
               SOURCE_STYLE[session.source] ?? "bg-muted text-muted-foreground")}
           >
             {session.source}
@@ -223,10 +223,10 @@ function SessionsByDate({ sessions }: { sessions: SessionDetail[] }) {
           <div key={date}>
             {/* Date header */}
             <div className="flex items-center gap-2 px-4 py-1.5 bg-muted/40 border-y border-border/30 sticky top-0 z-10">
-              <span className="text-xs font-semibold tabular-nums">{shortDate}</span>
-              <span className="text-[11px] text-muted-foreground">{dayName}</span>
+              <span className="text-xs font-bold tabular-nums">{shortDate}</span>
+              <span className="text-[10px] text-muted-foreground">{dayName}</span>
               {daySessions.length > 1 && (
-                <span className="text-[11px] text-muted-foreground/60 mr-auto">
+                <span className="text-[10px] text-muted-foreground/60 mr-auto">
                   {daySessions.length} אימונים · {dayTotal.toLocaleString("he-IL")} ₪
                 </span>
               )}
@@ -295,7 +295,7 @@ function OffsetsSection({ coach, queryKey, currentMonth }: { coach: CoachSalary;
   return (
     <div className="border-t border-border/40 px-4 py-3 flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
           <Minus size={12} /> קיזוזים
         </span>
         {!adding && (
@@ -314,7 +314,7 @@ function OffsetsSection({ coach, queryKey, currentMonth }: { coach: CoachSalary;
       )}
       {coach.offsets.map((o) => (
         <div key={o.id} className="flex items-center gap-2 text-sm">
-          <span className="text-[11px] text-muted-foreground/50 tabular-nums shrink-0">{o.month}</span>
+          <span className="text-[10px] text-muted-foreground/50 tabular-nums shrink-0">{o.month}</span>
           <span className="flex-1 text-muted-foreground truncate">{o.description}</span>
           <span className="tabular-nums font-medium text-rose-600 shrink-0">
             -{o.amount.toLocaleString("he-IL")} ₪
@@ -374,7 +374,7 @@ function OffsetsSection({ coach, queryKey, currentMonth }: { coach: CoachSalary;
               <> · קיזוזים -{coach.offsets_total.toLocaleString("he-IL")} ₪</>
             )}
           </span>
-          <span className="text-sm font-semibold tabular-nums">
+          <span className="text-sm font-bold tabular-nums">
             {coach.net_total.toLocaleString("he-IL")} ₪
           </span>
         </div>
@@ -440,7 +440,7 @@ function CoachRow({ coach, nameMap, rank, queryKey, currentMonth, monthMode }: {
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors text-right"
       >
-        <span className="text-xs font-semibold text-muted-foreground/40 w-5 text-center shrink-0 tabular-nums">
+        <span className="text-xs font-bold text-muted-foreground/40 w-5 text-center shrink-0 tabular-nums">
           {rank}
         </span>
         <div className="flex-1 min-w-0 text-right">
@@ -452,7 +452,7 @@ function CoachRow({ coach, nameMap, rank, queryKey, currentMonth, monthMode }: {
               <Badge
                 key={r.source}
                 variant="outline"
-                className={cn("text-[11px] px-1.5 py-0 h-4 border",
+                className={cn("text-[10px] px-1.5 py-0 h-4 border",
                   SOURCE_STYLE[r.source] ?? "bg-muted text-muted-foreground")}
               >
                 {r.count} {r.source}
@@ -462,7 +462,7 @@ function CoachRow({ coach, nameMap, rank, queryKey, currentMonth, monthMode }: {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <div className="text-right">
-            <p className="font-semibold text-base tabular-nums leading-tight">
+            <p className="font-bold text-base tabular-nums leading-tight">
               {coach.amount_total.toLocaleString("he-IL")} ₪
             </p>
             <p className="text-xs text-muted-foreground">{coach.sessions_total} אימונים</p>
@@ -593,7 +593,7 @@ export function SalaryView() {
             key={m}
             onClick={() => setMode(m)}
             className={cn(
-              "flex-1 text-sm py-1.5 rounded-lg font-medium transition-colors duration-200",
+              "flex-1 text-sm py-1.5 rounded-lg font-medium transition-all duration-200",
               mode === m
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
@@ -617,7 +617,7 @@ export function SalaryView() {
           <div className="text-center">
             <div className="font-semibold text-sm leading-tight">{label}</div>
             {rangeLabel && (
-              <div className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">{rangeLabel}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">{rangeLabel}</div>
             )}
           </div>
           <button

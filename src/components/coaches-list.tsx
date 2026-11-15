@@ -203,7 +203,7 @@ function CoachRow({ coach: c, onEdit, onDelete, onInvite }: {
   return (
     <div className="group flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-muted/40 dark:hover:bg-white/[0.03]">
       {/* Avatar */}
-      <div className="w-8 h-8 rounded-full bg-brand-gradient text-white flex items-center justify-center text-[11px] font-semibold shrink-0 select-none shadow-sm">
+      <div className="w-8 h-8 rounded-full bg-brand-gradient text-white flex items-center justify-center text-[11px] font-bold shrink-0 select-none shadow-sm">
         {getInitials(c.name)}
       </div>
 
@@ -212,7 +212,7 @@ function CoachRow({ coach: c, onEdit, onDelete, onInvite }: {
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium leading-none">{c.name}</span>
           {!c.active && (
-            <Badge variant="secondary" className="text-[11px] h-4 px-1.5 py-0">לא פעיל</Badge>
+            <Badge variant="secondary" className="text-[10px] h-4 px-1.5 py-0">לא פעיל</Badge>
           )}
         </div>
         {info && (

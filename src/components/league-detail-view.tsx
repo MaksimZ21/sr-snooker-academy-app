@@ -164,7 +164,7 @@ export function LeagueDetailView({
 
         {canEdit && (
           <div className="rounded-2xl border border-border/60 bg-card p-4">
-            <p className="text-xs font-medium text-muted-foreground mb-2">הוספת שחקן</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">הוספת שחקן</p>
             <LeagueParticipantPicker leagueId={leagueId} />
           </div>
         )}

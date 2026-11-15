@@ -126,7 +126,7 @@ function LeagueGroup({ title, items, basePath }: { title: string; items: League[
   if (items.length === 0) {
     return (
       <div>
-        <p className="text-xs font-medium text-muted-foreground mb-2">{title}</p>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{title}</p>
         <div className="py-8 text-center text-sm text-muted-foreground rounded-2xl border border-border/60 bg-card">
           אין ליגות
         </div>
@@ -135,7 +135,7 @@ function LeagueGroup({ title, items, basePath }: { title: string; items: League[
   }
   return (
     <div>
-      <p className="text-xs font-medium text-muted-foreground mb-2">{title}</p>
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{title}</p>
       <div className="rounded-2xl border border-border/60 bg-card overflow-hidden divide-y divide-border/40">
         {items.map((l) => (
           <Link

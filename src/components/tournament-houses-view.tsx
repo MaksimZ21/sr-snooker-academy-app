@@ -160,7 +160,7 @@ export function TournamentHousesView({
     <div className="flex flex-col gap-4">
       {canEdit && (
         <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3">
-          <p className="text-xs font-medium text-muted-foreground">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {houses.length === 0 ? "הגרלת בתים" : "הגרלה מחדש"}
           </p>
           <div className="flex items-end gap-2">

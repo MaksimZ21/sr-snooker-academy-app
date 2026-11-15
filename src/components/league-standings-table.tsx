@@ -96,7 +96,7 @@ export function LeagueStandingsTable({
     <div className="overflow-x-auto">
       <table className="w-full text-xs md:text-sm whitespace-nowrap">
         <thead>
-          <tr className="text-[11px] md:text-xs text-muted-foreground border-b border-border/40">
+          <tr className="text-[10px] md:text-xs text-muted-foreground border-b border-border/40">
             {levels && (
               <>
                 <Head short="דרגה" full="דרגה" className="ps-2 md:ps-4" />

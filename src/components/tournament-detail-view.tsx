@@ -29,7 +29,7 @@ import { useState, type ReactNode } from "react";
 function FieldGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col items-start gap-0.5">
-      <span className="text-[11px] text-muted-foreground leading-none">{label}</span>
+      <span className="text-[10px] text-muted-foreground leading-none">{label}</span>
       {children}
     </div>
   );
@@ -327,7 +327,7 @@ export function TournamentDetailView({
         </div>
         {tournament.type === "regular" && !tournament.manager_email && (
           <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-700 dark:text-amber-400">
-            טרם הוגדר מאמן אחראי לטורניר זה
+            ⚠️ טרם הוגדר מאמן אחראי לטורניר זה
           </div>
         )}
         <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-2">
@@ -389,7 +389,7 @@ export function TournamentDetailView({
 
         {canEdit && (
           <div className="rounded-2xl border border-border/60 bg-card p-4">
-            <p className="text-xs font-medium text-muted-foreground mb-2">הוספת משתתף</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">הוספת משתתף</p>
             <TournamentParticipantPicker
               tournamentId={tournamentId}
               multiLocation={tournament.type === "multi_location"}
@@ -399,7 +399,7 @@ export function TournamentDetailView({
         )}
 
         <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-          <p className="text-xs font-medium text-muted-foreground px-4 pt-3 pb-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-4 pt-3 pb-1">
             {`משתתפים (${participants.length})`}
           </p>
           {participants.length === 0 ? (

@@ -128,6 +128,32 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
     <div className="flex flex-col">
       {/* Header */}
       <div className="bg-brand-gradient relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div
+            className="session-orb absolute rounded-full"
+            style={{
+              top: "-30px",
+              right: "-30px",
+              width: "180px",
+              height: "180px",
+              background: "radial-gradient(circle, rgba(255,255,255,0.28) 0%, transparent 65%)",
+              filter: "blur(32px)",
+              animation: "drift-1 12s ease-in-out infinite",
+            }}
+          />
+          <div
+            className="session-orb absolute rounded-full"
+            style={{
+              bottom: "-20px",
+              left: "10px",
+              width: "140px",
+              height: "140px",
+              background: "radial-gradient(circle, rgba(251,191,36,0.35) 0%, transparent 65%)",
+              filter: "blur(24px)",
+              animation: "drift-2 16s ease-in-out infinite 3s",
+            }}
+          />
+        </div>
 
         <div className="relative z-10 px-5 pt-4 pb-6">
           <Link
@@ -139,14 +165,14 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
           </Link>
 
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 text-white flex items-center justify-center text-xl font-semibold shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-white/20 text-white flex items-center justify-center text-xl font-bold shrink-0">
               {getInitials(name)}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-semibold text-white leading-tight">{name}</h1>
+                <h1 className="text-2xl font-bold text-white leading-tight">{name}</h1>
                 {!student.active && (
-                  <span className="bg-white/20 text-white/80 text-[11px] px-2 py-0.5 rounded-full">
+                  <span className="bg-white/20 text-white/80 text-[10px] px-2 py-0.5 rounded-full">
                     לא פעיל
                   </span>
                 )}
@@ -247,7 +273,7 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
               className={cn("rounded-2xl p-3 flex flex-col items-center gap-1", stat.color)}
             >
               {stat.icon && <stat.icon size={16} />}
-              <span className="text-xl font-semibold tabular-nums">{stat.value}</span>
+              <span className="text-xl font-bold tabular-nums">{stat.value}</span>
               <span className="text-[11px] font-medium opacity-70">{stat.label}</span>
             </div>
           ))}
@@ -356,7 +382,7 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
                     {ratedCount > 0 && (
                       <Badge
                         variant={passCount >= ratedCount * 0.7 ? "default" : "secondary"}
-                        className="text-[11px] h-5 px-1.5 shrink-0"
+                        className="text-[10px] h-5 px-1.5 shrink-0"
                       >
                         {passCount}/{ratedCount}
                       </Badge>

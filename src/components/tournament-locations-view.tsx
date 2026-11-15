@@ -376,7 +376,7 @@ export function TournamentLocationsView({
                                       else assignHouseMut.mutate({ participantId: row.participantId, houseId: v });
                                     }}
                                   >
-                                    <SelectTrigger className="h-6 w-24 text-[11px] mr-2 inline-flex">
+                                    <SelectTrigger className="h-6 w-24 text-[10px] mr-2 inline-flex">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>

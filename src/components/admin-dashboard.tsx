@@ -333,7 +333,7 @@ function SessionRow({ session, coachMap }: { session: Session; coachMap: Record<
       <div className="w-1 self-stretch rounded-full shrink-0" style={{ background: cancelled ? "#94a3b8" : typeColor }} />
       <div className="w-14 shrink-0 text-left tabular-nums">
         <div className={cn("text-sm font-semibold", cancelled && "line-through opacity-40")}>{session.start_time}</div>
-        <div className="text-[11px] text-muted-foreground">{session.end_time}</div>
+        <div className="text-[10px] text-muted-foreground">{session.end_time}</div>
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
         <div className="flex items-center gap-2 flex-wrap">

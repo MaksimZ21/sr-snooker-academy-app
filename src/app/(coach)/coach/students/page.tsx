@@ -76,7 +76,7 @@ export default function CoachStudentsPage() {
                   className="flex items-center gap-3 bg-card border border-border/60 rounded-2xl px-4 py-3.5 hover:border-primary/30 hover:bg-primary/3 transition-colors active:scale-[0.98]"
                 >
                   {/* Avatar */}
-                  <div className="w-11 h-11 rounded-full bg-primary/12 text-primary flex items-center justify-center text-sm font-semibold shrink-0">
+                  <div className="w-11 h-11 rounded-full bg-primary/12 text-primary flex items-center justify-center text-sm font-bold shrink-0">
                     {getInitials(name)}
                   </div>
 

@@ -65,7 +65,7 @@ export function DayColumns({ items }: { items: DayColumnItem[] }) {
                 {dayLabelHe(item.day)} · {shortDate(item.day)}
                 {item.day === today && <span className="text-xs font-medium text-primary"> (היום)</span>}
               </p>
-              <span className="text-[11px] text-muted-foreground shrink-0">{item.count === 1 ? "משחק אחד" : `${item.count} משחקים`}</span>
+              <span className="text-[11px] text-muted-foreground shrink-0">{item.count} משחקים</span>
             </div>
             <div className="px-3 py-2">{item.content}</div>
           </div>

@@ -37,7 +37,7 @@ function HandicapTable({
             return (
               <tr key={p.id} className={newGroup ? "border-t-[6px] border-transparent" : undefined}>
                 <td className="py-1 pe-6">{p.name}</td>
-                <td className="w-10 py-1 text-center font-semibold" dir="ltr">
+                <td className="w-10 py-1 text-center font-bold" dir="ltr">
                   {p.level ?? "—"}
                 </td>
                 <td className="w-10 py-1 text-center tabular-nums">{points ?? "—"}</td>
@@ -127,8 +127,8 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
         <PublicThemeToggle className="absolute top-3 left-3" />
         <Image src="/logo.png" alt="" width={52} height={52} className="object-contain" />
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-2xl font-semibold text-white leading-tight">{league.name}</h1>
-          <p className="text-xs text-white/60">האקדמיה לסנוקר של שחר רוברג</p>
+          <h1 className="text-2xl font-bold text-white leading-tight">{league.name}</h1>
+          <p className="text-xs text-white/60 tracking-wide">האקדמיה לסנוקר של שחר רוברג</p>
         </div>
         {league.completed && (
           <span className="text-xs font-medium text-white/85 border border-white/30 rounded-full px-3 py-1">

@@ -65,7 +65,7 @@ export function StudentGoalSummary({ studentId }: { studentId: string }) {
   if (!current) {
     return (
       <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-2">
-        <p className="text-xs font-medium text-muted-foreground">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           מטרה חודשית
         </p>
         <p className="text-xs text-muted-foreground">
@@ -98,7 +98,7 @@ export function StudentGoalSummary({ studentId }: { studentId: string }) {
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card p-4">
-      <p className="text-xs font-medium text-muted-foreground mb-1">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
         מטרה חודשית · {label}
       </p>
       <GoalChart entries={current.entries} category={current.goal.category} />

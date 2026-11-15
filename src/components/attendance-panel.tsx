@@ -242,7 +242,7 @@ function AttendanceRow({
         <div className="flex items-center gap-3 sm:flex-1 min-w-0">
           <div
             className={cn(
-              "w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 select-none",
+              "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 select-none",
               curConfig ? curConfig.avatarClass : "bg-muted text-muted-foreground",
             )}
           >

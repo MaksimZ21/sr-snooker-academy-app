@@ -48,7 +48,7 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
     <div className="p-4 md:p-6 flex flex-col gap-6">
       {/* Header */}
       <div className="animate-fade-in-up">
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-2xl font-bold tracking-tight">
           {displayName ? `שלום, ${displayName}` : "שלום"}
         </h1>
         <p className="text-sm text-muted-foreground mt-0.5">
@@ -61,7 +61,7 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
       </div>
 
       {/* Stat chips */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
         <StatCard
           icon={<CalendarDays size={18} />}
           label="מפגשים היום"
@@ -86,7 +86,7 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
       </div>
 
       {/* Hero: next session */}
-      <div>
+      <div className="animate-fade-in-up" style={{ animationDelay: "120ms" }}>
         {isLoading ? (
           <HeroSkeleton />
         ) : nextSession ? (
@@ -168,6 +168,7 @@ function StatCard({
   return (
     <div className={cn(
       "relative rounded-2xl p-3.5 flex flex-col gap-2.5 overflow-hidden",
+      "transition-all duration-200",
       colorClass,
     )}>
       <span className="p-1.5 rounded-lg bg-white/20 text-white w-fit">
@@ -180,8 +181,8 @@ function StatCard({
         </>
       ) : (
         <>
-          <div className="text-3xl font-semibold tabular-nums leading-none text-white scoreboard-num">{value ?? 0}</div>
-          <div className="text-xs font-medium text-white/80 leading-tight">{label}</div>
+          <div className="text-3xl font-extrabold tabular-nums leading-none text-white scoreboard-num">{value ?? 0}</div>
+          <div className="text-xs font-medium text-white/75 leading-tight">{label}</div>
         </>
       )}
     </div>
@@ -194,11 +195,16 @@ function HeroNextCard({ session }: { session: Session }) {
 
   return (
     <Link href={`/coach/sessions/${session.id}`}>
-      <Card className="overflow-hidden border-2 border-primary/25 hover:border-primary/50 transition-colors group">
+      <Card className="overflow-hidden border-2 border-primary/25 hover:border-primary/50 hover:shadow-xl transition-all duration-300 group">
         <div className="bg-brand-gradient px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="inline-flex h-2 w-2 shrink-0 rounded-full bg-white" />
-            <span className="text-xs text-white/90 font-medium">המפגש הבא</span>
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+            </span>
+            <span className="text-xs uppercase tracking-widest text-white/90 font-semibold">
+              המפגש הבא
+            </span>
           </div>
           <Badge className={cn("border text-xs font-medium", className)} variant="outline">
             {label}
@@ -208,7 +214,7 @@ function HeroNextCard({ session }: { session: Session }) {
           <div className="flex items-end justify-between gap-3">
             <div className="flex flex-col">
               <div className={cn(
-                "text-5xl md:text-6xl font-semibold tabular-nums tracking-tight leading-none text-foreground group-hover:text-primary transition-colors",
+                "text-5xl md:text-6xl font-bold tabular-nums tracking-tight leading-none text-foreground group-hover:text-primary transition-colors duration-300",
                 cancelled && "opacity-40 line-through",
               )}>
                 {session.start_time}
@@ -222,7 +228,7 @@ function HeroNextCard({ session }: { session: Session }) {
               <Users size={15} />
               <span>{session.student_ids.length} מתאמנים</span>
             </div>
-            <div className="flex items-center gap-0.5 text-sm text-primary font-medium">
+            <div className="flex items-center gap-0.5 text-sm text-primary font-semibold group-hover:gap-1.5 transition-all duration-200">
               <span>פתח פרטים</span>
               <ChevronLeft size={15} />
             </div>

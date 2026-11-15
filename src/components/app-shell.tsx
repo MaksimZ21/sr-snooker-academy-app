@@ -46,27 +46,35 @@ export function AppShell({
     <div className="h-dvh flex flex-col md:flex-row overflow-hidden">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex md:w-60 flex-col shrink-0 bg-sidebar border-l border-sidebar-border relative">
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-sidebar-primary/60 to-transparent" />
+
         <div className="p-4 pb-2">
-          <div className="bg-brand-gradient rounded-2xl px-3.5 py-3 flex items-center gap-3">
+          <div className="bg-brand-gradient rounded-2xl px-3.5 py-3 flex items-center gap-3 shadow-lg shadow-primary/20">
             <div className="relative shrink-0">
+              <div className="absolute inset-0 rounded-full bg-white/30 blur-md scale-110" />
               <Image
                 src="/logo.png"
                 alt="לוגו אקדמיית סנוקר"
                 width={38}
                 height={38}
-                className="relative object-contain"
+                className="relative object-contain drop-shadow-sm"
               />
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-semibold text-white">האקדמיה לסנוקר</div>
-              <div className="text-xs text-white/70">של שחר רוברג</div>
+              <div className="text-sm font-bold text-white tracking-wide">האקדמיה לסנוקר</div>
+              <div className="text-[11px] text-white/60 font-medium">של שחר רוברג</div>
             </div>
           </div>
         </div>
 
         <nav className="flex-1 px-3 py-3 flex flex-col gap-0.5 overflow-y-auto">
-          {items.map((it) => (
-            <NavLink key={it.href} item={it} active={isActiveRoute(pathname, it.href)} />
+          {items.map((it, i) => (
+            <NavLink
+              key={it.href}
+              item={it}
+              active={isActiveRoute(pathname, it.href)}
+              style={{ animationDelay: `${i * 30}ms` }}
+            />
           ))}
         </nav>
 
@@ -75,9 +83,9 @@ export function AppShell({
           <div className="flex items-center gap-2">
             <button
               onClick={handleSignOut}
-              className="flex flex-1 items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground/80 transition-colors group"
+              className="flex flex-1 items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-sidebar-foreground/35 hover:bg-sidebar-accent hover:text-sidebar-foreground/70 transition-all duration-200 group"
             >
-              <LogOut size={16} strokeWidth={1.75} className="group-hover:text-destructive transition-colors" />
+              <LogOut size={15} strokeWidth={2} className="group-hover:text-destructive transition-colors" />
               <span>התנתקות</span>
             </button>
             <ThemeToggle />
@@ -95,14 +103,14 @@ export function AppShell({
         className="fixed bottom-0 inset-x-0 md:hidden pointer-events-none"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <nav className="mx-3 mb-3 pointer-events-auto bg-background/95 backdrop-blur-xl border border-border/60 rounded-2xl flex justify-around shadow-lg">
+        <nav className="mx-3 mb-3 pointer-events-auto bg-background/95 backdrop-blur-2xl border border-border/50 rounded-2xl flex justify-around shadow-2xl shadow-black/15">
           {quickItems.map((it) => (
             <NavLink key={it.href} item={it} active={isActiveRoute(pathname, it.href)} compact />
           ))}
           {hasMore && (
             <button
               onClick={() => setMoreOpen(true)}
-              className="flex flex-col flex-1 items-center gap-0.5 py-2.5 px-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              className="flex flex-col flex-1 items-center gap-0.5 py-2.5 px-1 text-[10px] text-muted-foreground/60 hover:text-foreground transition-colors"
             >
               <span className="w-10 h-8 rounded-xl flex items-center justify-center">
                 <LayoutGrid size={20} strokeWidth={1.75} />
@@ -149,13 +157,13 @@ export function AppShell({
                     href={it.href}
                     onClick={() => setMoreOpen(false)}
                     className={cn(
-                      "flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl text-[11px] text-center transition-colors",
+                      "flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl text-[10px] text-center transition-colors",
                       active
                         ? "bg-primary/10 text-primary font-semibold"
                         : "text-muted-foreground hover:bg-accent hover:text-foreground",
                     )}
                   >
-                    {Icon && <Icon size={22} strokeWidth={1.75} />}
+                    {Icon && <Icon size={22} strokeWidth={active ? 2.5 : 1.75} />}
                     <span className="leading-tight">{it.label}</span>
                   </Link>
                 );
@@ -179,11 +187,11 @@ function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      className="w-9 h-9 flex items-center justify-center rounded-xl text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground/80 transition-colors shrink-0"
+      className="w-9 h-9 flex items-center justify-center rounded-xl text-sidebar-foreground/35 hover:bg-sidebar-accent hover:text-sidebar-foreground/70 transition-all duration-200 shrink-0"
       aria-label="החלף מצב תצוגה"
     >
-      <Sun size={16} strokeWidth={1.75} className="hidden dark:block" />
-      <Moon size={16} strokeWidth={1.75} className="block dark:hidden" />
+      <Sun size={15} className="hidden dark:block" />
+      <Moon size={15} className="block dark:hidden" />
     </button>
   );
 }
@@ -206,16 +214,19 @@ function NavLink({
       <Link
         href={item.href}
         className={cn(
-          "flex flex-col flex-1 items-center gap-0.5 py-2.5 px-1 text-[11px] transition-colors relative",
-          active ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground",
+          "flex flex-col flex-1 items-center gap-0.5 py-2.5 px-1 text-[10px] transition-all duration-200 relative",
+          active ? "text-primary font-semibold" : "text-muted-foreground/60 hover:text-foreground",
         )}
       >
         <span className={cn(
-          "w-10 h-8 rounded-xl flex items-center justify-center transition-colors",
-          active && "bg-primary/12 dark:bg-primary/15",
+          "w-10 h-8 rounded-xl flex items-center justify-center transition-all duration-200",
+          active && "bg-primary/12 dark:bg-primary/15 shadow-sm",
         )}>
           {Icon && (
-            <Icon size={20} strokeWidth={1.75} />
+            <Icon
+              size={active ? 22 : 20}
+              strokeWidth={active ? 2.5 : 1.75}
+            />
           )}
         </span>
         <span className="leading-none">{item.label}</span>
@@ -228,23 +239,29 @@ function NavLink({
       href={item.href}
       style={style}
       className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors relative group",
+        "animate-fade-in-up flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 relative group",
         active
           ? "bg-sidebar-primary/12 text-sidebar-accent-foreground font-medium"
-          : "text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground",
+          : "text-sidebar-foreground/45 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/80",
       )}
     >
       {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-sidebar-primary" />
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-sidebar-primary shadow-[0_0_8px_oklch(0.72_0.22_145/0.5)]" />
       )}
       {Icon && (
         <Icon
           size={16}
-          strokeWidth={1.75}
-          className={cn("transition-colors shrink-0", active && "text-sidebar-primary")}
+          strokeWidth={active ? 2.5 : 1.75}
+          className={cn(
+            "transition-all duration-200 shrink-0",
+            active ? "text-sidebar-primary" : "group-hover:text-sidebar-foreground/70",
+          )}
         />
       )}
       <span className="truncate">{item.label}</span>
+      {!active && (
+        <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-r from-sidebar-primary/0 via-sidebar-primary/5 to-sidebar-primary/0" />
+      )}
     </Link>
   );
 }

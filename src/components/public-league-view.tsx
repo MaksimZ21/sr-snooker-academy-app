@@ -29,18 +29,18 @@ function HandicapTable({
   if (sorted.length === 0) return <p className="pb-4 text-center text-sm text-muted-foreground">אין שחקנים במחוז</p>;
   return (
     <div className="flex flex-col gap-2 px-4 pb-4">
-      <table className="w-full text-sm">
+      <table className="w-auto text-sm">
         <tbody>
           {sorted.map((p, i) => {
             const newGroup = i > 0 && sorted[i - 1].level !== p.level;
             const points = p.level ? values[p.level] : undefined;
             return (
               <tr key={p.id} className={newGroup ? "border-t-[6px] border-transparent" : undefined}>
-                <td className="py-1 pe-2">{p.name}</td>
-                <td className="w-14 py-1 text-center font-bold" dir="ltr">
+                <td className="py-1 pe-6">{p.name}</td>
+                <td className="w-10 py-1 text-center font-bold" dir="ltr">
                   {p.level ?? "—"}
                 </td>
-                <td className="w-12 py-1 text-center tabular-nums">{points ?? "—"}</td>
+                <td className="w-10 py-1 text-center tabular-nums">{points ?? "—"}</td>
               </tr>
             );
           })}

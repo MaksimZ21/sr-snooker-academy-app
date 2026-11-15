@@ -8,6 +8,7 @@ import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
 import { DayColumns } from "@/components/day-strip";
 import { PublicThemeToggle } from "@/components/public-theme-toggle";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
+import { LiveTicker } from "@/components/broadcast";
 
 // A district's handicap ("פור") table: each player with their level and
 // points per frame, grouped by level (best first), like the club's sheet.
@@ -127,7 +128,7 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
         <PublicThemeToggle className="absolute top-3 left-3" />
         <Image src="/logo.png" alt="" width={52} height={52} className="object-contain" />
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-2xl font-bold text-white leading-tight">{league.name}</h1>
+          <h1 className="bc-num text-3xl md:text-4xl text-white leading-tight">{league.name}</h1>
           <p className="text-xs text-white/60 tracking-wide">האקדמיה לסנוקר של שחר רוברג</p>
         </div>
         {league.completed && (
@@ -136,6 +137,23 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
           </span>
         )}
       </div>
+
+      {/* This week's league matches still to play, running like a sports channel. */}
+      {!league.completed && (
+        <LiveTicker
+          isLoading={false}
+          label="השבוע בליגה"
+          empty="אין משחקים מתוכננים השבוע"
+          items={scheduled
+            .filter((m) => m.frames_a === null || m.frames_b === null)
+            .sort((a, b) => (a.scheduled_date as string).localeCompare(b.scheduled_date as string))
+            .map((m) => ({
+              id: m.id,
+              time: `${dayLabelHe(m.scheduled_date as string)} ${shortDate(m.scheduled_date as string)}`,
+              text: `${lookup(m.participant_a_id)?.name ?? "?"} נגד ${lookup(m.participant_b_id)?.name ?? "?"} · ${districtLabel.get(m.district_id) ?? ""}`,
+            }))}
+        />
+      )}
 
       <div className="px-4 py-6 flex flex-col gap-8 max-w-6xl mx-auto">
         {league.districts.length > 0 || league.participants.length > 0 ? (

@@ -9,7 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-rubik), var(--font-assistant), sans-serif;
   --font-display: var(--font-rubik);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -144,6 +144,14 @@
   }
   html {
     @apply font-sans;
+  }
+  /* Broadcast look: titles in the display face, page titles slanted. */
+  h1, h2, h3 {
+    font-family: var(--font-rubik), var(--font-assistant), sans-serif;
+  }
+  h1 {
+    font-style: italic;
+    letter-spacing: -0.02em;
   }
 
   /* Subtle baize dot texture in dark mode */
@@ -284,8 +292,11 @@
 /* ── Utilities ──────────────────────────────────────────────── */
 @layer utilities {
   /* Brand gradients — pure green, no blue drift */
+  /* Broadcast green: the lead tile's gradient with its slanted stripes. */
   .bg-brand-gradient {
-    background-image: linear-gradient(135deg, oklch(0.52 0.24 145) 0%, oklch(0.30 0.18 145) 100%);
+    background-image:
+      repeating-linear-gradient(115deg, rgb(255 255 255 / 0.06) 0 14px, transparent 14px 40px),
+      linear-gradient(135deg, #0e8f45 0%, #075a2b 100%);
   }
   .bg-brand-gradient-soft {
     background-image: linear-gradient(135deg, oklch(0.92 0.06 145) 0%, oklch(0.88 0.05 145) 100%);

@@ -93,7 +93,7 @@ export function SessionCard({
                 "tabular-nums leading-tight",
                 cancelled && "opacity-40 line-through",
               )}>
-                <span className="text-base font-bold">{session.start_time}</span>
+                <span className="bc-num text-lg">{session.start_time}</span>
                 <span className="text-sm font-normal text-muted-foreground"> – {session.end_time}</span>
               </div>
               <div className="flex items-center gap-1 shrink-0">

@@ -5,23 +5,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import dynamic from "next/dynamic";
-import {
-  CalendarDays,
-  Users,
-  ChevronLeft,
-  CalendarX,
-} from "lucide-react";
+import { ChevronLeft, CalendarX } from "lucide-react";
 import { formatHebrewDate, dayLabelHe } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 import type { CoachStats } from "@/app/api/coach/stats/route";
 import type { Session } from "@/lib/sheets/schemas";
-
-const CoachBarChart = dynamic(
-  () => import("@/components/coach-charts").then((m) => m.CoachBarChart),
-  { ssr: false },
-);
+import { BallTile, BroadcastRow, LiveTicker, WeekBars, nowHHMM } from "@/components/broadcast";
 
 export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
   const { data, isLoading } = useQuery<CoachStats>({
@@ -34,106 +24,87 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
     refetchInterval: 120_000,
   });
 
-  const now = new Date();
+  const now = nowHHMM();
   const sessions = data?.todaySessions ?? [];
-  const nextIdx = sessions.findIndex((s) => {
-    const [hh, mm] = s.start_time.split(":").map(Number);
-    const d = new Date();
-    d.setHours(hh, mm, 0, 0);
-    return d >= now;
-  });
-  const nextSession = nextIdx >= 0 ? sessions[nextIdx] : null;
+  const live = sessions.filter((x) => x.status !== "cancelled");
+  const nextSession = live.find((x) => x.end_time > now) ?? null;
+  const namesOf = (x: Session) => x.student_ids.map((id) => data?.studentMap[id] ?? id).join(", ");
 
   return (
-    <div className="p-4 md:p-6 flex flex-col gap-6">
+    <div className="flex flex-col">
+      <LiveTicker
+        isLoading={isLoading}
+        label="היום שלי"
+        items={live.map((x) => ({
+          id: x.id,
+          time: x.start_time,
+          text: `${trainingTypeBadge(x.training_type).label} · ${namesOf(x) || "אין מתאמנים"}`,
+        }))}
+      />
+      <div className="p-4 md:p-6 flex flex-col gap-5">
       {/* Header */}
-      <div className="animate-fade-in-up">
-        <h1 className="text-2xl font-bold tracking-tight">
-          {displayName ? `שלום, ${displayName}` : "שלום"}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {isLoading || !data ? (
-            <Skeleton className="h-4 w-40 inline-block" />
-          ) : (
-            formatHebrewDate(data.today)
-          )}
-        </p>
+      <div className="flex items-end justify-between gap-4 bc-slide">
+        <div>
+          <p className="bc-kicker text-[13px] text-primary">המאמן</p>
+          <h1 className="bc-num text-[32px] md:text-[44px] leading-[1.05] mt-1.5">
+            {displayName ? `שלום, ${displayName}` : "שלום"}
+          </h1>
+        </div>
+        <div className="hidden md:block font-display font-bold text-[15px] text-muted-foreground bg-card border rounded-xl px-4 py-2.5">
+          {isLoading || !data ? <Skeleton className="h-4 w-40" /> : formatHebrewDate(data.today)}
+        </div>
       </div>
 
-      {/* Stat chips */}
-      <div className="grid grid-cols-3 gap-3 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
-        <StatCard
-          icon={<CalendarDays size={18} />}
-          label="מפגשים היום"
-          value={data?.todaySessions.length}
-          colorClass="ball-card-red"
-          isLoading={isLoading}
-        />
-        <StatCard
-          icon={<CalendarDays size={18} />}
-          label="השבוע"
-          value={data?.weekSessionCount}
-          colorClass="ball-card-blue"
-          isLoading={isLoading}
-        />
-        <StatCard
-          icon={<Users size={18} />}
-          label="תלמידים"
-          value={data?.weekStudentCount}
-          colorClass="ball-card-yellow"
-          isLoading={isLoading}
-        />
+      {/* Tiles: the next session leads */}
+      <div className="grid grid-cols-3 md:grid-cols-[2fr_1fr_1fr_1fr] gap-3.5">
+        <NextTile session={nextSession} isLoading={isLoading} names={nextSession ? namesOf(nextSession) : ""} />
+        <BallTile label="מפגשים היום" value={live.length} ball="red" isLoading={isLoading} delay={0.12} />
+        <BallTile label="השבוע" value={data?.weekSessionCount} ball="blue" isLoading={isLoading} delay={0.19} />
+        <BallTile label="תלמידים השבוע" value={data?.weekStudentCount} ball="yellow" isLoading={isLoading} delay={0.26} />
       </div>
 
-      {/* Hero: next session */}
-      <div className="animate-fade-in-up" style={{ animationDelay: "120ms" }}>
-        {isLoading ? (
-          <HeroSkeleton />
-        ) : nextSession ? (
-          <HeroNextCard session={nextSession} />
-        ) : (
-          <Card className="border-dashed border-2">
-            <CardContent className="flex flex-col items-center gap-3 py-14 text-muted-foreground">
-              <CalendarX size={42} className="opacity-25" />
-              <span className="text-sm">אין מפגש קרוב להיום</span>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Bar chart */}
-      <CoachBarChart data={data} isLoading={isLoading} />
-
-      {/* Today's sessions */}
-      {(isLoading || sessions.length > 0) && (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold">מפגשים היום</CardTitle>
-              <Link
-                href="/coach/schedule"
-                className="text-xs text-primary hover:underline flex items-center gap-0.5"
-              >
-                לוז מלא <ChevronLeft size={12} />
-              </Link>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3.5">
+        <section className="bg-card border rounded-[18px] overflow-hidden">
+          <div className="flex items-center justify-between px-[18px] py-3.5 border-b">
+            <h2 className="font-display font-extrabold text-base">מפגשים היום</h2>
+            <Link href="/coach/schedule" className="text-[13px] font-bold text-primary hover:underline flex items-center gap-0.5">
+              לו״ז מלא <ChevronLeft size={13} />
+            </Link>
+          </div>
+          {isLoading ? (
+            <div className="flex flex-col gap-2 p-4">
+              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-14 w-full rounded-lg" />
             </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {isLoading ? (
-              <div className="flex flex-col gap-2">
-                <Skeleton className="h-14 w-full rounded-lg" />
-                <Skeleton className="h-14 w-full rounded-lg" />
-              </div>
-            ) : (
-              <div className="flex flex-col divide-y divide-border/60">
-                {sessions.map((s) => (
-                  <SessionRow key={s.id} session={s} studentMap={data?.studentMap ?? {}} />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+          ) : !sessions.length ? (
+            <div className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
+              <CalendarX size={36} className="opacity-30" />
+              <span className="text-sm">אין לך מפגשים היום</span>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              {sessions.map((x) => (
+                <BroadcastRow
+                  key={x.id}
+                  session={x}
+                  href={`/coach/sessions/${x.id}`}
+                  who={namesOf(x) || "אין מתאמנים"}
+                  sub={`${trainingTypeBadge(x.training_type).label} · ${x.student_ids.length} מתאמנים`}
+                  now={now}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="bg-card border rounded-[18px] overflow-hidden">
+          <div className="flex items-center justify-between px-[18px] py-3.5 border-b">
+            <h2 className="font-display font-extrabold text-base">השבוע במספרים</h2>
+            {data && <span className="font-display font-bold text-[13px] text-muted-foreground">{data.weekSessionCount} מפגשים</span>}
+          </div>
+          {isLoading || !data ? <Skeleton className="h-44 m-4 rounded-lg" /> : <WeekBars days={data.sessionsByDay} today={data.today} />}
+        </section>
+      </div>
 
       {/* Upcoming */}
       {(isLoading || (data?.upcomingSessions.length ?? 0) > 0) && (
@@ -150,115 +121,44 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }
 
 /* ─── Sub-components ──────────────────────────────────────────── */
 
-function StatCard({
-  icon, label, value, colorClass, isLoading,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value?: number;
-  colorClass: string;
-  isLoading: boolean;
-}) {
-  return (
-    <div className={cn(
-      "relative rounded-2xl p-3.5 flex flex-col gap-2.5 overflow-hidden",
-      "transition-all duration-200",
-      colorClass,
-    )}>
-      <span className="p-1.5 rounded-lg bg-white/20 text-white w-fit">
-        {icon}
-      </span>
-      {isLoading ? (
-        <>
-          <Skeleton className="h-7 w-10 rounded-lg bg-white/20" />
-          <Skeleton className="h-3 w-14 rounded bg-white/20" />
-        </>
-      ) : (
-        <>
-          <div className="text-3xl font-extrabold tabular-nums leading-none text-white scoreboard-num">{value ?? 0}</div>
-          <div className="text-xs font-medium text-white/75 leading-tight">{label}</div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function HeroNextCard({ session }: { session: Session }) {
-  const { label, className } = trainingTypeBadge(session.training_type);
-  const cancelled = session.status === "cancelled";
-
-  return (
-    <Link href={`/coach/sessions/${session.id}`}>
-      <Card className="overflow-hidden border-2 border-primary/25 hover:border-primary/50 hover:shadow-xl transition-all duration-300 group">
-        <div className="bg-brand-gradient px-5 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
-            </span>
-            <span className="text-xs uppercase tracking-widest text-white/90 font-semibold">
-              המפגש הבא
-            </span>
-          </div>
-          <Badge className={cn("border text-xs font-medium", className)} variant="outline">
-            {label}
-          </Badge>
-        </div>
-        <CardContent className="p-5 flex flex-col gap-4">
-          <div className="flex items-end justify-between gap-3">
-            <div className="flex flex-col">
-              <div className={cn(
-                "text-5xl md:text-6xl font-bold tabular-nums tracking-tight leading-none text-foreground group-hover:text-primary transition-colors duration-300",
-                cancelled && "opacity-40 line-through",
-              )}>
-                {session.start_time}
-              </div>
-              <div className="text-muted-foreground mt-2 text-sm">עד {session.end_time}</div>
-            </div>
-            {cancelled && <Badge variant="destructive" className="self-start">לא התקיים</Badge>}
-          </div>
-          <div className="flex items-center justify-between pt-2 border-t border-border/60">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Users size={15} />
-              <span>{session.student_ids.length} מתאמנים</span>
-            </div>
-            <div className="flex items-center gap-0.5 text-sm text-primary font-semibold group-hover:gap-1.5 transition-all duration-200">
-              <span>פתח פרטים</span>
-              <ChevronLeft size={15} />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
-
-function HeroSkeleton() {
-  return (
-    <Card className="overflow-hidden border-2 border-primary/10">
-      <div className="bg-brand-gradient px-5 py-3">
-        <Skeleton className="h-4 w-32 bg-white/20" />
+// The big green tile: when the next session starts, with whom.
+function NextTile({ session, isLoading, names }: { session: Session | null; isLoading: boolean; names: string }) {
+  const body = (
+    <>
+      <div className="absolute inset-0 bc-stripes" />
+      <div className="relative">
+        <p className="font-display font-bold text-[13px] text-white/75">המפגש הבא</p>
+        {isLoading ? (
+          <Skeleton className="h-20 w-36 mt-2 bg-white/20" />
+        ) : session ? (
+          <>
+            <p className="bc-num text-[64px] md:text-[84px] leading-none mt-2.5">{session.start_time}</p>
+            <p className="text-[13px] text-white/80 mt-1 truncate">
+              {trainingTypeBadge(session.training_type).label} · עד {session.end_time}
+              {names ? ` · ${names}` : ""}
+            </p>
+          </>
+        ) : (
+          <p className="bc-num text-[34px] leading-tight mt-3">אין עוד מפגשים היום</p>
+        )}
       </div>
-      <CardContent className="p-5 flex flex-col gap-4">
-        <div className="flex items-end justify-between gap-3">
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-14 w-36" />
-            <Skeleton className="h-4 w-20" />
-          </div>
-          <Skeleton className="h-6 w-16" />
-        </div>
-        <div className="flex items-center justify-between pt-2 border-t border-border/60">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-20" />
-        </div>
-      </CardContent>
-    </Card>
+    </>
+  );
+  const cls =
+    "col-span-3 md:col-span-1 relative overflow-hidden rounded-[18px] p-[18px] text-white bg-linear-to-br from-[#0e8f45] to-[#075a2b] bc-slide";
+  return session ? (
+    <Link href={`/coach/sessions/${session.id}`} className={cn(cls, "transition-transform duration-200 hover:-translate-y-1")}>
+      {body}
+    </Link>
+  ) : (
+    <div className={cls}>{body}</div>
   );
 }
 

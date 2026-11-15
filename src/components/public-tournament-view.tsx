@@ -97,7 +97,14 @@ export function PublicTournamentView({
     <div className="min-h-dvh bg-background" dir="rtl">
       {/* Hero */}
       <div className="bg-brand-gradient px-5 py-8 flex flex-col items-center text-center gap-3">
-        {!tournament.multiLocation && <Image src="/logo.png" alt="" width={52} height={52} className="object-contain" />}
+        {tournament.multiLocation ? (
+          // External (multi-location) tournaments run under ISPA's logo.
+          <div className="rounded-2xl bg-white px-4 py-2 shadow-sm">
+            <Image src="/ispa-logo.png" alt="ISPA" width={160} height={80} className="object-contain" priority />
+          </div>
+        ) : (
+          <Image src="/logo.png" alt="" width={52} height={52} className="object-contain" />
+        )}
         <div className="flex flex-col gap-1.5">
           <h1 className="text-2xl font-bold text-white leading-tight">{tournament.name}</h1>
           {!tournament.multiLocation && (

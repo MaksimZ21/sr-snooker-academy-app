@@ -118,8 +118,8 @@ export function GroupsList() {
     return (
       <div className="rounded-[18px] border bg-card p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="font-display text-[15px] font-extrabold leading-snug">{g.name}</p>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-[15px] font-extrabold leading-snug break-words">{g.name}</p>
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
               {g.start_time && (
                 <span className="flex items-center gap-1 rounded-md bg-sidebar text-white px-2 py-0.5 font-display text-[11px] font-bold tabular-nums">

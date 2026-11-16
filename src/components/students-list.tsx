@@ -137,8 +137,8 @@ export function StudentsList() {
       </Tabs>
 
       {/* Filters */}
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <div className="relative flex-1">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
+        <div className="relative flex-1 col-span-2">
           <Search className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="חיפוש לפי שם, טלפון, מייל..."

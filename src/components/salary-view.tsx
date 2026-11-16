@@ -106,7 +106,7 @@ function DeltaBadge({ current, prev }: { current: number; prev: number | undefin
     )}>
       {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
       <span dir="ltr">{up ? "+" : ""}{pct}%</span>
-      <span className="font-sans font-normal text-muted-foreground">מהתקופה הקודמת</span>
+      <span className="font-sans font-normal text-muted-foreground">מהקודם</span>
     </span>
   );
 }

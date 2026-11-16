@@ -43,7 +43,7 @@ export function LiveTicker({
     ));
   return (
     <div className="bc-ticker bg-sidebar text-white flex items-stretch h-11 overflow-hidden">
-      <span className="bg-[#d61f2c] font-display font-extrabold text-sm flex items-center gap-2 ps-[18px] pe-[26px] shrink-0 [clip-path:polygon(0_0,100%_0,100%_100%,12px_100%)]">
+      <span className="relative z-10 bg-[#d61f2c] font-display font-extrabold text-sm flex items-center gap-2 ps-[18px] pe-[26px] shrink-0 [clip-path:polygon(0_0,100%_0,100%_100%,12px_100%)]">
         <i className="w-2 h-2 rounded-full bg-white bc-blink" />
         {label}
       </span>

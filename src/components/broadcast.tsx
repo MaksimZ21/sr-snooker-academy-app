@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CountUp } from "@/components/motion/count-up";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 import type { Session } from "@/lib/sheets/schemas";
@@ -85,7 +86,7 @@ export function BallTile({
       {isLoading ? (
         <Skeleton className="h-12 w-16 mt-2.5" />
       ) : (
-        <p className="bc-num text-[56px] leading-none mt-2.5">{value ?? 0}</p>
+        <p className="bc-num text-[56px] leading-none mt-2.5"><CountUp value={value ?? 0} /></p>
       )}
       {sub && <p className="text-[13px] text-muted-foreground mt-1">{sub}</p>}
     </Tag>

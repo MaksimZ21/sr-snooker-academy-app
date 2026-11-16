@@ -11,6 +11,7 @@ import {
   FileText, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CountUp } from "@/components/motion/count-up";
 import dynamic from "next/dynamic";
 import { dayLabelHe } from "@/lib/date";
 import { toast } from "sonner";
@@ -171,7 +172,7 @@ function StatCards({
           ) : (
             <>
               <span className={cn("bc-num leading-none", i === 0 ? "text-5xl md:text-6xl" : "text-4xl")}>
-                {card.value !== undefined ? card.format(card.value) : "—"}
+                {card.value !== undefined ? <CountUp value={card.value} suffix={i === 0 ? " ₪" : ""} /> : "—"}
               </span>
               <span className={cn("font-display text-[13px] font-bold leading-tight", i === 0 ? "text-white/80" : "text-muted-foreground")}>{card.label}</span>
             </>

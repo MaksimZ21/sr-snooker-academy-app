@@ -9,6 +9,7 @@ import { DayColumns } from "@/components/day-strip";
 import { PublicThemeToggle } from "@/components/public-theme-toggle";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 import { LiveTicker } from "@/components/broadcast";
+import { PageEnter } from "@/components/motion/page-enter";
 
 // A district's handicap ("פור") table: each player with their level and
 // points per frame, grouped by level (best first), like the club's sheet.
@@ -161,6 +162,7 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
         />
       )}
 
+      <PageEnter>
       <div className="px-4 py-6 flex flex-col gap-8 max-w-6xl mx-auto">
         {league.districts.length > 0 || league.participants.length > 0 ? (
           <PublicLeagueBoard
@@ -248,6 +250,7 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
           האקדמיה לסנוקר של שחר רוברג
         </p>
       </div>
+      </PageEnter>
     </div>
   );
 }

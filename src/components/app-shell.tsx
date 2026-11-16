@@ -19,6 +19,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number; strokeWidth?
 import { useTheme } from "next-themes";
 import type { NavItem } from "./nav-items";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { PageEnter } from "@/components/motion/page-enter";
 
 const BOTTOM_NAV_COUNT = 4;
 
@@ -98,8 +99,8 @@ export function AppShell({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto pb-32 md:pb-4 min-w-0 animate-fade-in">
-        {children}
+      <main className="flex-1 overflow-y-auto pb-32 md:pb-4 min-w-0">
+        <PageEnter>{children}</PageEnter>
       </main>
 
       {/* Mobile bottom nav — floating pill */}

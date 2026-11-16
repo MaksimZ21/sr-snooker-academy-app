@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { CountUp } from "@/components/motion/count-up";
 
 type Status = "present" | "absent" | "late" | "confirmed" | "declined";
 
@@ -32,7 +33,7 @@ export function AttendanceForm({
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="font-display text-[13px] font-bold text-muted-foreground">נוכחות</p>
-          <p className={cn("bc-num text-5xl leading-none mt-1.5", tone)}>{pct === null ? "—" : `${pct}%`}</p>
+          <p className={cn("bc-num text-5xl leading-none mt-1.5", tone)}>{pct === null ? "—" : <CountUp value={pct} suffix="%" />}</p>
         </div>
         <div className="flex gap-5 text-center">
           <div>

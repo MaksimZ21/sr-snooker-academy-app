@@ -253,6 +253,7 @@
   to   { opacity: 1; transform: none; }
 }
 @keyframes bc-grow { from { transform: scaleY(0); } to { transform: none; } }
+@keyframes bc-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
 
 @layer utilities {
   .font-display { font-family: var(--font-rubik), var(--font-assistant), sans-serif; }
@@ -268,6 +269,13 @@
   .bc-stripes { background-image: repeating-linear-gradient(115deg, rgb(255 255 255 / 0.07) 0 14px, transparent 14px 40px); }
   .bc-bar-today { background-image: repeating-linear-gradient(115deg, var(--primary) 0 10px, color-mix(in oklab, var(--primary) 80%, white) 10px 20px); }
   .bc-slant { clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%); }
+
+  /* Loading placeholders: a light sweep runs across, like a broadcast wipe. */
+  .bc-skeleton {
+    background-image: linear-gradient(100deg, transparent 30%, color-mix(in oklab, var(--card) 70%, transparent) 50%, transparent 70%);
+    background-size: 200% 100%;
+    animation: bc-shimmer 1.4s ease-in-out infinite;
+  }
 
   /* A snooker ball peeking from the tile's corner */
   .bc-ball { position: relative; overflow: hidden; }
@@ -285,7 +293,7 @@
   .bc-ball-black::after { background: radial-gradient(circle at 35% 30%, #6b6b6b, #1a1a1a 60%); }
 
   @media (prefers-reduced-motion: reduce) {
-    .bc-track, .bc-blink, .bc-slide, .bc-grow { animation: none; }
+    .bc-track, .bc-blink, .bc-slide, .bc-grow, .bc-skeleton { animation: none; }
   }
 }
 

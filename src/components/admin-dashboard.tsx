@@ -15,6 +15,7 @@ import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 import type { AdminStats, AbsentStudent, PaymentDueStudent } from "@/app/api/admin/stats/route";
 import type { Session } from "@/lib/sheets/schemas";
+import { CountUp } from "@/components/motion/count-up";
 import { BallTile, BroadcastRow, LiveTicker, TYPE_COLORS, TypeSplit, WeekBars, nowHHMM } from "@/components/broadcast";
 const CollegesCard = dynamic(
   () => import("@/components/colleges-card").then((m) => m.CollegesCard),
@@ -100,7 +101,7 @@ export function AdminDashboard({ displayName = "" }: { displayName?: string }) {
             {isLoading ? (
               <Skeleton className="h-20 w-24 mt-2 bg-white/20" />
             ) : (
-              <p className="bc-num text-[84px] leading-none mt-2.5">{live.length}</p>
+              <p className="bc-num text-[84px] leading-none mt-2.5"><CountUp value={live.length} /></p>
             )}
             <p className="text-[13px] text-white/75 mt-1 min-h-5">
               {next ? `הבא: ${next.start_time} · ${trainingTypeBadge(next.training_type).label}` : !isLoading ? "אין עוד מפגשים היום" : ""}

@@ -50,7 +50,7 @@ export function LiveTicker({
       {isLoading ? null : items.length === 0 ? (
         <span className="flex items-center ps-6 text-sm text-white/60">{empty}</span>
       ) : (
-        <div className="bc-track flex items-center gap-10 ps-6">
+        <div className="bc-track flex items-center gap-10 ps-6" style={{ animationDuration: `${Math.max(40, items.length * 9)}s` }}>
           {row("")}
           {/* A second copy, so the strip loops without a gap. */}
           {row("-again")}

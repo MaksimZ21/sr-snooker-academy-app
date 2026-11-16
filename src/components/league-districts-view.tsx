@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { HandicapDistrict } from "@/lib/sheets/handicap";
 import { computeLeagueStandings } from "@/lib/sheets/tournament-logic";
-import { LeagueStandingsTable, remainingMatchesByParticipant, type StandingLevel } from "@/components/league-standings-table";
+import { LeagueStandingsTable, formByParticipant, remainingMatchesByParticipant, type StandingLevel } from "@/components/league-standings-table";
 import type { LeagueLevelRow } from "@/lib/sheets/league-levels";
 import { DistrictSwitcher } from "@/components/district-switcher";
 import { ClearDayButton } from "@/components/league-clear-day-button";
@@ -349,6 +349,7 @@ export function LeagueDistrictsView({
                 renderName={participantName}
                 levels={levelsByParticipant}
                 remaining={remainingMatchesByParticipant(district.matches)}
+                form={formByParticipant(district.matches)}
               />
 
               {hasFixtures && (

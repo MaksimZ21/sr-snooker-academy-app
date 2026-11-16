@@ -58,118 +58,165 @@ function RemainingDetail({
   );
 }
 
+// Each player's last results (newest first), from a district's matches.
+export type FormResult = "W" | "D" | "L";
+export function formByParticipant(matches: MatchLike[], last = 5): Record<string, FormResult[]> {
+  const played = matches
+    .filter((m) => m.frames_a !== null && m.frames_b !== null)
+    .sort((a, b) => (b.scheduled_date ?? "").localeCompare(a.scheduled_date ?? ""));
+  const out: Record<string, FormResult[]> = {};
+  for (const m of played) {
+    const a = m.frames_a as number;
+    const b = m.frames_b as number;
+    const resA: FormResult = a === b ? "D" : a > b ? "W" : "L";
+    const resB: FormResult = a === b ? "D" : a > b ? "L" : "W";
+    for (const [id, res] of [
+      [m.participant_a_id, resA],
+      [m.participant_b_id, resB],
+    ] as const) {
+      const list = (out[id] ??= []);
+      if (list.length < last) list.push(res);
+    }
+  }
+  return out;
+}
+
+const FORM_STYLE: Record<FormResult, [string, string]> = {
+  W: ["נ", "bg-primary text-white"],
+  D: ["ת", "bg-muted-foreground/40 text-white"],
+  L: ["ה", "bg-red-500 text-white"],
+};
+
 // Short header on a phone, full header from md up.
 function Head({ short, full, className }: { short: string; full: string; className?: string }) {
   return (
-    <th className={cn("text-center px-1 md:px-2 py-1.5 font-medium", className)}>
+    <th className={cn("text-center px-1 md:px-2 py-2.5 font-display font-bold", className)}>
       <span className="md:hidden">{short}</span>
       <span className="hidden md:inline">{full}</span>
     </th>
   );
 }
 
-const cell = "text-center px-1 md:px-2 py-1.5 tabular-nums";
+const cell = "text-center px-1 md:px-2 py-2.5 tabular-nums";
 
 // One table for both the admin league page and the public league page, so
 // the two never drift apart. No hooks — renders on the server or client.
-// `levels` (12 ft level + points gathered toward the next level change, by
-// participant id) adds two columns before the place.
+// Laid out like a sports-TV table: a dark header, the place in a box (the
+// leader in green), each player's level beside the name, the league points
+// as the loud column and the last results as a form guide.
+// `levels` (12 ft level + points toward the next level change, by
+// participant id) shows next to and under the name.
 // `remaining` (from remainingMatchesByParticipant) makes each row tappable,
 // opening the opponents that player hasn't played yet.
-// Compact on a phone (short headers, tight padding) so the whole table fits
-// without scrolling sideways.
+// `form` (from formByParticipant) adds the last results (from md up).
 export function LeagueStandingsTable({
   rows,
   renderName,
-  highlightLeader = false,
+  highlightLeader = true,
   levels,
   remaining,
+  form,
 }: {
   rows: LeagueStandingRow[];
   renderName: (participantId: string) => React.ReactNode;
   highlightLeader?: boolean;
   levels?: Record<string, StandingLevel>;
   remaining?: Record<string, RemainingMatch[]>;
+  form?: Record<string, FormResult[]>;
 }) {
-  const colSpan = levels ? 11 : 9;
+  const colSpan = form ? 10 : 9;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs md:text-sm whitespace-nowrap">
+      <table className="w-full text-[13px] md:text-sm whitespace-nowrap">
         <thead>
-          <tr className="text-[11px] md:text-xs text-muted-foreground border-b border-border/40">
-            {levels && (
-              <>
-                <Head short="דרגה" full="דרגה" className="ps-2 md:ps-4" />
-                {/* Two lines on a phone, so it isn't mistaken for the league points. */}
-                <th className="text-center px-1 md:px-2 py-1.5 font-medium leading-tight">
-                  <span className="md:hidden">
-                    נק׳
-                    <br />
-                    דירוג
-                  </span>
-                  <span className="hidden md:inline">נק׳ דירוג</span>
-                </th>
-              </>
-            )}
-            <Head short="#" full="מקום" className={cn("text-right", !levels && "ps-2 md:ps-4")} />
-            <th className="text-right px-1 md:px-2 py-1.5 font-medium">שם</th>
+          <tr className="bg-sidebar text-white/75 text-[11px] md:text-xs">
+            <th className="text-center ps-2 md:ps-4 pe-1 py-2.5 font-display font-bold w-10">#</th>
+            <th className="text-right px-1 md:px-2 py-2.5 font-display font-bold">שחקן</th>
             <Head short="מש׳" full="משחקים" />
-            <Head short="נ׳" full="נצחונות" />
+            <Head short="נ׳" full="ניצחונות" />
             <Head short="ת׳" full="תיקו" />
             <Head short="ה׳" full="הפסדים" />
-            <Head short="פריימים" full="מאזן פריימים" />
-            <Head short="הפרש" full="הפרש" />
-            <Head short="נק׳" full="נקודות" className="pe-2 md:pe-2" />
+            <Head short="פריימים" full="פריימים" className="hidden sm:table-cell" />
+            <Head short="+/-" full="הפרש" />
+            {form && <Head short="צורה" full="צורה" className="hidden md:table-cell" />}
+            <th className="text-center px-2 md:px-3 py-2.5 font-display font-extrabold bg-primary text-white">נק׳</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => {
             const diff = row.framesFor - row.framesAgainst;
-            const leading = highlightLeader && i === 0;
+            const leading = highlightLeader && i === 0 && row.played > 0;
             const lv = levels?.[row.participantId];
-            const rowClass = cn("border-b border-border/20 last:border-b-0", leading && "bg-primary/5");
+            const rowClass = cn(
+              "border-b border-border/40 last:border-b-0",
+              i % 2 === 1 && "bg-muted/25",
+              leading && "bg-primary/8",
+            );
+            const results = form?.[row.participantId] ?? [];
             const cells = (
               <>
-                {levels && (
-                  <>
-                    <td className={cn(cell, "ps-2 md:ps-4 font-semibold")}>{lv?.level ?? "—"}</td>
-                    <td
-                      className={cn(
-                        cell,
-                        "text-[11px] md:text-xs",
-                        lv && lv.points > 0 && "text-emerald-600 dark:text-emerald-400",
-                        lv && lv.points < 0 && "text-destructive",
-                      )}
-                      dir="ltr"
-                    >
-                      {lv ? (lv.points > 0 ? `+${lv.points}` : lv.points) : "—"}
-                    </td>
-                  </>
-                )}
-                <td
-                  className={cn(
-                    "px-1 md:px-2 py-1.5",
-                    !levels && "ps-2 md:ps-4",
-                    leading && "font-semibold text-primary",
-                  )}
-                >
-                  {i + 1}
+                <td className="ps-2 md:ps-4 pe-1 py-2 text-center">
+                  <span
+                    className={cn(
+                      "inline-flex w-7 h-7 items-center justify-center rounded-md bc-num text-sm",
+                      leading ? "bg-primary text-white" : i < 3 && row.played > 0 ? "bg-sidebar text-white" : "text-muted-foreground",
+                    )}
+                  >
+                    {i + 1}
+                  </span>
                 </td>
-                <td className={cn("px-1 md:px-2 py-1.5 max-w-[5.5rem] md:max-w-[9rem] truncate", leading && "font-semibold")}>
-                  {renderName(row.participantId)}
+                <td className="px-1 md:px-2 py-2 max-w-[7.5rem] md:max-w-[14rem]">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {lv?.level && (
+                      <span className="shrink-0 rounded bg-sidebar text-white px-1 min-w-5 text-center font-display text-[11px] font-extrabold leading-5" dir="ltr">
+                        {lv.level}
+                      </span>
+                    )}
+                    <span className={cn("truncate", leading ? "font-extrabold" : "font-semibold")}>{renderName(row.participantId)}</span>
+                  </div>
+                  {lv && lv.points !== 0 && (
+                    <span
+                      className={cn(
+                        "block text-[11px] leading-tight mt-0.5",
+                        lv.points > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive",
+                      )}
+                    >
+                      נק׳ דירוג <bdi dir="ltr">{lv.points > 0 ? `+${lv.points}` : lv.points}</bdi>
+                    </span>
+                  )}
                 </td>
                 <td className={cell}>{row.played}</td>
                 <td className={cell}>{row.wins}</td>
                 <td className={cell}>{row.draws}</td>
                 <td className={cell}>{row.losses}</td>
-                <td className={cell} dir="ltr">
+                <td className={cn(cell, "hidden sm:table-cell text-muted-foreground")} dir="ltr">
                   {row.framesFor}-{row.framesAgainst}
                 </td>
-                <td className={cell} dir="ltr">
+                <td
+                  className={cn(cell, "font-semibold", diff > 0 && "text-emerald-600 dark:text-emerald-400", diff < 0 && "text-destructive")}
+                  dir="ltr"
+                >
                   {diff > 0 ? "+" : ""}
                   {diff}
                 </td>
-                <td className={cn(cell, "pe-2 font-semibold")}>{row.points}</td>
+                {form && (
+                  <td className={cn(cell, "hidden md:table-cell")}>
+                    <span className="inline-flex gap-1">
+                      {results.length === 0 ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        results.map((r, k) => (
+                          <span key={k} className={cn("w-5 h-5 rounded flex items-center justify-center font-display text-[11px] font-extrabold", FORM_STYLE[r][1])}>
+                            {FORM_STYLE[r][0]}
+                          </span>
+                        ))
+                      )}
+                    </span>
+                  </td>
+                )}
+                <td className="text-center px-2 md:px-3 py-2 bg-primary/8">
+                  <span className="bc-num text-lg md:text-xl leading-none">{row.points}</span>
+                </td>
               </>
             );
             return remaining ? (

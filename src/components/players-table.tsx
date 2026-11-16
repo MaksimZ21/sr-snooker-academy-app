@@ -84,7 +84,8 @@ export function PlayersTable() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-muted-foreground border-b border-border/40">
-                <th className="text-right px-4 py-2 font-medium">שם</th>
+                <th className="text-center ps-4 pe-1 py-2 font-medium w-12">#</th>
+                <th className="text-right px-2 py-2 font-medium">שם</th>
                 <th className="text-right px-2 py-2 font-medium">טלפון</th>
                 <th className="text-center px-2 py-2 font-medium">דירוג</th>
                 <th className="text-center px-2 py-2 font-medium">טורנירים</th>
@@ -92,9 +93,10 @@ export function PlayersTable() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((p) => (
+              {rows.map((p, i) => (
                 <PlayerRow
                   key={`${p.id}:${p.rating}`}
+                  rank={i + 1}
                   player={p}
                   onSaveRating={(rating) => saveRating({ id: p.id, rating })}
                   onCopyLink={() => copyLink(p.publicSlug)}
@@ -110,11 +112,14 @@ export function PlayersTable() {
 }
 
 function PlayerRow({
+  rank,
   player,
   onSaveRating,
   onCopyLink,
   saving,
 }: {
+  // Place in the ranking (rows come sorted by rating).
+  rank: number;
   player: Player;
   onSaveRating: (rating: number) => void;
   onCopyLink: () => void;
@@ -136,7 +141,16 @@ function PlayerRow({
 
   return (
     <tr className="border-b border-border/20 last:border-b-0">
-      <td className="px-4 py-2">{player.name}</td>
+      <td className="ps-4 pe-1 py-2 text-center">
+        <span
+          className={`inline-flex w-8 h-8 items-center justify-center rounded-lg bc-num text-sm ${
+            rank === 1 ? "bg-[#f2b705] text-black" : rank === 2 ? "bg-[#c0c4c8] text-black" : rank === 3 ? "bg-[#c47a3a] text-white" : "text-muted-foreground"
+          }`}
+        >
+          {rank}
+        </span>
+      </td>
+      <td className="px-2 py-2 font-semibold">{player.name}</td>
       <td className="px-2 py-2 text-muted-foreground">{player.phone || "—"}</td>
       <td className="px-2 py-2">
         {editing ? (
@@ -153,7 +167,7 @@ function PlayerRow({
           </div>
         ) : (
           <div className="flex items-center justify-center gap-1.5">
-            <span className="tabular-nums font-medium">{player.rating}</span>
+            <span className="bc-num text-base">{player.rating}</span>
             <button
               type="button"
               onClick={() => {

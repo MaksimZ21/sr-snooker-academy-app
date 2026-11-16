@@ -1,27 +1,39 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronDown, ExternalLink, FolderOpen, AlertCircle } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronDown,
+  ExternalLink,
+  FolderOpen,
+  AlertCircle,
+  FileText,
+  FileSpreadsheet,
+  Presentation,
+  FileVideo,
+  FileImage,
+  FileAudio,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DriveFolder, DriveFile } from "@/lib/google/drive";
 
-const MIME_ICONS: Record<string, string> = {
-  "application/vnd.google-apps.document": "📄",
-  "application/vnd.google-apps.spreadsheet": "📊",
-  "application/vnd.google-apps.presentation": "📽️",
-  "application/pdf": "📕",
-  "video/mp4": "🎬",
-  "video/quicktime": "🎬",
+// Each file type in its own color, like the Drive icons people know.
+const MIME_ICONS: Record<string, [LucideIcon, string]> = {
+  "application/vnd.google-apps.document": [FileText, "#4285f4"],
+  "application/vnd.google-apps.spreadsheet": [FileSpreadsheet, "#0f9d58"],
+  "application/vnd.google-apps.presentation": [Presentation, "#f4b400"],
+  "application/pdf": [FileText, "#db4437"],
 };
 
-function mimeIcon(mimeType: string) {
+function mimeIcon(mimeType: string): [LucideIcon, string] {
   if (MIME_ICONS[mimeType]) return MIME_ICONS[mimeType];
-  if (mimeType.startsWith("video/")) return "🎬";
-  if (mimeType.startsWith("image/")) return "🖼️";
-  if (mimeType.startsWith("audio/")) return "🎵";
-  return "📄";
+  if (mimeType.startsWith("video/")) return [FileVideo, "#db4437"];
+  if (mimeType.startsWith("image/")) return [FileImage, "#0f9d58"];
+  if (mimeType.startsWith("audio/")) return [FileAudio, "#78716c"];
+  return [FileText, "#4285f4"];
 }
 
 function FileRow({ file }: { file: DriveFile }) {
@@ -32,7 +44,14 @@ function FileRow({ file }: { file: DriveFile }) {
       rel="noopener noreferrer"
       className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 transition-colors group"
     >
-      <span className="text-lg shrink-0 leading-none">{mimeIcon(file.mimeType)}</span>
+      {(() => {
+        const [Icon, color] = mimeIcon(file.mimeType);
+        return (
+          <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${color}1f`, color }}>
+            <Icon size={16} strokeWidth={2} />
+          </span>
+        );
+      })()}
       <span className="flex-1 text-sm truncate">{file.name}</span>
       <ExternalLink
         size={13}
@@ -55,7 +74,7 @@ function FolderSection({ folder }: { folder: DriveFolder }) {
         <FolderOpen size={16} className="text-amber-500 shrink-0" />
         <span className="flex-1 font-semibold text-sm">{folder.name}</span>
         <span className="text-xs text-muted-foreground shrink-0">
-          {folder.files.length + folder.subfolders.length} פריטים
+          {folder.files.length + folder.subfolders.length} ׳₪׳¨׳™׳˜׳™׳
         </span>
         {open ? (
           <ChevronDown size={14} className="text-muted-foreground shrink-0" />
@@ -67,7 +86,7 @@ function FolderSection({ folder }: { folder: DriveFolder }) {
       {open && (
         <div className={cn("mr-3 border-r border-border/50 pr-2 flex flex-col gap-0.5 mt-0.5")}>
           {isEmpty && (
-            <p className="text-xs text-muted-foreground px-3 py-2">תיקייה ריקה</p>
+            <p className="text-xs text-muted-foreground px-3 py-2">׳×׳™׳§׳™׳™׳” ׳¨׳™׳§׳”</p>
           )}
           {folder.subfolders.map((sub) => (
             <FolderSection key={sub.id} folder={sub} />
@@ -106,7 +125,7 @@ export function DriveLibrary() {
     return (
       <div className="p-4 flex flex-col items-center gap-3 py-16 text-muted-foreground">
         <AlertCircle size={36} className="opacity-40" />
-        <p className="text-sm text-center">לא ניתן לטעון קבצים כרגע</p>
+        <p className="text-sm text-center">׳׳ ׳ ׳™׳×׳ ׳׳˜׳¢׳•׳ ׳§׳‘׳¦׳™׳ ׳›׳¨׳’׳¢</p>
       </div>
     );
   }
@@ -118,7 +137,7 @@ export function DriveLibrary() {
     return (
       <div className="p-4 flex flex-col items-center gap-3 py-16 text-muted-foreground">
         <FolderOpen size={36} className="opacity-25" />
-        <p className="text-sm">אין קבצים בתיקייה</p>
+        <p className="text-sm">׳׳™׳ ׳§׳‘׳¦׳™׳ ׳‘׳×׳™׳§׳™׳™׳”</p>
       </div>
     );
   }

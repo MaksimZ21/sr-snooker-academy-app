@@ -33,13 +33,22 @@ export function PricingTable({ showAdd = false }: { showAdd?: boolean }) {
           <AddPricingDialog />
         </div>
       )}
-      <table className="w-full border-collapse">
+      {rows.length === 0 ? (
+        <div className="rounded-[18px] border border-dashed bg-card py-14 text-center flex flex-col items-center gap-1">
+          <p className="font-display text-base font-extrabold">המחירון עדיין ריק</p>
+          <p className="text-sm text-muted-foreground">
+            {showAdd ? "אפשר להוסיף שורה ראשונה בכפתור \"הוסף שורה\"." : "המחירים יופיעו כאן כשהמנהל יוסיף אותם."}
+          </p>
+        </div>
+      ) : (
+      <div className="rounded-[18px] border bg-card overflow-hidden">
+      <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b">
-            <th className="text-right p-2">סוג שיעור</th>
-            <th className="text-right p-2">משך</th>
-            <th className="text-right p-2">מחיר (₪)</th>
-            <th className="text-right p-2">הערות</th>
+          <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
+            <th className="text-right p-3">סוג שיעור</th>
+            <th className="text-right p-3">משך</th>
+            <th className="text-right p-3">מחיר (₪)</th>
+            <th className="text-right p-3">הערות</th>
           </tr>
         </thead>
         <tbody>
@@ -53,6 +62,8 @@ export function PricingTable({ showAdd = false }: { showAdd?: boolean }) {
           ))}
         </tbody>
       </table>
+      </div>
+      )}
     </div>
   );
 }

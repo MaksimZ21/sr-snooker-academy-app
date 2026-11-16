@@ -5,6 +5,7 @@ import { Shuffle, Trash2, ArrowLeftRight, ChevronDown, ChevronUp } from "lucide-
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MatchLine } from "@/components/match-line";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -200,45 +201,59 @@ export function TournamentHousesView({
               <button
                 type="button"
                 onClick={() => toggleCollapsed(house.id)}
-                className="w-full flex items-center justify-between px-4 pt-3 pb-2 text-right"
+                className="w-full flex items-center justify-between gap-3 px-4 py-3 text-right bg-sidebar text-white"
               >
-                <span className="text-sm font-semibold">{house.label}</span>
-                {collapsed ? (
-                  <ChevronDown size={16} className="text-muted-foreground" />
-                ) : (
-                  <ChevronUp size={16} className="text-muted-foreground" />
-                )}
+                <span className="bc-num text-xl leading-none">{house.label}</span>
+                <span className="flex items-center gap-2 font-display text-xs font-bold text-white/60">
+                  {house.matches.filter((m) => m.frames_a !== null && m.frames_b !== null).length}/{house.matches.length} משחקים
+                  {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                </span>
               </button>
 
               {!collapsed && (
               <>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-[13px] md:text-sm">
                   <thead>
-                    <tr className="text-xs text-muted-foreground border-b border-border/40">
-                      <th className="text-right px-4 py-1.5 font-medium">מקום</th>
-                      <th className="text-right px-2 py-1.5 font-medium">שם</th>
-                      <th className="text-center px-2 py-1.5 font-medium">נצחונות</th>
-                      <th className="text-center px-2 py-1.5 font-medium">פריימים לטובה</th>
-                      <th className="text-center px-2 py-1.5 font-medium">פריימים לרעה</th>
-                      <th className="text-center px-2 py-1.5 font-medium">הפרש</th>
+                    <tr className="text-[11px] md:text-xs text-muted-foreground border-b bg-muted/40">
+                      <th className="text-center ps-3 pe-1 py-2 font-display font-bold w-10">#</th>
+                      <th className="text-right px-2 py-2 font-display font-bold">שחקן</th>
+                      <th className="text-center px-2 py-2 font-display font-bold">נ׳</th>
+                      <th className="text-center px-2 py-2 font-display font-bold">פריימים</th>
+                      <th className="text-center px-2 py-2 font-display font-bold">+/-</th>
                       {canEdit && <th className="w-8" />}
                     </tr>
                   </thead>
                   <tbody>
                     {standings.map((row, i) => (
-                      <tr key={row.participantId} className="border-b border-border/20 last:border-b-0">
-                        <td className="px-4 py-1.5">{i + 1}</td>
-                        <td className="px-2 py-1.5">
-                          {participantName(row.participantId)}
-                          {participantSkillLevel(row.participantId) && (
-                            <span className="text-muted-foreground"> ({participantSkillLevel(row.participantId)})</span>
-                          )}
+                      <tr key={row.participantId} className={cn("border-b border-border/40 last:border-b-0", i === 0 && row.wins > 0 && "bg-primary/8")}>
+                        <td className="ps-3 pe-1 py-2 text-center">
+                          <span className={cn("inline-flex w-7 h-7 items-center justify-center rounded-md bc-num text-sm", i === 0 && row.wins > 0 ? "bg-primary text-white" : "text-muted-foreground")}>
+                            {i + 1}
+                          </span>
                         </td>
-                        <td className="text-center px-2 py-1.5">{row.wins}</td>
-                        <td className="text-center px-2 py-1.5">{row.framesWon}</td>
-                        <td className="text-center px-2 py-1.5">{row.framesLost}</td>
-                        <td className="text-center px-2 py-1.5">
+                        <td className="px-2 py-2">
+                          <span className="flex items-center gap-1.5 min-w-0">
+                            {participantSkillLevel(row.participantId) && (
+                              <span className="shrink-0 rounded bg-sidebar text-white px-1 font-display text-[11px] font-extrabold leading-5" dir="ltr">
+                                {participantSkillLevel(row.participantId)}
+                              </span>
+                            )}
+                            <span className="truncate font-semibold">{participantName(row.participantId)}</span>
+                          </span>
+                        </td>
+                        <td className="text-center px-2 py-2"><span className="bc-num text-base">{row.wins}</span></td>
+                        <td className="text-center px-2 py-2 tabular-nums text-muted-foreground" dir="ltr">
+                          {row.framesWon}-{row.framesLost}
+                        </td>
+                        <td
+                          className={cn(
+                            "text-center px-2 py-2 tabular-nums font-semibold",
+                            row.framesWon - row.framesLost > 0 && "text-emerald-600 dark:text-emerald-400",
+                            row.framesWon - row.framesLost < 0 && "text-destructive",
+                          )}
+                          dir="ltr"
+                        >
                           {row.framesWon - row.framesLost > 0 ? "+" : ""}
                           {row.framesWon - row.framesLost}
                         </td>
@@ -260,7 +275,7 @@ export function TournamentHousesView({
                 </table>
               </div>
 
-              <div className="flex flex-col gap-2 px-4 py-3 border-t border-border/40">
+              <div className="grid gap-2 p-3 border-t sm:grid-cols-2 lg:grid-cols-3">
                 {house.matches.map((m) => {
                   const nameA = participantName(m.participant_a_id);
                   const nameB = participantName(m.participant_b_id);
@@ -347,71 +362,37 @@ function HouseMatchRow({
     onSave(na, nb);
   }
 
-  if (!canEdit) {
-    return (
-      <div className="flex items-center gap-2 text-sm">
-        <span className="flex-1">{nameA} נגד {nameB}</span>
-        {played ? (
-          <span className="font-medium">{match.frames_a} - {match.frames_b}</span>
-        ) : (
-          <span className="text-muted-foreground text-xs">טרם שוחק</span>
-        )}
-      </div>
-    );
-  }
-
-  if (played && !editing) {
-    return (
-      <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-2.5 py-1.5 text-sm">
-        <span className="truncate">
-          <span className={cn(match.frames_a! > match.frames_b! && "font-semibold")}>{nameA}</span>
-          <span className="mx-1.5 font-semibold tabular-nums">{match.frames_a} - {match.frames_b}</span>
-          <span className={cn(match.frames_b! > match.frames_a! && "font-semibold")}>{nameB}</span>
-        </span>
-        <button
-          type="button"
-          className="text-xs text-muted-foreground underline shrink-0"
-          onClick={() => setEditing(true)}
-        >
-          עריכה
-        </button>
-      </div>
-    );
-  }
-
+  const box = (value: string, set: (v: string) => void) => (
+    <Input
+      type="number"
+      min={0}
+      value={value}
+      onChange={(e) => set(e.target.value)}
+      onBlur={trySave}
+      className="h-7 w-12 text-center px-1 bc-num text-sm"
+      disabled={saving}
+    />
+  );
+  const showBoxes = canEdit && (!played || editing);
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-2 text-sm">
-        <span className="flex-1">{nameA} נגד {nameB}</span>
-        <Input
-          type="number"
-          min={0}
-          value={framesA}
-          onChange={(e) => setFramesA(e.target.value)}
-          onBlur={trySave}
-          className="h-7 w-14 text-center px-1"
-          disabled={saving}
-        />
-        <span className="text-muted-foreground">-</span>
-        <Input
-          type="number"
-          min={0}
-          value={framesB}
-          onChange={(e) => setFramesB(e.target.value)}
-          onBlur={trySave}
-          className="h-7 w-14 text-center px-1"
-          disabled={saving}
-        />
-        {played && (
-          <button
-            type="button"
-            className="text-[11px] text-muted-foreground underline shrink-0"
-            onClick={() => setEditing(false)}
-          >
-            ביטול
-          </button>
-        )}
-      </div>
-    </div>
+    <MatchLine
+      nameA={nameA}
+      nameB={nameB}
+      framesA={showBoxes ? null : match.frames_a}
+      framesB={showBoxes ? null : match.frames_b}
+      scoreA={showBoxes ? box(framesA, setFramesA) : undefined}
+      scoreB={showBoxes ? box(framesB, setFramesB) : undefined}
+      aside={
+        canEdit ? (
+          played ? (
+            <button type="button" className="font-display font-bold hover:text-foreground" onClick={() => setEditing((v) => !v)}>
+              {editing ? "ביטול" : "עריכה"}
+            </button>
+          ) : (
+            <span className="font-display font-bold">הזן תוצאה</span>
+          )
+        ) : undefined
+      }
+    />
   );
 }

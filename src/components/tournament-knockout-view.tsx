@@ -1,4 +1,5 @@
 "use client";
+import { cn } from "@/lib/utils";
 import { useState, useRef, useLayoutEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Swords, CheckCheck, Trash2 } from "lucide-react";
@@ -294,7 +295,12 @@ export function TournamentKnockoutView({
             </svg>
             {rounds.map(({ round, label, matches: roundMatches }) => (
               <div key={round} className="relative flex flex-col w-56 shrink-0">
-                <p className="font-display text-sm font-extrabold text-center pb-2">
+                <p
+                  className={cn(
+                    "mx-auto mb-3 rounded-lg px-3 py-1 font-display text-xs font-extrabold",
+                    round === rounds[rounds.length - 1]?.round ? "bg-[#f2b705] text-black" : "bg-sidebar text-white",
+                  )}
+                >
                   {label}
                 </p>
                 <div className="flex-1 flex flex-col justify-around gap-6">
@@ -376,13 +382,21 @@ function KnockoutMatchCard({
   const canEnterResult = canEdit && !played && !!match.participant_a_id && !!match.participant_b_id;
 
   return (
-    <div className="rounded-[14px] border bg-card p-2.5 flex flex-col gap-1.5">
+    <div className="rounded-[14px] border bg-card overflow-hidden flex flex-col divide-y shadow-[0_6px_16px_-12px_rgb(13_21_16/0.35)]">
       {(["a", "b"] as const).map((side) => {
         const name = side === "a" ? nameA : nameB;
         const participantId = side === "a" ? match.participant_a_id : match.participant_b_id;
         const score = side === "a" ? match.frames_a : match.frames_b;
+        const other = side === "a" ? match.frames_b : match.frames_a;
+        const won = played && (score as number) > (other as number);
         return (
-          <div key={side} className="flex items-center gap-2 text-sm">
+          <div
+            key={side}
+            className={cn(
+              "flex items-center gap-2 text-sm px-2.5 py-1.5 border-s-4",
+              won ? "border-primary bg-primary/8" : "border-transparent",
+            )}
+          >
             {canAssign ? (
               <Select
                 value={participantId ?? "__none__"}
@@ -412,9 +426,11 @@ function KnockoutMatchCard({
                 </SelectContent>
               </Select>
             ) : (
-              <span className="flex-1 truncate">{name ?? "TBD"}</span>
+              <span className={cn("flex-1 truncate", won ? "font-extrabold" : played ? "text-muted-foreground" : name ? "font-semibold" : "text-muted-foreground")}>
+                {name ?? "טרם נקבע"}
+              </span>
             )}
-            {played && <span className="font-medium tabular-nums">{score}</span>}
+            {played && <span className={cn("bc-num text-base leading-none", !won && "text-muted-foreground")}>{score}</span>}
             {canEnterResult && (
               <Input
                 type="number"
@@ -422,7 +438,7 @@ function KnockoutMatchCard({
                 value={side === "a" ? framesA : framesB}
                 onChange={(e) => (side === "a" ? setFramesA : setFramesB)(e.target.value)}
                 onBlur={trySave}
-                className="h-7 w-12 text-center px-1 text-xs shrink-0"
+                className="h-7 w-12 text-center px-1 bc-num text-sm shrink-0"
                 disabled={saving}
               />
             )}

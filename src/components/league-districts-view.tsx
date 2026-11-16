@@ -216,7 +216,7 @@ export function LeagueDistrictsView({
   return (
     <div className="flex flex-col gap-4">
       {canEdit && (
-        <div className="rounded-2xl border border-border/60 bg-card p-4 flex items-end gap-2">
+        <div className="rounded-[18px] border bg-card p-4 flex items-end gap-2">
           <div className="flex-1">
             <label className="text-xs text-muted-foreground mb-1 block">מחוז חדש</label>
             <Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="למשל: צפון" dir="auto" />
@@ -250,7 +250,7 @@ export function LeagueDistrictsView({
       )}
 
       {districts.length === 0 ? (
-        <div className="py-8 text-center text-sm text-muted-foreground rounded-2xl border border-border/60 bg-card">
+        <div className="py-8 text-center text-sm text-muted-foreground rounded-[18px] border bg-card">
           עדיין אין מחוזות
         </div>
       ) : (
@@ -294,7 +294,7 @@ export function LeagueDistrictsView({
             id: district.id,
             label: district.label,
             content: (
-            <div key={district.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+            <div key={district.id} className="rounded-[18px] border bg-card overflow-hidden">
               <div className="flex items-center justify-between px-4 pt-3 pb-2">
                 <div>
                   <p className="text-sm font-semibold">{district.label}</p>

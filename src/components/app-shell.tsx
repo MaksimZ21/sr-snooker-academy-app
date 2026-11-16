@@ -114,7 +114,7 @@ export function AppShell({
           {hasMore && (
             <button
               onClick={() => setMoreOpen(true)}
-              className="flex flex-col flex-1 items-center gap-0.5 py-1.5 px-1 rounded-xl text-[10px] font-semibold text-white/55 hover:text-white transition-colors"
+              className="flex flex-col flex-1 items-center gap-0.5 py-1.5 px-1 rounded-xl text-[11px] font-semibold text-white/55 hover:text-white transition-colors"
             >
               <span className="w-10 h-8 rounded-xl flex items-center justify-center">
                 <LayoutGrid size={20} strokeWidth={1.75} />
@@ -161,7 +161,7 @@ export function AppShell({
                     href={it.href}
                     onClick={() => setMoreOpen(false)}
                     className={cn(
-                      "flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl text-[10px] text-center transition-colors",
+                      "flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl text-[11px] text-center transition-colors",
                       active
                         ? "bg-primary/10 text-primary font-semibold"
                         : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -218,7 +218,7 @@ function NavLink({
       <Link
         href={item.href}
         className={cn(
-          "flex flex-col flex-1 items-center gap-0.5 py-1.5 px-1 rounded-xl text-[10px] font-semibold transition-colors duration-200 relative",
+          "flex flex-col flex-1 items-center gap-0.5 py-1.5 px-1 rounded-xl text-[11px] font-semibold transition-colors duration-200 relative",
           active ? "bg-primary text-white" : "text-white/55 hover:text-white",
         )}
       >

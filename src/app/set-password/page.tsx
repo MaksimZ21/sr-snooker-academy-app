@@ -26,12 +26,13 @@ export default function SetPasswordPage() {
 
   return (
     <main className="min-h-dvh grid place-items-center px-4 bg-brand-gradient">
-      <Card className="w-full max-w-md bg-background/80 backdrop-blur-xl border-border/50 shadow-2xl">
+      <Card className="w-full max-w-md bg-card shadow-2xl overflow-hidden py-0 gap-0">
+        <div className="bg-sidebar text-white px-8 pt-7 pb-5 text-center flex flex-col items-center gap-2">
+          <h1 className="bc-num text-[28px] md:text-[34px] leading-[1.05]">הגדרת סיסמה</h1>
+          <p className="text-sm text-white/65">בחר סיסמה לכניסה למערכת</p>
+          <span className="block h-[3px] w-14 bg-primary mt-1" />
+        </div>
         <CardContent className="flex flex-col gap-6 p-8">
-          <div className="text-center">
-            <h1 className="bc-num text-[28px] md:text-[36px] leading-[1.05]">הגדרת סיסמה</h1>
-            <p className="text-sm text-muted-foreground mt-1">בחר סיסמה לכניסה למערכת</p>
-          </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <div>
               <Label>סיסמה חדשה</Label>

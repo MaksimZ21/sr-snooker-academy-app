@@ -51,7 +51,7 @@ export default function CoachAssessmentsPage() {
       />
 
       <div className="p-4 md:p-6">
-        <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm dark:ring-1 dark:ring-white/[0.06]">
+        <div className="rounded-[18px] border bg-card overflow-hidden shadow-sm dark:ring-1 dark:ring-white/[0.06]">
           {isLoading ? (
             <div className="divide-y divide-border/50">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -95,7 +95,7 @@ export default function CoachAssessmentsPage() {
                         {rated > 0 && (
                           <Badge
                             variant={pass >= rated * 0.7 ? "default" : "secondary"}
-                            className="text-[10px] h-4 px-1.5"
+                            className="text-[11px] h-4 px-1.5"
                           >
                             {pass}/{rated} ✓
                           </Badge>

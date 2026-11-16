@@ -163,7 +163,7 @@ export function PublicTournamentView({
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="חיפוש לפי שם — מצא את המיקום שלך..."
                   dir="auto"
-                  className="w-full rounded-xl border border-border/60 bg-card px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="w-full rounded-[14px] border bg-card px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
                 {(() => {
                   // One button per location (like the league districts); only
@@ -259,7 +259,7 @@ export function PublicTournamentView({
                                 if (el) matchNodeRefs.current.set(m.id, el);
                                 else matchNodeRefs.current.delete(m.id);
                               }}
-                              className="rounded-xl border border-border/60 bg-card p-2.5 flex flex-col gap-1.5"
+                              className="rounded-[14px] border bg-card p-2.5 flex flex-col gap-1.5"
                             >
                               {[
                                 { p: pa, score: m.frames_a },
@@ -306,7 +306,7 @@ function HouseCard({
 }) {
   const standings = computeHouseStandings(house.memberIds, house.matches);
   return (
-    <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+    <div className="rounded-[18px] border bg-card overflow-hidden">
       <p className="text-sm font-semibold px-4 pt-3 pb-2">{house.label}</p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">

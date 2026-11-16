@@ -354,7 +354,7 @@ export function WhatsAppScheduler() {
             <TabsTrigger value="scheduled">
               הודעות מתוזמנות
               {pending.length > 0 && (
-                <span className="mr-1.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1">
+                <span className="mr-1.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground px-1">
                   {pending.length}
                 </span>
               )}
@@ -369,7 +369,7 @@ export function WhatsAppScheduler() {
         <TabsContent value="scheduled">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">ממתינות לשליחה</p>
+              <p className="font-display text-sm font-extrabold">ממתינות לשליחה</p>
               {loadingMsgs ? (
                 <div className="flex flex-col gap-2">
                   <Skeleton className="h-16 w-full rounded-xl" />
@@ -396,7 +396,7 @@ export function WhatsAppScheduler() {
 
             {history.length > 0 && (
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">היסטוריה</p>
+                <p className="font-display text-sm font-extrabold">היסטוריה</p>
                 {groupByAutomationRun(history).map((item) =>
                   item.kind === "batch" ? (
                     <AutomationBatchCard key={item.runId} batch={item} onRescheduleMessage={handleReschedule} />
@@ -425,8 +425,8 @@ export function WhatsAppScheduler() {
           <div className="max-w-2xl flex flex-col gap-4">
 
             {/* Recipient */}
-            <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">נמען</p>
+            <section className="rounded-[18px] border bg-card p-4 flex flex-col gap-3 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
+              <p className="font-display text-sm font-extrabold">נמען</p>
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -486,8 +486,8 @@ export function WhatsAppScheduler() {
             </section>
 
             {/* Message */}
-            <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-4 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">הודעה</p>
+            <section className="rounded-[18px] border bg-card p-4 flex flex-col gap-4 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
+              <p className="font-display text-sm font-extrabold">הודעה</p>
 
               {/* Type selector */}
               <div className="flex gap-2">
@@ -710,8 +710,8 @@ export function WhatsAppScheduler() {
             </section>
 
             {/* Schedule */}
-            <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">תזמון שליחה</p>
+            <section className="rounded-[18px] border bg-card p-4 flex flex-col gap-3 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
+              <p className="font-display text-sm font-extrabold">תזמון שליחה</p>
               <input
                 type="datetime-local"
                 className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition-shadow"
@@ -762,7 +762,7 @@ function MessageCard({
     MessageSquare;
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-4 flex items-start gap-3 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
+    <div className="rounded-[18px] border bg-card p-4 flex items-start gap-3 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]">
       <StatusIcon
         size={15}
         className={cn(
@@ -773,8 +773,8 @@ function MessageCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
           <span className="font-medium text-sm">{m.chat_name || m.chat_id}</span>
-          <Badge variant={variant} className="text-[10px] h-4 px-1.5">{label}</Badge>
-          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+          <Badge variant={variant} className="text-[11px] h-4 px-1.5">{label}</Badge>
+          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
             <TypeIcon size={10} />
             {parsed.type === "image" ? "תמונה" : parsed.type === "poll" ? "סקר" : parsed.type === "group_settings" ? "הגדרות קבוצה" : "טקסט"}
           </span>
@@ -823,7 +823,7 @@ function AutomationBatchCard({
   const earliest = [...batch.messages].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))[0];
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06] overflow-hidden">
+    <div className="rounded-[18px] border bg-card shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06] overflow-hidden">
       <div className="flex items-center gap-3 p-4">
         <button
           type="button"

@@ -151,7 +151,7 @@ export function TournamentParticipantPicker({
         dir="auto"
       />
       {query.trim().length >= 2 && (
-        <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <div className="rounded-[14px] border bg-card overflow-hidden">
           {isLoading ? (
             <div className="px-3 py-3 text-sm text-muted-foreground text-center">מחפש...</div>
           ) : isError ? (

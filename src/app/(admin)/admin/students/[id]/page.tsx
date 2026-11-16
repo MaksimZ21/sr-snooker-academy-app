@@ -147,7 +147,7 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
               <div className="flex items-center gap-2">
                 <h1 className="bc-num text-[28px] md:text-[36px] text-white leading-tight">{name}</h1>
                 {!student.active && (
-                  <span className="bg-white/20 text-white/80 text-[10px] px-2 py-0.5 rounded-full">
+                  <span className="bg-white/20 text-white/80 text-[11px] px-2 py-0.5 rounded-full">
                     לא פעיל
                   </span>
                 )}
@@ -335,7 +335,7 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
                     {ratedCount > 0 && (
                       <Badge
                         variant={passCount >= ratedCount * 0.7 ? "default" : "secondary"}
-                        className="text-[10px] h-5 px-1.5 shrink-0"
+                        className="text-[11px] h-5 px-1.5 shrink-0"
                       >
                         {passCount}/{ratedCount}
                       </Badge>

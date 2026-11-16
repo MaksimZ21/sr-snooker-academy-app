@@ -159,8 +159,8 @@ export function TournamentHousesView({
   return (
     <div className="flex flex-col gap-4">
       {canEdit && (
-        <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <div className="rounded-[18px] border bg-card p-4 flex flex-col gap-3">
+          <p className="font-display text-sm font-extrabold">
             {houses.length === 0 ? "הגרלת בתים" : "הגרלה מחדש"}
           </p>
           <div className="flex items-end gap-2">
@@ -188,7 +188,7 @@ export function TournamentHousesView({
       )}
 
       {houses.length === 0 ? (
-        <div className="py-8 text-center text-sm text-muted-foreground rounded-2xl border border-border/60 bg-card">
+        <div className="py-8 text-center text-sm text-muted-foreground rounded-[18px] border bg-card">
           עדיין לא בוצעה הגרלה
         </div>
       ) : (
@@ -196,7 +196,7 @@ export function TournamentHousesView({
           const standings = computeHouseStandings(house.memberIds, house.matches);
           const collapsed = collapsedHouseIds.has(house.id);
           return (
-            <div key={house.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+            <div key={house.id} className="rounded-[18px] border bg-card overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleCollapsed(house.id)}

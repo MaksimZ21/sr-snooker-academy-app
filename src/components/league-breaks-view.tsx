@@ -84,7 +84,7 @@ export function LeagueBreaksView({
   });
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+    <div className="rounded-[18px] border bg-card overflow-hidden">
       <div className="pt-3" />
       <BreaksSearchInput value={query} onChange={setQuery} />
       {isLoading ? (

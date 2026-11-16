@@ -215,7 +215,7 @@ export function LeagueDetailView({
 
         {tab === "players" && (
           <>
-          <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+          <div className="rounded-[18px] border bg-card overflow-hidden">
             {participants.length === 0 ? (
               <div className="py-8 text-center text-sm text-muted-foreground">אין שחקנים עדיין</div>
             ) : (

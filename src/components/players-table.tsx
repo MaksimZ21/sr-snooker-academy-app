@@ -79,7 +79,7 @@ export function PlayersTable() {
 
   return (
     <div className="p-4">
-      <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+      <div className="rounded-[18px] border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

@@ -70,7 +70,7 @@ export function PublicLeagueBoard({
   const card = (panel: Panel, title: string, body: React.ReactNode) => {
     const isFolded = folded.has(panel);
     return (
-      <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+      <div className="rounded-[18px] border bg-card overflow-hidden">
         <p className="text-sm font-semibold px-4 pt-3 pb-2 md:hidden">{title}</p>
         <button
           type="button"

@@ -51,7 +51,7 @@ export function LeagueLevelsView({ leagueId, canEdit }: { leagueId: string; canE
   if (!rows.length) return null;
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+    <div className="rounded-[18px] border bg-card overflow-hidden">
       <div className="px-4 pt-3 pb-1">
         <p className="text-[11px] text-muted-foreground">
           ±5 נקודות אחרי {MIN_MATCHES} משחקים לפחות = מועמד לשינוי דרגה. הספירה מתאפסת אחרי כל שינוי.

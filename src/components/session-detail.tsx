@@ -224,7 +224,7 @@ export function SessionDetail({
           <TabsContent value="notes">
             <div className="flex flex-col gap-5">
               <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                <p className="font-display text-sm font-extrabold mb-2">
                   מטרה חודשית
                 </p>
                 <GoalPanel
@@ -236,7 +236,7 @@ export function SessionDetail({
                 />
               </div>
               <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                <p className="font-display text-sm font-extrabold mb-2">
                   הערות
                 </p>
                 <NotesPanel

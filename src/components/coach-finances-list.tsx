@@ -134,7 +134,7 @@ function FinanceRow({
         {session.source && session.source !== "אחר" && (
           <Badge
             variant="outline"
-            className={cn("text-[10px] px-1.5 py-0 h-4 border shrink-0",
+            className={cn("text-[11px] px-1.5 py-0 h-4 border shrink-0",
               SOURCE_STYLE[session.source] ?? "border-border/60 text-muted-foreground")}
           >
             {session.source}
@@ -153,7 +153,7 @@ function FinanceRow({
         disabled={toggling}
         onClick={() => onToggle(session.id, paid ? "pending" : "paid")}
         className={cn(
-          "shrink-0 flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-md border transition-all duration-150",
+          "shrink-0 flex items-center gap-0.5 text-[11px] font-semibold px-2 py-0.5 rounded-md border transition-all duration-150",
           "disabled:opacity-50",
           paid
             ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800"
@@ -177,8 +177,8 @@ function DateGroupHeader({ date, sessions }: { date: string; sessions: Session[]
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/40 border-y border-border/30 sticky top-0 z-10">
       <span className="text-xs font-bold tabular-nums">{shortDt}</span>
-      <span className="text-[10px] text-muted-foreground">{dayName}</span>
-      <span className="text-[10px] text-muted-foreground/50 mr-auto">
+      <span className="text-[11px] text-muted-foreground">{dayName}</span>
+      <span className="text-[11px] text-muted-foreground/50 mr-auto">
         {paidCount}/{sessions.length} שולמו
         {total > 0 && ` · ${total.toLocaleString("he-IL")} ₪`}
       </span>
@@ -193,7 +193,7 @@ function MonthGroupHeader({ monthKey, sessions }: { monthKey: string; sessions: 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/40 border-y border-border/30">
       <span className="text-xs font-semibold">{monthLabelFromKey(monthKey)}</span>
-      <span className="text-[10px] text-muted-foreground/60 mr-auto">
+      <span className="text-[11px] text-muted-foreground/60 mr-auto">
         {paidCount}/{sessions.length} שולמו
         {total > 0 && ` · ${total.toLocaleString("he-IL")} ₪`}
       </span>
@@ -207,13 +207,13 @@ function OffsetsBar({ offsets }: { offsets: OffsetEntry[] }) {
   if (offsets.length === 0) return null;
   const total = offsets.reduce((s, o) => s + o.amount, 0);
   return (
-    <div className="rounded-xl border border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/20 px-3 py-2.5 flex flex-col gap-1.5">
+    <div className="rounded-[14px] border border-rose-300/60 bg-card px-4 py-3 flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 text-rose-700 dark:text-rose-400">
           <Minus size={11} />
-          <span className="text-[10px] font-medium">קיזוזים</span>
+          <span className="text-[11px] font-medium">קיזוזים</span>
         </div>
-        <span className="text-sm font-bold tabular-nums text-rose-800 dark:text-rose-300">
+        <span className="bc-num text-xl leading-none text-rose-600 dark:text-rose-400" dir="ltr">
           -{total.toLocaleString("he-IL")} ₪
         </span>
       </div>
@@ -240,25 +240,19 @@ function SummaryBar({ sessions }: { sessions: Session[] }) {
   const pendAmt = pending.reduce((s, r) => s + (r.price_nis ?? 0), 0);
 
   return (
-    <div className="grid grid-cols-2 gap-2">
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20 px-3 py-2.5 flex flex-col gap-0.5">
-        <div className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
-          <Check size={11} />
-          <span className="text-[10px] font-medium">שולם</span>
-        </div>
-        <span className="text-sm font-bold tabular-nums text-emerald-800 dark:text-emerald-300 scoreboard-num">
-          {paidAmt.toLocaleString("he-IL")} ₪
+    <div className="grid grid-cols-2 gap-3">
+      <div className="rounded-[14px] bg-brand-gradient text-white px-4 py-3 flex flex-col gap-1">
+        <span className="flex items-center gap-1 font-display text-xs font-bold text-white/75">
+          <Check size={12} />
+          שולם
         </span>
-        <span className="text-[10px] text-emerald-600/70 dark:text-emerald-500">{paid.length} אימונים</span>
+        <span className="bc-num text-3xl leading-none">{paidAmt.toLocaleString("he-IL")} ₪</span>
+        <span className="text-xs text-white/70">{paid.length} אימונים</span>
       </div>
-      <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20 px-3 py-2.5 flex flex-col gap-0.5">
-        <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
-          <span className="text-[10px] font-medium">⏳ ממתין לתשלום</span>
-        </div>
-        <span className="text-sm font-bold tabular-nums text-amber-800 dark:text-amber-300 scoreboard-num">
-          {pendAmt.toLocaleString("he-IL")} ₪
-        </span>
-        <span className="text-[10px] text-amber-600/70 dark:text-amber-500">{pending.length} אימונים</span>
+      <div className="rounded-[14px] border bg-card px-4 py-3 flex flex-col gap-1">
+        <span className="font-display text-xs font-bold text-amber-600 dark:text-amber-400">ממתין לתשלום</span>
+        <span className="bc-num text-3xl leading-none">{pendAmt.toLocaleString("he-IL")} ₪</span>
+        <span className="text-xs text-muted-foreground">{pending.length} אימונים</span>
       </div>
     </div>
   );
@@ -279,7 +273,7 @@ function FilterChips<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider shrink-0">{label}</span>
+      <span className="text-[11px] font-medium text-muted-foreground/70 shrink-0">{label}</span>
       {options.map((o) => (
         <button
           key={o.value}
@@ -464,7 +458,7 @@ export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
           </button>
           <div className="text-center">
             <div className="font-semibold text-sm leading-tight">{label}</div>
-            {rangeLabel && <div className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">{rangeLabel}</div>}
+            {rangeLabel && <div className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">{rangeLabel}</div>}
           </div>
           <button onClick={prevPeriod} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors" aria-label="הקודם">
             <ChevronLeft size={17} />
@@ -500,7 +494,7 @@ export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
       {filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">אין מפגשים</p>
       ) : mode === "month" ? (
-        <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <div className="rounded-[14px] border bg-card overflow-hidden">
           {groups!.map(({ key, sessions: grpSessions }) => (
             <div key={key}>
               <DateGroupHeader date={key} sessions={grpSessions} />
@@ -515,7 +509,7 @@ export function CoachFinancesList({ coachEmail }: { coachEmail?: string }) {
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <div className="rounded-[14px] border bg-card overflow-hidden">
           {monthGroups!.map((mg) => (
             <div key={mg.key}>
               <MonthGroupHeader monthKey={mg.key} sessions={mg.dateGroups.flatMap((dg) => dg.sessions)} />

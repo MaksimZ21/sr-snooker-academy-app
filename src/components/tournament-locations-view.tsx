@@ -194,7 +194,7 @@ export function TournamentLocationsView({
   return (
     <div className="flex flex-col gap-4">
       {canEdit && (
-        <div className="rounded-2xl border border-border/60 bg-card p-4 flex items-end gap-2">
+        <div className="rounded-[18px] border bg-card p-4 flex items-end gap-2">
           <div className="flex-1">
             <label className="text-xs text-muted-foreground mb-1 block">מיקום חדש</label>
             <Input value={newLocationLabel} onChange={(e) => setNewLocationLabel(e.target.value)} placeholder="למשל: אולם צפון" dir="auto" />
@@ -207,7 +207,7 @@ export function TournamentLocationsView({
       )}
 
       {locations.length === 0 ? (
-        <div className="py-8 text-center text-sm text-muted-foreground rounded-2xl border border-border/60 bg-card">
+        <div className="py-8 text-center text-sm text-muted-foreground rounded-[18px] border bg-card">
           עדיין אין מיקומים
         </div>
       ) : (
@@ -242,7 +242,7 @@ export function TournamentLocationsView({
           const locationHouses = houses.filter((h) => h.location_id === location.id);
           const unassigned = participants.filter((p) => p.location_id === location.id && !p.house_id);
           return (
-            <div key={location.id} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+            <div key={location.id} className="rounded-[18px] border bg-card overflow-hidden">
               <p className="text-sm font-semibold px-4 pt-3 pb-2">{location.label}</p>
 
               {canEdit && (
@@ -302,7 +302,7 @@ export function TournamentLocationsView({
                 return (
                   <div
                     key={house.id}
-                    className="snap-start shrink-0 w-[88%] sm:w-[440px] rounded-xl border border-border/60 bg-card overflow-hidden"
+                    className="snap-start shrink-0 w-[88%] sm:w-[440px] rounded-[14px] border bg-card overflow-hidden"
                   >
                     <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
                       <p className="text-sm font-semibold">{house.label}</p>
@@ -376,7 +376,7 @@ export function TournamentLocationsView({
                                       else assignHouseMut.mutate({ participantId: row.participantId, houseId: v });
                                     }}
                                   >
-                                    <SelectTrigger className="h-6 w-24 text-[10px] mr-2 inline-flex">
+                                    <SelectTrigger className="h-6 w-24 text-[11px] mr-2 inline-flex">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>

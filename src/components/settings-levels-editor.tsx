@@ -48,7 +48,7 @@ export function SettingsLevelsEditor() {
         .map((size) => {
           const list = entries.filter((e) => e.table_size === size);
           return (
-            <div key={size} className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-2">
+            <div key={size} className="rounded-[18px] border bg-card p-4 flex flex-col gap-2">
               <p className="text-sm font-semibold">דרגות {TABLE_SIZE_LABEL[size]}</p>
               <p className="text-[11px] text-muted-foreground">מהחזקה ביותר (למעלה) לחלשה ביותר (למטה)</p>
               <div className="flex flex-col gap-1.5">

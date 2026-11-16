@@ -268,27 +268,22 @@ function HashSessionHandler() {
 export default function LoginPage() {
   return (
     <main className="min-h-dvh grid place-items-center px-4 bg-brand-gradient">
-      <Card className="w-full max-w-md bg-background/80 backdrop-blur-xl border-border/50 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-4 left-4 flex gap-1.5 opacity-70">
-          <span className="block w-2.5 h-2.5 rounded-full bg-rose-400" />
-          <span className="block w-2.5 h-2.5 rounded-full bg-amber-400" />
-          <span className="block w-2.5 h-2.5 rounded-full bg-emerald-500" />
+      <Card className="w-full max-w-md bg-card shadow-2xl relative overflow-hidden py-0 gap-0">
+        {/* Dark control-room band with the (white) logo */}
+        <div className="bg-sidebar text-white px-8 pt-8 pb-6 flex flex-col items-center gap-3 text-center">
+          <Image
+            src="/logo.png"
+            alt="לוגו אקדמיית סנוקר"
+            width={120}
+            height={75}
+            className="object-contain"
+          />
+          <h1 className="bc-num text-[30px] md:text-[36px] leading-tight">
+            האקדמיה לסנוקר<br />של שחר רוברג
+          </h1>
+          <span className="block h-[3px] w-14 bg-primary" />
         </div>
-        <CardContent className="flex flex-col gap-6 p-8 pt-12">
-          <div className="text-center flex flex-col gap-2">
-            <div className="flex flex-col items-center gap-3">
-              <Image
-                src="/logo.png"
-                alt="לוגו אקדמיית סנוקר"
-                width={120}
-                height={75}
-                className="object-contain"
-              />
-              <h1 className="bc-num text-[34px] md:text-[44px] leading-tight text-center">
-                האקדמיה לסנוקר<br />של שחר רוברג
-              </h1>
-            </div>
-          </div>
+        <CardContent className="flex flex-col gap-6 p-8">
           <HashSessionHandler />
           <Suspense>
             <LoginTabs />

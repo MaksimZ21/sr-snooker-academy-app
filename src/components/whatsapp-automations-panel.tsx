@@ -53,7 +53,7 @@ export function WhatsAppAutomationsPanel() {
           {automations.map((a) => (
             <div
               key={a.id}
-              className="rounded-2xl border border-border/60 bg-card p-4 flex items-center justify-between gap-3 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]"
+              className="rounded-[18px] border bg-card p-4 flex items-center justify-between gap-3 shadow-sm shadow-foreground/[0.03] dark:shadow-none dark:ring-1 dark:ring-white/[0.06]"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <ListChecks size={15} className="text-muted-foreground shrink-0" />

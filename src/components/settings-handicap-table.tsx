@@ -65,7 +65,7 @@ export function SettingsHandicapTable() {
       </p>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {districts.map((d) => (
-          <div key={d.id} className="rounded-2xl border border-border/60 bg-card p-3 flex flex-col gap-2">
+          <div key={d.id} className="rounded-[18px] border bg-card p-3 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
               <Input
                 key={d.name}

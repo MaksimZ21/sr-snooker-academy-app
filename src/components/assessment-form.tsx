@@ -122,8 +122,8 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
         <div className="flex flex-col gap-5">
 
           {/* Participant info + photo */}
-          <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">פרטי משתתף</p>
+          <section className="rounded-[18px] border bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
+            <p className="font-display text-sm font-extrabold">פרטי משתתף</p>
             <div className="flex gap-4 items-start">
 
               {/* Photo */}
@@ -143,12 +143,12 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
                   ) : (
                     <>
                       <Camera size={20} className="text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground">תמונה</span>
+                      <span className="text-[11px] text-muted-foreground">תמונה</span>
                     </>
                   )}
                 </button>
                 {photoDataUrl && (
-                  <button type="button" onClick={removePhoto} className="text-[10px] text-muted-foreground hover:text-destructive transition-colors">
+                  <button type="button" onClick={removePhoto} className="text-[11px] text-muted-foreground hover:text-destructive transition-colors">
                     הסר
                   </button>
                 )}
@@ -180,8 +180,8 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
           </section>
 
           {/* Player attributes */}
-          <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-4 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">מאפייני השחקן</p>
+          <section className="rounded-[18px] border bg-card p-4 flex flex-col gap-4 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
+            <p className="font-display text-sm font-extrabold">מאפייני השחקן</p>
             <div className="grid grid-cols-2 gap-4">
               <HandEyePicker label="יד חזקה" value={strongHand} onChange={setStrongHand} />
               <HandEyePicker label="עין חזקה" value={strongEye}  onChange={setStrongEye}  />
@@ -189,8 +189,8 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
           </section>
 
           {/* Notes + phrase suggestions */}
-          <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">נקודות עיקריות לשיפור</p>
+          <section className="rounded-[18px] border bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
+            <p className="font-display text-sm font-extrabold">נקודות עיקריות לשיפור</p>
             <Textarea
               rows={6}
               value={notes}
@@ -274,9 +274,9 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
         </div>
 
         {/* ── Left column — technique ── */}
-        <section className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
+        <section className="rounded-[18px] border bg-card p-4 flex flex-col gap-3 shadow-sm dark:ring-1 dark:ring-white/[0.06]">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">טכניקה</p>
+            <p className="font-display text-sm font-extrabold">טכניקה</p>
             {ratedCount > 0 && (
               <span className="text-xs text-muted-foreground tabular-nums">
                 ✓ {goodCount}　○ {mediumCount}　✗ {badCount}

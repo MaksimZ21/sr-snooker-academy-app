@@ -18,7 +18,7 @@ export default function Page() {
         </FoldSection>
         <FoldSection title="תמחור אימונים" storageKey="settings:session-pricing">
           <p className="text-xs text-muted-foreground">כללי תמחור אוטומטי לפי שם האימון</p>
-          <div className="rounded-2xl border border-border/60 bg-card">
+          <div className="rounded-[18px] border bg-card">
             <SessionPricingTable />
           </div>
         </FoldSection>

@@ -109,7 +109,7 @@ export function StudentGoalView({ studentId }: { studentId: string }) {
 
       {past.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">חודשים קודמים</p>
+          <p className="font-display text-sm font-extrabold">חודשים קודמים</p>
           {past.map((g) => (
             <PastGoalRow key={g.goal.id} item={g} />
           ))}

@@ -96,7 +96,7 @@ function exportCsv(data: SalaryResponse, nameMap: Record<string, string>, label:
 
 function DeltaBadge({ current, prev }: { current: number; prev: number | undefined }) {
   if (prev === undefined || prev === null) return null;
-  if (prev === 0) return <span className="text-[10px] text-muted-foreground font-medium">אין השוואה</span>;
+  if (prev === 0) return <span className="text-[11px] text-muted-foreground font-medium">אין השוואה</span>;
   const pct = Math.round(((current - prev) / prev) * 100);
   const up  = pct >= 0;
   return (
@@ -191,7 +191,7 @@ function SessionRow({ session }: { session: SessionDetail }) {
         {session.source !== "אחר" && (
           <Badge
             variant="outline"
-            className={cn("text-[10px] px-1.5 py-0 h-[18px] border shrink-0",
+            className={cn("text-[11px] px-1.5 py-0 h-[18px] border shrink-0",
               SOURCE_STYLE[session.source] ?? "bg-muted text-muted-foreground")}
           >
             {session.source}
@@ -231,9 +231,9 @@ function SessionsByDate({ sessions }: { sessions: SessionDetail[] }) {
             {/* Date header */}
             <div className="flex items-center gap-2 px-4 py-1.5 bg-muted/40 border-y border-border/30 sticky top-0 z-10">
               <span className="text-xs font-bold tabular-nums">{shortDate}</span>
-              <span className="text-[10px] text-muted-foreground">{dayName}</span>
+              <span className="text-[11px] text-muted-foreground">{dayName}</span>
               {daySessions.length > 1 && (
-                <span className="text-[10px] text-muted-foreground/60 mr-auto">
+                <span className="text-[11px] text-muted-foreground/60 mr-auto">
                   {daySessions.length} אימונים · {dayTotal.toLocaleString("he-IL")} ₪
                 </span>
               )}
@@ -302,7 +302,7 @@ function OffsetsSection({ coach, queryKey, currentMonth }: { coach: CoachSalary;
   return (
     <div className="border-t border-border/40 px-4 py-3 flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+        <span className="font-display text-sm font-extrabold flex items-center gap-1.5">
           <Minus size={12} /> קיזוזים
         </span>
         {!adding && (
@@ -321,7 +321,7 @@ function OffsetsSection({ coach, queryKey, currentMonth }: { coach: CoachSalary;
       )}
       {coach.offsets.map((o) => (
         <div key={o.id} className="flex items-center gap-2 text-sm">
-          <span className="text-[10px] text-muted-foreground/50 tabular-nums shrink-0">{o.month}</span>
+          <span className="text-[11px] text-muted-foreground/50 tabular-nums shrink-0">{o.month}</span>
           <span className="flex-1 text-muted-foreground truncate">{o.description}</span>
           <span className="tabular-nums font-medium text-rose-600 shrink-0">
             -{o.amount.toLocaleString("he-IL")} ₪
@@ -459,7 +459,7 @@ function CoachRow({ coach, nameMap, rank, queryKey, currentMonth, monthMode }: {
               <Badge
                 key={r.source}
                 variant="outline"
-                className={cn("text-[10px] px-1.5 py-0 h-4 border",
+                className={cn("text-[11px] px-1.5 py-0 h-4 border",
                   SOURCE_STYLE[r.source] ?? "bg-muted text-muted-foreground")}
               >
                 {r.count} {r.source}
@@ -624,7 +624,7 @@ export function SalaryView() {
           <div className="text-center">
             <div className="font-semibold text-sm leading-tight">{label}</div>
             {rangeLabel && (
-              <div className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">{rangeLabel}</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">{rangeLabel}</div>
             )}
           </div>
           <button

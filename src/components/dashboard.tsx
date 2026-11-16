@@ -111,7 +111,7 @@ function HeroNextCard({
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
             </span>
-            <span className="text-xs uppercase tracking-widest text-white/90 font-semibold">
+            <span className="text-xs text-white/90 font-semibold">
               המפגש הבא
             </span>
           </div>

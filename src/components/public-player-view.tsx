@@ -8,7 +8,7 @@ export function PublicPlayerView({ player }: { player: PublicPlayer }) {
         <p className="text-sm text-muted-foreground">דירוג נוכחי: {player.rating}</p>
       </div>
       <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">טורנירים</h2>
+        <h2 className="font-display text-base font-extrabold">טורנירים</h2>
         {player.tournaments.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">עדיין לא השתתף/ה בטורנירים</p>
         ) : (
@@ -16,7 +16,7 @@ export function PublicPlayerView({ player }: { player: PublicPlayer }) {
             <a
               key={t.publicSlug}
               href={`/t/${t.publicSlug}`}
-              className="rounded-xl border border-border/60 bg-card p-3 flex items-center justify-between text-sm hover:border-primary/40 transition-colors"
+              className="rounded-[14px] border bg-card p-3 flex items-center justify-between text-sm hover:border-primary/40 transition-colors"
             >
               <span className="font-medium">{t.name}</span>
               {t.completed && <span className="text-xs text-muted-foreground">הסתיים</span>}

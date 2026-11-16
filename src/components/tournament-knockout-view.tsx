@@ -228,8 +228,8 @@ export function TournamentKnockoutView({
   return (
     <div className="flex flex-col gap-4">
       {canEdit && (
-        <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <div className="rounded-[18px] border bg-card p-4 flex flex-col gap-3">
+          <p className="font-display text-sm font-extrabold">
             {matches.length === 0 ? "בניית בראקט נוקאאוט" : "בניית בראקט מחדש"}
           </p>
           <div className="flex items-end gap-2">
@@ -275,7 +275,7 @@ export function TournamentKnockoutView({
       )}
 
       {matches.length === 0 ? (
-        <div className="py-8 text-center text-sm text-muted-foreground rounded-2xl border border-border/60 bg-card">
+        <div className="py-8 text-center text-sm text-muted-foreground rounded-[18px] border bg-card">
           עדיין לא נוצר בראקט
         </div>
       ) : (
@@ -294,7 +294,7 @@ export function TournamentKnockoutView({
             </svg>
             {rounds.map(({ round, label, matches: roundMatches }) => (
               <div key={round} className="relative flex flex-col w-56 shrink-0">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center pb-2">
+                <p className="font-display text-sm font-extrabold text-center pb-2">
                   {label}
                 </p>
                 <div className="flex-1 flex flex-col justify-around gap-6">
@@ -376,7 +376,7 @@ function KnockoutMatchCard({
   const canEnterResult = canEdit && !played && !!match.participant_a_id && !!match.participant_b_id;
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card p-2.5 flex flex-col gap-1.5">
+    <div className="rounded-[14px] border bg-card p-2.5 flex flex-col gap-1.5">
       {(["a", "b"] as const).map((side) => {
         const name = side === "a" ? nameA : nameB;
         const participantId = side === "a" ? match.participant_a_id : match.participant_b_id;

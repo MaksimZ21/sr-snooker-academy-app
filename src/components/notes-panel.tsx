@@ -21,7 +21,7 @@ function getInitials(name: string) {
 export function NoteTeamBadge({ note }: { note: Pick<Note, "visibility"> }) {
   if (note.visibility !== "team") return null;
   return (
-    <span className="inline-block shrink-0 rounded-full border border-amber-400 px-1.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+    <span className="inline-block shrink-0 rounded-full border border-amber-400 px-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
       צוותית
     </span>
   );
@@ -53,7 +53,7 @@ export function NoteVisibilityPicker({
           )}
         >
           <span className="block text-xs font-semibold">{o.label}</span>
-          <span className="block text-[10px] opacity-80">{o.hint}</span>
+          <span className="block text-[11px] opacity-80">{o.hint}</span>
         </button>
       ))}
     </div>
@@ -227,7 +227,7 @@ function StudentNotes({
     <div className="border border-border/60 rounded-xl overflow-hidden">
       {/* Student header */}
       <div className="flex items-center gap-2.5 px-3 py-2.5 bg-muted/30">
-        <div className="w-7 h-7 rounded-full bg-primary/12 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 select-none">
+        <div className="w-7 h-7 rounded-full bg-primary/12 text-primary flex items-center justify-center text-[11px] font-bold shrink-0 select-none">
           {getInitials(name)}
         </div>
         <span className="font-semibold text-sm flex-1 truncate">{name}</span>

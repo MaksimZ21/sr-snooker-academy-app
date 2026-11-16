@@ -64,8 +64,8 @@ export function StudentGoalSummary({ studentId }: { studentId: string }) {
 
   if (!current) {
     return (
-      <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-2">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      <div className="rounded-[18px] border bg-card p-4 flex flex-col gap-2">
+        <p className="font-display text-sm font-extrabold">
           מטרה חודשית
         </p>
         <p className="text-xs text-muted-foreground">
@@ -97,8 +97,8 @@ export function StudentGoalSummary({ studentId }: { studentId: string }) {
   const label = GOAL_CATEGORIES.find((c) => c.key === current.goal.category)?.label ?? current.goal.category;
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-4">
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+    <div className="rounded-[18px] border bg-card p-4">
+      <p className="font-display text-sm font-extrabold mb-1">
         מטרה חודשית · {label}
       </p>
       <GoalChart entries={current.entries} category={current.goal.category} />

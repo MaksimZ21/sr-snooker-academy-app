@@ -29,7 +29,7 @@ import { useState, type ReactNode } from "react";
 function FieldGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col items-start gap-0.5">
-      <span className="text-[10px] text-muted-foreground leading-none">{label}</span>
+      <span className="text-[11px] text-muted-foreground leading-none">{label}</span>
       {children}
     </div>
   );
@@ -330,7 +330,7 @@ export function TournamentDetailView({
             טרם הוגדר מאמן אחראי לטורניר זה
           </div>
         )}
-        <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-2">
+        <div className="rounded-[18px] border bg-card p-4 flex flex-col gap-2">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">קישור ציבורי:</span>
             <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1">
@@ -388,8 +388,8 @@ export function TournamentDetailView({
         </div>
 
         {canEdit && (
-          <div className="rounded-2xl border border-border/60 bg-card p-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">הוספת משתתף</p>
+          <div className="rounded-[18px] border bg-card p-4">
+            <p className="font-display text-sm font-extrabold mb-2">הוספת משתתף</p>
             <TournamentParticipantPicker
               tournamentId={tournamentId}
               multiLocation={tournament.type === "multi_location"}
@@ -398,8 +398,8 @@ export function TournamentDetailView({
           </div>
         )}
 
-        <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-4 pt-3 pb-1">
+        <div className="rounded-[18px] border bg-card overflow-hidden">
+          <p className="font-display text-sm font-extrabold px-4 pt-3 pb-1">
             {`משתתפים (${participants.length})`}
           </p>
           {participants.length === 0 ? (

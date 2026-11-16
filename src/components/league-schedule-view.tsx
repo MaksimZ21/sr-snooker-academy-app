@@ -151,7 +151,7 @@ export function LeagueScheduleView({
   const days = [...new Set(datedMatches.map((m) => m.scheduled_date as string))].sort();
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+    <div className="rounded-[18px] border bg-card overflow-hidden">
       <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-2 flex-wrap">
         <Button size="sm" variant="outline" onClick={downloadWeekImage} disabled={days.length === 0}>
           <ImageDown size={14} className="ml-1.5" />

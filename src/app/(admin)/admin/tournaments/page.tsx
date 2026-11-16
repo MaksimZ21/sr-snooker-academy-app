@@ -187,7 +187,7 @@ function TournamentGroup({ title, items, basePath }: { title: string; items: Tou
     return (
       <div>
         <h2 className="font-display text-base font-extrabold mb-2">{title}</h2>
-        <div className="py-8 text-center text-sm text-muted-foreground rounded-2xl border border-border/60 bg-card">
+        <div className="py-8 text-center text-sm text-muted-foreground rounded-[18px] border bg-card">
           אין טורנירים
         </div>
       </div>

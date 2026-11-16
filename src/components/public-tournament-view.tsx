@@ -154,7 +154,7 @@ export function PublicTournamentView({
       <div className="px-4 py-6 flex flex-col gap-8 max-w-4xl mx-auto">
         {tournament.houses.length > 0 && (
           <section className="flex flex-col gap-5">
-            <h2 className="text-lg font-semibold">שלב הבתים</h2>
+            <h2 className="bc-num text-2xl md:text-3xl">שלב הבתים</h2>
             {tournament.locations.length > 0 ? (
               <>
                 <input
@@ -194,7 +194,7 @@ export function PublicTournamentView({
                               onClick={() => setLocationId(location.id)}
                               aria-pressed={location.id === selected.id}
                               className={cn(
-                                "rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
+                                "rounded-xl border px-4 py-2 font-display text-sm font-bold transition-colors",
                                 location.id === selected.id
                                   ? "bg-primary text-primary-foreground border-primary"
                                   : "bg-card border-border/60 text-muted-foreground hover:text-foreground",
@@ -206,7 +206,7 @@ export function PublicTournamentView({
                         </div>
                       )}
                       {visibleLocations.length === 1 && (
-                        <h3 className="text-sm font-semibold text-muted-foreground">{selected.label}</h3>
+                        <h3 className="bc-kicker text-sm text-primary">{selected.label}</h3>
                       )}
                       <div className="flex flex-col gap-3 md:flex-row md:overflow-x-auto md:snap-x md:snap-mandatory md:pb-2">
                         {locationHouses.map((house) => (
@@ -231,7 +231,7 @@ export function PublicTournamentView({
 
         {tournament.knockoutMatches.length > 0 && (
           <section className="flex flex-col gap-3">
-            <h2 className="text-lg font-semibold">שלב הנוקאאוט</h2>
+            <h2 className="bc-num text-2xl md:text-3xl">שלב הנוקאאוט</h2>
             <div className="overflow-x-auto">
               <div ref={bracketRef} className="relative flex gap-10 min-w-max">
                 <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
@@ -241,7 +241,12 @@ export function PublicTournamentView({
                 </svg>
                 {Array.from({ length: totalRounds }, (_, i) => i + 1).map((round) => (
                   <div key={round} className="relative flex flex-col w-56 shrink-0">
-                    <p className="text-xs font-semibold text-muted-foreground text-center pb-2">
+                    <p
+                      className={cn(
+                        "mx-auto mb-3 rounded-lg px-3 py-1 font-display text-xs font-extrabold",
+                        round === totalRounds ? "bg-[#f2b705] text-black" : "bg-sidebar text-white",
+                      )}
+                    >
                       {knockoutRoundLabel(round, totalRounds)}
                     </p>
                     <div className="flex-1 flex flex-col justify-around gap-6">
@@ -259,19 +264,33 @@ export function PublicTournamentView({
                                 if (el) matchNodeRefs.current.set(m.id, el);
                                 else matchNodeRefs.current.delete(m.id);
                               }}
-                              className="rounded-[14px] border bg-card p-2.5 flex flex-col gap-1.5"
+                              className="rounded-[14px] border bg-card overflow-hidden flex flex-col divide-y shadow-[0_6px_16px_-12px_rgb(13_21_16/0.35)]"
                             >
                               {[
-                                { p: pa, score: m.frames_a },
-                                { p: pb, score: m.frames_b },
-                              ].map(({ p, score }, i) => (
-                                <div key={i} className="flex items-center justify-between gap-2 text-sm">
-                                  <span className="flex-1 truncate">
-                                    {p?.name ?? "TBD"}{p?.skillLevel && <span className="text-muted-foreground"> ({p.skillLevel})</span>}
-                                  </span>
-                                  {played && <span className="font-medium tabular-nums">{score}</span>}
-                                </div>
-                              ))}
+                                { p: pa, score: m.frames_a, other: m.frames_b },
+                                { p: pb, score: m.frames_b, other: m.frames_a },
+                              ].map(({ p, score, other }, i) => {
+                                const won = played && (score as number) > (other as number);
+                                return (
+                                  <div
+                                    key={i}
+                                    className={cn(
+                                      "flex items-center justify-between gap-2 text-sm px-2.5 py-2 border-s-4",
+                                      won ? "border-primary bg-primary/8" : "border-transparent",
+                                    )}
+                                  >
+                                    <span className={cn("flex-1 truncate flex items-center gap-1.5", won ? "font-extrabold" : played ? "text-muted-foreground" : "")}>
+                                      {p?.skillLevel && (
+                                        <span className="shrink-0 rounded bg-sidebar text-white px-1 font-display text-[11px] font-extrabold leading-5" dir="ltr">
+                                          {p.skillLevel}
+                                        </span>
+                                      )}
+                                      <span className="truncate">{p?.name ?? "טרם נקבע"}</span>
+                                    </span>
+                                    {played && <span className={cn("bc-num text-base leading-none", !won && "text-muted-foreground")}>{score}</span>}
+                                  </div>
+                                );
+                              })}
                             </div>
                           );
                         })}
@@ -305,41 +324,65 @@ function HouseCard({
   lookup: (id: string | null) => PublicParticipant | null;
 }) {
   const standings = computeHouseStandings(house.memberIds, house.matches);
+  const played = house.matches.filter((m) => m.frames_a !== null && m.frames_b !== null).length;
   return (
     <div className="rounded-[18px] border bg-card overflow-hidden">
-      <p className="text-sm font-semibold px-4 pt-3 pb-2">{house.label}</p>
+      <div className="flex items-center justify-between gap-3 bg-sidebar text-white px-4 py-3">
+        <p className="bc-num text-xl leading-none">{house.label}</p>
+        <span className="font-display text-xs font-bold text-white/60">
+          {played}/{house.matches.length} משחקים
+        </span>
+      </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-[13px] md:text-sm">
           <thead>
-            <tr className="text-xs text-muted-foreground border-b border-border/40">
-              <th className="text-right px-4 py-1.5 font-medium">מקום</th>
-              <th className="text-right px-2 py-1.5 font-medium">שם</th>
-              <th className="text-center px-2 py-1.5 font-medium">נצחונות</th>
-              <th className="text-center px-2 py-1.5 font-medium">פריימים לטובה</th>
-              <th className="text-center px-2 py-1.5 font-medium">פריימים לרעה</th>
-              <th className="text-center px-2 py-1.5 font-medium">הפרש</th>
+            <tr className="text-[11px] md:text-xs text-muted-foreground border-b bg-muted/40">
+              <th className="text-center ps-3 pe-1 py-2 font-display font-bold w-10">#</th>
+              <th className="text-right px-2 py-2 font-display font-bold">שחקן</th>
+              <th className="text-center px-2 py-2 font-display font-bold">נ׳</th>
+              <th className="text-center px-2 py-2 font-display font-bold">פריימים</th>
+              <th className="text-center px-2 py-2 font-display font-bold">+/-</th>
             </tr>
           </thead>
           <tbody>
             {standings.map((row, i) => {
               const p = lookup(row.participantId);
-              const leading = i === 0;
+              const leading = i === 0 && row.wins > 0;
+              const diff = row.framesWon - row.framesLost;
               return (
-                <tr
-                  key={row.participantId}
-                  className={cn("border-b border-border/20 last:border-b-0", leading && "bg-primary/5")}
-                >
-                  <td className={cn("px-4 py-1.5", leading && "font-semibold text-primary")}>{i + 1}</td>
-                  <td className={cn("px-2 py-1.5 max-w-[9rem] truncate", leading && "font-semibold")}>
-                    {p?.name ?? "?"}
-                    {p?.skillLevel && <span className="text-muted-foreground text-xs"> ({p.skillLevel})</span>}
+                <tr key={row.participantId} className={cn("border-b border-border/40 last:border-b-0", leading && "bg-primary/8")}>
+                  <td className="ps-3 pe-1 py-2 text-center">
+                    <span
+                      className={cn(
+                        "inline-flex w-7 h-7 items-center justify-center rounded-md bc-num text-sm",
+                        leading ? "bg-primary text-white" : "text-muted-foreground",
+                      )}
+                    >
+                      {i + 1}
+                    </span>
                   </td>
-                  <td className="text-center px-2 py-1.5 tabular-nums">{row.wins}</td>
-                  <td className="text-center px-2 py-1.5 tabular-nums">{row.framesWon}</td>
-                  <td className="text-center px-2 py-1.5 tabular-nums">{row.framesLost}</td>
-                  <td className="text-center px-2 py-1.5 tabular-nums">
-                    {row.framesWon - row.framesLost > 0 ? "+" : ""}
-                    {row.framesWon - row.framesLost}
+                  <td className="px-2 py-2 max-w-[10rem]">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      {p?.skillLevel && (
+                        <span className="shrink-0 rounded bg-sidebar text-white px-1 font-display text-[11px] font-extrabold leading-5" dir="ltr">
+                          {p.skillLevel}
+                        </span>
+                      )}
+                      <span className={cn("truncate", leading ? "font-extrabold" : "font-semibold")}>{p?.name ?? "?"}</span>
+                    </span>
+                  </td>
+                  <td className="text-center px-2 py-2">
+                    <span className="bc-num text-base">{row.wins}</span>
+                  </td>
+                  <td className="text-center px-2 py-2 tabular-nums text-muted-foreground" dir="ltr">
+                    {row.framesWon}-{row.framesLost}
+                  </td>
+                  <td
+                    className={cn("text-center px-2 py-2 tabular-nums font-semibold", diff > 0 && "text-emerald-600 dark:text-emerald-400", diff < 0 && "text-destructive")}
+                    dir="ltr"
+                  >
+                    {diff > 0 ? "+" : ""}
+                    {diff}
                   </td>
                 </tr>
               );
@@ -348,21 +391,24 @@ function HouseCard({
         </table>
       </div>
 
-      <div className="flex flex-col gap-2 px-4 py-3 border-t border-border/40">
+      <div className="flex flex-col divide-y border-t">
         {house.matches.map((m) => {
-          const nameA = lookup(m.participant_a_id);
-          const nameB = lookup(m.participant_b_id);
-          const played = m.frames_a !== null && m.frames_b !== null;
+          const a = lookup(m.participant_a_id);
+          const b = lookup(m.participant_b_id);
+          const done = m.frames_a !== null && m.frames_b !== null;
+          const aWon = done && (m.frames_a as number) > (m.frames_b as number);
+          const bWon = done && (m.frames_b as number) > (m.frames_a as number);
           return (
-            <div key={m.id} className="flex flex-col gap-1">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="flex-1 truncate">{nameA?.name ?? "?"} נגד {nameB?.name ?? "?"}</span>
-                {played ? (
-                  <span className="font-medium tabular-nums">{m.frames_a} - {m.frames_b}</span>
-                ) : (
-                  <span className="text-muted-foreground text-xs">טרם שוחק</span>
-                )}
-              </div>
+            <div key={m.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-2 text-sm">
+              <span className={cn("truncate", aWon ? "font-extrabold" : done ? "text-muted-foreground" : "")}>{a?.name ?? "?"}</span>
+              {done ? (
+                <span className="bc-num text-base rounded-md bg-sidebar text-white px-2 py-0.5 leading-none" dir="rtl">
+                  {m.frames_a}-{m.frames_b}
+                </span>
+              ) : (
+                <span className="rounded-md bg-muted px-2 py-0.5 font-display text-[11px] font-bold text-muted-foreground">נגד</span>
+              )}
+              <span className={cn("truncate text-left", bWon ? "font-extrabold" : done ? "text-muted-foreground" : "")}>{b?.name ?? "?"}</span>
             </div>
           );
         })}

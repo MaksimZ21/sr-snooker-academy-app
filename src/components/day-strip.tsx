@@ -51,23 +51,24 @@ export function DayColumns({ items }: { items: DayColumnItem[] }) {
               else colRefs.current.delete(item.day);
             }}
             className={cn(
-              "snap-start shrink-0 w-[85%] md:w-auto rounded-xl border bg-card flex flex-col",
-              item.day === today ? "border-primary" : "border-border/60",
+              "snap-start shrink-0 w-[85%] md:w-auto rounded-[18px] border bg-card flex flex-col overflow-hidden",
+              item.day === today ? "border-primary ring-2 ring-primary/20" : "border-border",
             )}
           >
             <div
               className={cn(
-                "flex items-baseline justify-between gap-2 px-3 py-2 border-b border-border/40 rounded-t-xl",
-                item.day === today ? "bg-primary/10" : "bg-muted/40",
+                "flex items-center justify-between gap-2 px-3 py-2.5",
+                item.day === today ? "bg-primary text-white" : "bg-sidebar text-white",
               )}
             >
-              <p className="text-sm font-semibold">
-                {dayLabelHe(item.day)} · {shortDate(item.day)}
-                {item.day === today && <span className="text-xs font-medium text-primary"> (היום)</span>}
+              <p className="flex items-baseline gap-2">
+                <span className="font-display text-sm font-extrabold">{dayLabelHe(item.day)}</span>
+                <span className="bc-num text-base text-white/75">{shortDate(item.day)}</span>
+                {item.day === today && <span className="rounded-md bg-white/20 px-1.5 py-0.5 font-display text-[11px] font-bold">היום</span>}
               </p>
-              <span className="text-[11px] text-muted-foreground shrink-0">{item.count} משחקים</span>
+              <span className="rounded-md bg-white/15 px-1.5 py-0.5 font-display text-[11px] font-bold shrink-0">{item.count} משחקים</span>
             </div>
-            <div className="px-3 py-2">{item.content}</div>
+            <div className="p-2.5">{item.content}</div>
           </div>
         ))}
       </div>

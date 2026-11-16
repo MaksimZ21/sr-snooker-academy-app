@@ -10,6 +10,7 @@ import { studentFullName } from "@/lib/sheets/schemas";
 import type { Student, Note } from "@/lib/sheets/schemas";
 import { cn } from "@/lib/utils";
 import { AttendanceForm } from "@/components/attendance-form";
+import { HeroBackdrop } from "@/components/motion/hero-backdrop";
 
 type Detail = {
   student: Student;
@@ -55,7 +56,8 @@ export default function CoachStudentDetailPage({ params }: { params: Promise<{ i
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="bg-brand-gradient relative overflow-hidden">
+      <div className="bg-brand-plain relative isolate overflow-hidden">
+        <HeroBackdrop />
 
         <div className="relative z-10 px-5 pt-4 pb-6">
           {/* Back */}

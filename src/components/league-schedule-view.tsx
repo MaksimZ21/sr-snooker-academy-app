@@ -5,6 +5,7 @@ import { ClipboardCopy, ClipboardPaste, ImageDown, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MatchLine } from "@/components/match-line";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   buildOpenMatchesText,
@@ -204,7 +205,7 @@ export function LeagueScheduleView({
                 day,
                 count: dayMatches.length,
                 content: (
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-2">
                     {canEdit && (
                       <div className="flex justify-end">
                         <ClearDayButton
@@ -292,54 +293,41 @@ function ScheduleRow({
     onSave(na, nb);
   }
 
+  const box = (value: string, set: (v: string) => void) => (
+    <Input
+      type="number"
+      min={0}
+      value={value}
+      onChange={(e) => set(e.target.value)}
+      onBlur={trySave}
+      className="h-7 w-12 text-center px-1 bc-num text-sm"
+      disabled={busy}
+    />
+  );
+
   return (
-    <div className="flex flex-col gap-1 text-sm py-1.5 border-b border-border/30 last:border-b-0">
-      <p className="leading-snug">
-        {nameA} <span className="text-muted-foreground">נגד</span> {nameB}
-      </p>
-      <div className="flex items-center gap-2">
-      <span className="flex-1 min-w-0 truncate text-[11px] text-muted-foreground">{districtLabel}</span>
-      {canEdit ? (
-        <>
-          <Input
-            type="number"
-            min={0}
-            value={framesA}
-            onChange={(e) => setFramesA(e.target.value)}
-            onBlur={trySave}
-            className="h-7 w-14 text-center px-1"
+    <MatchLine
+      nameA={nameA}
+      nameB={nameB}
+      framesA={match.frames_a}
+      framesB={match.frames_b}
+      sub={districtLabel}
+      scoreA={canEdit ? box(framesA, setFramesA) : undefined}
+      scoreB={canEdit ? box(framesB, setFramesB) : undefined}
+      aside={
+        canEdit && !played ? (
+          <button
+            type="button"
+            onClick={onRemove}
             disabled={busy}
-          />
-          <span className="text-muted-foreground">-</span>
-          <Input
-            type="number"
-            min={0}
-            value={framesB}
-            onChange={(e) => setFramesB(e.target.value)}
-            onBlur={trySave}
-            className="h-7 w-14 text-center px-1"
-            disabled={busy}
-          />
-          {!played && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
-              onClick={onRemove}
-              disabled={busy}
-              aria-label="הסר מהלוז"
-              title="הסר מהלוז"
-            >
-              <X size={14} />
-            </Button>
-          )}
-        </>
-      ) : played ? (
-        <span className="font-medium tabular-nums">{match.frames_a} - {match.frames_b}</span>
-      ) : (
-        <span className="text-muted-foreground text-xs">טרם שוחק</span>
-      )}
-      </div>
-    </div>
+            className="flex items-center gap-0.5 font-display font-bold hover:text-destructive"
+            title="הסר מהלוז"
+          >
+            <X size={12} />
+            הסר מהלוז
+          </button>
+        ) : undefined
+      }
+    />
   );
 }

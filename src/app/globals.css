@@ -300,6 +300,10 @@
 /* ── Utilities ──────────────────────────────────────────────── */
 @layer utilities {
   /* Brand gradients — pure green, no blue drift */
+  /* The broadcast green without stripes, for headers with the moving backdrop. */
+  .bg-brand-plain {
+    background-image: linear-gradient(135deg, #0e8f45 0%, #075a2b 100%);
+  }
   /* Broadcast green: the lead tile's gradient with its slanted stripes. */
   .bg-brand-gradient {
     background-image:

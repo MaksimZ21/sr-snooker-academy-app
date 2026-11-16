@@ -7,6 +7,7 @@ import { computeHouseStandings, knockoutRoundLabel } from "@/lib/sheets/tourname
 import type { PublicTournament, PublicParticipant } from "@/lib/sheets/tournaments-public";
 import type { HouseWithMatches } from "@/lib/sheets/tournament-houses";
 import { LiveTicker } from "@/components/broadcast";
+import { HeroBackdrop } from "@/components/motion/hero-backdrop";
 
 // Polled instead of a one-time server fetch so a spectator watching results
 // come in sees them without manually refreshing the page. 15s keeps it
@@ -97,7 +98,8 @@ export function PublicTournamentView({
   return (
     <div className="min-h-dvh bg-background" dir="rtl">
       {/* Hero */}
-      <div className="bg-brand-gradient px-5 py-8 flex flex-col items-center text-center gap-3">
+      <div className="relative isolate overflow-hidden bg-brand-plain px-5 py-10 flex flex-col items-center text-center gap-3">
+        <HeroBackdrop />
         {tournament.multiLocation ? (
           // External (multi-location) tournaments run under ISPA's logo.
           <div className="rounded-2xl bg-white px-4 py-2 shadow-sm">

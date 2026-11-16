@@ -6,6 +6,7 @@ import { ArrowRight, FileText, Send, CheckCircle2, Circle, XCircle, Minus, Users
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { TECHNIQUE_CRITERIA, normalizeTechniqueRating, type Assessment } from "@/lib/sheets/assessment-types";
+import { HeroBackdrop } from "@/components/motion/hero-backdrop";
 
 type WhatsAppGroup = { id: string; name: string };
 
@@ -147,7 +148,8 @@ export function AssessmentDetailView({
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="bg-brand-gradient relative overflow-hidden">
+      <div className="bg-brand-plain relative isolate overflow-hidden">
+        <HeroBackdrop />
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div
             className="session-orb absolute rounded-full"

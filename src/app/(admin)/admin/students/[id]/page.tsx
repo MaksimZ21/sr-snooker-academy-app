@@ -26,6 +26,7 @@ import { studentFullName } from "@/lib/sheets/schemas";
 import type { Student, Note, Session, Attendance } from "@/lib/sheets/schemas";
 import type { Assessment } from "@/lib/sheets/assessment-types";
 import { TECHNIQUE_CRITERIA, normalizeTechniqueRating } from "@/lib/sheets/assessment-types";
+import { HeroBackdrop } from "@/components/motion/hero-backdrop";
 
 type AttendanceDetailRow = { session: Session; attendance_status: Attendance["status"] };
 
@@ -128,7 +129,8 @@ export default function AdminStudentDetailPage({ params }: { params: Promise<{ i
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="bg-brand-gradient relative overflow-hidden">
+      <div className="bg-brand-plain relative isolate overflow-hidden">
+        <HeroBackdrop />
 
         <div className="relative z-10 px-5 pt-4 pb-6">
           <Link

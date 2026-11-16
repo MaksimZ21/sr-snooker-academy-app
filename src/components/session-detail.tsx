@@ -20,6 +20,7 @@ import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 import { TYPE_COLORS } from "@/components/broadcast";
 import { User, Users, Trash2 } from "lucide-react";
+import { HeroBackdrop } from "@/components/motion/hero-backdrop";
 
 type Coach = { email: string; name: string; active: boolean };
 
@@ -111,7 +112,8 @@ export function SessionDetail({
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="bg-brand-gradient relative overflow-hidden">
+      <div className="bg-brand-plain relative isolate overflow-hidden">
+        <HeroBackdrop />
 
         {/* Admin action buttons — absolute top corner */}
         {isAdmin && (

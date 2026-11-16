@@ -9,7 +9,9 @@ import { DayColumns } from "@/components/day-strip";
 import { PublicThemeToggle } from "@/components/public-theme-toggle";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 import { LiveTicker } from "@/components/broadcast";
+import { MatchLine } from "@/components/match-line";
 import { PageEnter } from "@/components/motion/page-enter";
+import { HeroBackdrop } from "@/components/motion/hero-backdrop";
 
 // A district's handicap ("פור") table: each player with their level and
 // points per frame, grouped by level (best first), like the club's sheet.
@@ -89,25 +91,16 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
               count: dayMatches.length,
               content: (
                 <div className="flex flex-col gap-2">
-                  {dayMatches.map((m) => {
-                    const played = m.frames_a !== null && m.frames_b !== null;
-                    return (
-                      <div key={m.id} className="flex items-center gap-2 text-sm py-1 border-b border-border/30 last:border-b-0">
-                        <div className="flex-1 min-w-0">
-                          <p className="leading-snug">
-                            {lookup(m.participant_a_id)?.name ?? "?"} <span className="text-muted-foreground">נגד</span>{" "}
-                            {lookup(m.participant_b_id)?.name ?? "?"}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">{districtLabel.get(m.district_id)}</p>
-                        </div>
-                        {played ? (
-                          <span className="font-medium tabular-nums shrink-0">{m.frames_a} - {m.frames_b}</span>
-                        ) : (
-                          <span className="text-muted-foreground text-xs shrink-0">טרם שוחק</span>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {dayMatches.map((m) => (
+                    <MatchLine
+                      key={m.id}
+                      nameA={lookup(m.participant_a_id)?.name ?? "?"}
+                      nameB={lookup(m.participant_b_id)?.name ?? "?"}
+                      framesA={m.frames_a}
+                      framesB={m.frames_b}
+                      sub={districtLabel.get(m.district_id)}
+                    />
+                  ))}
                 </div>
               ),
             };
@@ -131,7 +124,8 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
   return (
     <div className="min-h-dvh bg-background overflow-x-clip" dir="rtl">
       {/* Hero */}
-      <div className="relative bg-brand-gradient px-5 py-8 flex flex-col items-center text-center gap-3">
+      <div className="relative isolate overflow-hidden bg-brand-plain px-5 py-10 flex flex-col items-center text-center gap-3">
+        <HeroBackdrop />
         <PublicThemeToggle className="absolute top-3 left-3" />
         <Image src="/logo.png" alt="" width={52} height={52} className="object-contain" />
         <div className="flex flex-col gap-1.5">

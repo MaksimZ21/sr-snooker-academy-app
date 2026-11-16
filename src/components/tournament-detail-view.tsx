@@ -26,10 +26,10 @@ import { TableSizeBadge } from "@/components/table-size";
 import { cn } from "@/lib/utils";
 import { useState, type ReactNode } from "react";
 
-function FieldGroup({ label, children }: { label: string; children: ReactNode }) {
+function FieldGroup({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
   return (
-    <div className="flex flex-col items-start gap-0.5">
-      <span className="text-[11px] text-muted-foreground leading-none">{label}</span>
+    <div className={cn("flex flex-col items-stretch gap-0.5", className)}>
+      <span className="text-[11px] text-muted-foreground leading-none md:hidden">{label}</span>
       {children}
     </div>
   );
@@ -88,6 +88,8 @@ export function TournamentDetailView({
   const qc = useQueryClient();
   // Multi-location: which location's participants the list shows.
   const [partsLocation, setPartsLocation] = useState<string>(ALL_LOCATIONS);
+  // Tournament day: show only who still needs something.
+  const [partsFilter, setPartsFilter] = useState<"all" | "not-arrived" | "unpaid" | "no-level">("all");
   const { levelsFor } = useSkillLevels();
 
   const { data, isLoading } = useQuery({
@@ -399,9 +401,34 @@ export function TournamentDetailView({
         )}
 
         <div className="rounded-[18px] border bg-card overflow-hidden">
-          <p className="font-display text-sm font-extrabold px-4 pt-3 pb-1">
-            {`משתתפים (${participants.length})`}
-          </p>
+          <div className="flex flex-col gap-2.5 px-4 py-3 border-b">
+            <p className="font-display text-base font-extrabold">{`משתתפים (${participants.length})`}</p>
+            {tournament.type === "regular" && participants.length > 0 && (
+              <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] -mx-1 px-1">
+                {(
+                  [
+                    ["all", "הכל", participants.length],
+                    ["not-arrived", "לא הגיעו", participants.filter((x) => !x.arrived).length],
+                    ["unpaid", "לא שילמו", participants.filter((x) => !x.paid).length],
+                    ["no-level", "ללא סיווג", participants.filter((x) => x.student.id !== "" && !x.student.skill_level).length],
+                  ] as const
+                ).map(([key, label, n]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setPartsFilter(key)}
+                    aria-pressed={partsFilter === key}
+                    className={cn(
+                      "shrink-0 rounded-lg px-3 py-1.5 font-display text-xs font-bold transition-colors",
+                      partsFilter === key ? "bg-sidebar text-white" : "bg-muted text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {label} <span className="tabular-nums opacity-70">{n}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {participants.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">אין משתתפים עדיין</div>
           ) : (
@@ -409,23 +436,63 @@ export function TournamentDetailView({
               const renderRow = (p: (typeof participants)[number]) => {
                 const paymentValue = p.paid ? (p.payment_method ?? "cash") : "unpaid";
                 const isRealStudent = p.student.id !== "";
+                const fullName = [p.student.first_name, p.student.last_name].filter(Boolean).join(" ");
+                const digits = (p.student.phone ?? "").replace(/\D/g, "");
+                const wa = digits ? `https://wa.me/${digits.startsWith("972") ? digits : digits.startsWith("0") ? `972${digits.slice(1)}` : digits}` : null;
                 return (
-                  <div key={p.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
-                      </p>
-                      {tournament.type === "regular" && (
-                        <p className="text-xs text-muted-foreground">{p.student.phone || "—"}</p>
+                  <div
+                    key={p.id}
+                    className={cn(
+                      "flex flex-col gap-2.5 px-4 py-3 md:flex-row md:items-center md:gap-4",
+                      tournament.type === "regular" && p.arrived && "bg-primary/5",
+                    )}
+                  >
+                    <div className="flex-1 min-w-0 flex items-start gap-3">
+                      <span
+                        className={cn(
+                          "mt-0.5 w-9 h-9 rounded-xl flex items-center justify-center font-display text-xs font-extrabold shrink-0",
+                          p.arrived ? "bg-primary text-white" : "bg-sidebar text-[#7ee2a4]",
+                        )}
+                      >
+                        {fullName.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[15px] font-semibold truncate">{fullName}</p>
+                        {tournament.type === "regular" && (
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            {p.student.phone ? (
+                              <a href={`tel:${p.student.phone}`} className="tabular-nums hover:text-primary" dir="ltr">{p.student.phone}</a>
+                            ) : (
+                              <span>—</span>
+                            )}
+                            {wa && (
+                              <a href={wa} target="_blank" rel="noopener noreferrer" className="font-bold text-[#1da851]">WhatsApp</a>
+                            )}
+                          </div>
+                        )}
+                        <ParticipantNote
+                          tournamentId={tournamentId}
+                          participantId={p.id}
+                          note={participantNotes[p.id] ?? ""}
+                          canEdit={canEdit}
+                        />
+                      </div>
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive md:hidden"
+                          onClick={() => {
+                            if (window.confirm(`להסיר את ${fullName} מהטורניר?`)) removeMut.mutate(p.id);
+                          }}
+                          disabled={removeMut.isPending}
+                          aria-label="הסרה מהטורניר"
+                        >
+                          <Trash2 size={15} />
+                        </Button>
                       )}
-                      <ParticipantNote
-                        tournamentId={tournamentId}
-                        participantId={p.id}
-                        note={participantNotes[p.id] ?? ""}
-                        canEdit={canEdit}
-                      />
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="grid grid-cols-[auto_1fr] md:flex md:flex-wrap items-center gap-2">
                       {tournament.type === "multi_location" && (
                         !canEdit || p.house_id ? (
                           <span
@@ -440,7 +507,7 @@ export function TournamentDetailView({
                             onValueChange={(v) => v && assignLocationMut.mutate({ participantId: p.id, locationId: v === "none" ? null : v })}
                             disabled={assignLocationMut.isPending}
                           >
-                            <SelectTrigger className="h-8 w-32 text-xs">
+                            <SelectTrigger className="h-9 w-36 text-xs">
                               <SelectValue placeholder="ללא מיקום">
                                 {(v: string) => (v === "none" ? "ללא מיקום" : locations.find((l) => l.id === v)?.label ?? v)}
                               </SelectValue>
@@ -463,7 +530,7 @@ export function TournamentDetailView({
                             >
                               <SelectTrigger
                                 className={cn(
-                                  "h-8 w-20 text-xs",
+                                  "h-9 w-[4.5rem] text-xs font-display font-bold",
                                   !p.student.skill_level &&
                                     "border-destructive/60 bg-destructive/10 text-destructive hover:bg-destructive/15 dark:bg-destructive/15",
                                 )}
@@ -472,7 +539,7 @@ export function TournamentDetailView({
                                     SelectItem's children, unless Select is given an
                                     `items` map — map it back to a label ourselves. */}
                                 <SelectValue placeholder="סיווג">
-                                  {(v: string) => (v === "none" ? "ללא" : v)}
+                                  {(v: string) => (v === "none" ? "סיווג?" : v)}
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
@@ -495,49 +562,55 @@ export function TournamentDetailView({
                         </FieldGroup>
                       )}
                       {tournament.type === "regular" && (
-                        <FieldGroup label="הגעה">
-                          {canEdit ? (
-                            <button
-                              type="button"
-                              onClick={() => arrivedMut.mutate({ participantId: p.id, arrived: !p.arrived })}
-                            >
-                              <Badge variant={p.arrived ? "default" : "outline"} className="cursor-pointer">
-                                {p.arrived ? "הגיע" : "לא הגיע"}
-                              </Badge>
-                            </button>
-                          ) : (
-                            <Badge variant={p.arrived ? "default" : "outline"}>{p.arrived ? "הגיע" : "לא הגיע"}</Badge>
-                          )}
-                        </FieldGroup>
+                        canEdit ? (
+                          <button
+                            type="button"
+                            onClick={() => arrivedMut.mutate({ participantId: p.id, arrived: !p.arrived })}
+                            aria-pressed={p.arrived}
+                            className={cn(
+                              "h-9 rounded-xl border px-3 font-display text-[13px] font-bold transition-colors md:w-28",
+                              p.arrived ? "bg-primary border-primary text-white" : "bg-card text-muted-foreground hover:text-foreground",
+                            )}
+                          >
+                            {p.arrived ? "✓ הגיע" : "סמן הגעה"}
+                          </button>
+                        ) : (
+                          <Badge variant={p.arrived ? "default" : "outline"}>{p.arrived ? "הגיע" : "לא הגיע"}</Badge>
+                        )
                       )}
                       {tournament.type === "regular" && (
-                        <FieldGroup label="תשלום">
+                        <FieldGroup label="תשלום" className="col-span-2 md:col-span-1">
                           {canEdit ? (
-                            <Select
-                              value={paymentValue}
-                              onValueChange={(v) => {
-                                if (!v) return;
-                                if (v === "unpaid") paidMut.mutate({ participantId: p.id, paid: false, paymentMethod: null });
-                                else paidMut.mutate({ participantId: p.id, paid: true, paymentMethod: v as "cash" | "credit" });
-                              }}
-                            >
-                              <SelectTrigger
-                                className={cn(
-                                  "h-8 w-28 text-xs",
-                                  p.paid &&
-                                    "border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-300",
-                                )}
-                              >
-                                <SelectValue>
-                                  {(v: string) => (v === "unpaid" ? "לא שולם" : v === "credit" ? "אשראי" : "מזומן")}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="unpaid">לא שולם</SelectItem>
-                                <SelectItem value="cash">מזומן</SelectItem>
-                                <SelectItem value="credit">אשראי</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <div className="flex rounded-xl border bg-muted/40 p-0.5">
+                              {(
+                                [
+                                  ["unpaid", "לא שולם"],
+                                  ["cash", "מזומן"],
+                                  ["credit", "אשראי"],
+                                ] as const
+                              ).map(([v, label]) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  aria-pressed={paymentValue === v}
+                                  onClick={() => {
+                                    if (paymentValue === v) return;
+                                    if (v === "unpaid") paidMut.mutate({ participantId: p.id, paid: false, paymentMethod: null });
+                                    else paidMut.mutate({ participantId: p.id, paid: true, paymentMethod: v });
+                                  }}
+                                  className={cn(
+                                    "flex-1 h-8 px-2.5 rounded-[10px] font-display text-xs font-bold transition-colors",
+                                    paymentValue === v
+                                      ? v === "unpaid"
+                                        ? "bg-amber-500 text-white"
+                                        : "bg-primary text-white"
+                                      : "text-muted-foreground hover:text-foreground",
+                                  )}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
                           ) : (
                             <Badge variant={p.paid ? "default" : "secondary"}>
                               {p.paid ? (p.payment_method === "credit" ? "שולם · אשראי" : "שולם · מזומן") : "לא שולם"}
@@ -549,9 +622,12 @@ export function TournamentDetailView({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => removeMut.mutate(p.id)}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hidden md:inline-flex"
+                          onClick={() => {
+                            if (window.confirm(`להסיר את ${fullName} מהטורניר?`)) removeMut.mutate(p.id);
+                          }}
                           disabled={removeMut.isPending}
+                          aria-label="הסרה מהטורניר"
                         >
                           <Trash2 size={14} />
                         </Button>
@@ -561,7 +637,20 @@ export function TournamentDetailView({
                 );
               };
               if (tournament.type !== "multi_location" || locations.length === 0) {
-                return <div className="divide-y divide-border/40">{participants.map(renderRow)}</div>;
+                const rows = participants.filter((x) =>
+                  partsFilter === "not-arrived"
+                    ? !x.arrived
+                    : partsFilter === "unpaid"
+                      ? !x.paid
+                      : partsFilter === "no-level"
+                        ? x.student.id !== "" && !x.student.skill_level
+                        : true,
+                );
+                return rows.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">אין משתתפים שמתאימים לסינון</p>
+                ) : (
+                  <div className="divide-y divide-border/40">{rows.map(renderRow)}</div>
+                );
               }
               const keyOf = (p: (typeof participants)[number]) => p.location_id ?? NO_LOCATION_KEY;
               const groups = [

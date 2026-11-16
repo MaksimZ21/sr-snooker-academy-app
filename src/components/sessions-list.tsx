@@ -140,10 +140,16 @@ export function SessionsList({
       </div>
 
       {/* Totals */}
-      <div className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-2">
-        <p className="text-xs text-muted-foreground">{total} מפגשים</p>
+      <div className="grid grid-cols-2 gap-3 max-w-md">
+        <div className="rounded-[14px] bg-sidebar text-white px-4 py-3">
+          <p className="bc-num text-3xl leading-none">{total}</p>
+          <p className="font-display text-xs font-bold text-white/60 mt-1">מפגשים</p>
+        </div>
         {grandTotal > 0 && (
-          <p className="text-xs font-semibold tabular-nums">{grandTotal.toLocaleString("he-IL")} ₪</p>
+          <div className="rounded-[14px] border bg-card px-4 py-3">
+            <p className="bc-num text-3xl leading-none">{grandTotal.toLocaleString("he-IL")} ₪</p>
+            <p className="font-display text-xs font-bold text-muted-foreground mt-1">סה״כ</p>
+          </div>
         )}
       </div>
 
@@ -155,23 +161,19 @@ export function SessionsList({
           return (
             <section key={key} className="flex flex-col gap-2">
               {label && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-semibold">{label}</h2>
-                    <span className="text-xs text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-full">
-                      {sessions.length}
-                    </span>
-                  </div>
+                <div className="flex items-baseline justify-between gap-3 border-b pb-1.5">
+                  <h2 className="bc-kicker text-sm text-primary">
+                    {label}
+                    <span className="text-muted-foreground font-medium">· {sessions.length} מפגשים</span>
+                  </h2>
                   {monthTotal > 0 && (
-                    <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                      {monthTotal.toLocaleString("he-IL")} ₪
-                    </span>
+                    <span className="bc-num text-lg leading-none">{monthTotal.toLocaleString("he-IL")} ₪</span>
                   )}
                 </div>
               )}
-              <div className="flex flex-col gap-2">
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                 {sessions.map((s) => (
-                  <SessionCard key={s.id} session={s} basePath={basePath} />
+                  <SessionCard key={s.id} session={s} basePath={basePath} showDate />
                 ))}
               </div>
             </section>

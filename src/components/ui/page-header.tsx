@@ -11,19 +11,19 @@ interface PageHeaderProps {
 export function PageHeader({ title, subtitle, action, icon, className }: PageHeaderProps) {
   return (
     <div className={cn(
-      "relative flex items-center justify-between gap-3 px-4 pt-5 pb-4 border-b border-border/60 bc-slide",
+      "relative flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 pt-5 pb-4 border-b border-border/60 bc-slide",
       // A short green rule under the title, like a TV lower third.
       "after:absolute after:bottom-[-1px] after:start-4 after:h-[3px] after:w-14 after:bg-primary",
       className,
     )}>
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-3 min-w-0 flex-1 basis-60">
         {icon && (
           <div className="h-11 w-11 rounded-xl bg-sidebar text-[#7ee2a4] flex items-center justify-center shrink-0 bc-slant">
             {icon}
           </div>
         )}
         <div className="min-w-0">
-          <h1 className="bc-num text-[26px] md:text-[32px] leading-[1.05]">{title}</h1>
+          <h1 className="bc-num text-[24px] md:text-[32px] leading-[1.05] break-words">{title}</h1>
           {subtitle && (
             <p className="text-xs text-muted-foreground mt-1 leading-snug">{subtitle}</p>
           )}

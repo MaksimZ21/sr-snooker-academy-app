@@ -316,7 +316,7 @@ export function TournamentDetailView({
         }
       />
       <div className="px-4 md:px-6 flex flex-col gap-4">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="grid grid-cols-3 gap-2.5 max-w-xl">
           <StatPill label="משתתפים" value={String(participants.length)} />
           {tournament.type === "regular" && (
             <>
@@ -327,7 +327,7 @@ export function TournamentDetailView({
         </div>
         {tournament.type === "regular" && !tournament.manager_email && (
           <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-700 dark:text-amber-400">
-            ⚠️ טרם הוגדר מאמן אחראי לטורניר זה
+            טרם הוגדר מאמן אחראי לטורניר זה
           </div>
         )}
         <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-2">
@@ -640,9 +640,9 @@ export function TournamentDetailView({
 
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-card px-3 py-1.5 flex items-center gap-1.5">
-      <span className="text-sm font-semibold tabular-nums">{value}</span>
-      <span className="text-xs text-muted-foreground">{label}</span>
+    <div className="rounded-[14px] border bg-card px-3.5 py-3 flex flex-col gap-1">
+      <span className="bc-num text-3xl leading-none" dir="ltr">{value}</span>
+      <span className="font-display text-xs font-bold text-muted-foreground">{label}</span>
     </div>
   );
 }

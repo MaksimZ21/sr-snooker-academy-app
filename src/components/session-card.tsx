@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Users, Banknote, CheckCircle2, CircleDashed } from "lucide-react";
 import type { Group, Session } from "@/lib/sheets/schemas";
-import { todayIsoTel } from "@/lib/date";
+import { dayLetterHe, todayIsoTel } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { TYPE_COLORS } from "@/components/broadcast";
 import { ScheduleSlot, shortSlotTitle } from "@/components/schedule-slot";
@@ -10,7 +10,10 @@ import { ScheduleSlot, shortSlotTitle } from "@/components/schedule-slot";
 export function SessionCard({
   session,
   basePath,
+  showDate = false,
 }: {
+  // On lists that aren't laid out by day (e.g. "my sessions").
+  showDate?: boolean;
   // attendance_marked: only on the schedule's lists (week / mine).
   session: Session & { attendance_marked?: boolean };
   basePath: "coach" | "admin";
@@ -53,6 +56,11 @@ export function SessionCard({
       cancelled={cancelled}
       meta={
         <>
+          {showDate && (
+            <span className="font-display font-bold text-foreground">
+              {dayLetterHe(session.date)} {session.date.slice(8, 10)}.{session.date.slice(5, 7)}
+            </span>
+          )}
           <span className="flex items-center gap-0.5 tabular-nums">
             <Users size={11} />
             {session.student_ids.length}

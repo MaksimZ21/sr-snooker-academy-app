@@ -5,7 +5,7 @@ import { fetchAttendanceForStudent } from "@/lib/sheets/attendance";
 import { fetchSessionsAll } from "@/lib/sheets/sessions";
 import { fetchStudentVisibleNotes } from "@/lib/sheets/notes";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { TYPE_COLORS } from "@/components/broadcast";
 import type { Note, Session } from "@/lib/sheets/schemas";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -74,17 +74,20 @@ export default async function StudentHistoryPage() {
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <p className="font-medium">{formatDate(s.date)}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {s.start_time} – {s.end_time}
+                      <p className="bc-num text-lg leading-none mt-1" dir="ltr">
+                        {s.start_time}–{s.end_time}
                       </p>
                     </div>
-                    <Badge variant="secondary">{TYPE_LABELS[s.training_type] ?? s.training_type}</Badge>
+                    <span className="flex items-center gap-1.5 rounded-md bg-muted px-2 py-0.5 font-display text-xs font-bold text-muted-foreground">
+                      <i className="w-2 h-2 rounded-full" style={{ background: TYPE_COLORS[s.training_type] ?? "#94a3b8" }} />
+                      {TYPE_LABELS[s.training_type] ?? s.training_type}
+                    </span>
                   </div>
                   {notes.length > 0 && (
                     <div className="border-t border-border/60 pt-3 flex flex-col gap-2">
                       <p className="text-xs font-medium text-muted-foreground">סיכום מהמאמן</p>
                       {notes.map((n) => (
-                        <div key={n.id} className="bg-muted/50 rounded-lg px-3 py-2.5 text-sm leading-relaxed">
+                        <div key={n.id} className="border-s-4 border-primary bg-primary/5 rounded-e-lg px-3 py-2.5 text-sm leading-relaxed">
                           {n.text}
                         </div>
                       ))}

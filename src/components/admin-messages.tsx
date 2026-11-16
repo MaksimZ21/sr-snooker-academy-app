@@ -1,4 +1,5 @@
 "use client";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2 , MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { ContactRequest } from "@/lib/sheets/contact";
 
@@ -117,50 +118,70 @@ function MessageList({
     return <p className="text-muted-foreground text-center py-12">{emptyText}</p>;
   }
 
+  // An inbox: one row per message, unread marked, reply on WhatsApp in one tap.
   return (
-    <div className="flex flex-col gap-3">
-      {messages.map((m) => (
-        <Card key={m.id} className="cursor-pointer" onClick={() => onExpand(m.id, m.status)}>
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                  <span className="font-semibold text-sm">{m.student_name}</span>
-                  {m.student_phone && <span className="text-xs text-muted-foreground">{m.student_phone}</span>}
-                  {m.status === "new" && <Badge className="text-xs">חדש</Badge>}
-                  {m.status === "handled" && (
-                    <Badge variant="secondary" className="text-xs">
-                      טופל
-                    </Badge>
+    <div className="rounded-[18px] border bg-card divide-y overflow-hidden">
+      {messages.map((m) => {
+        const digits = m.student_phone.replace(/\D/g, "");
+        const wa = digits ? `https://wa.me/${digits.startsWith("972") ? digits : digits.startsWith("0") ? `972${digits.slice(1)}` : digits}` : null;
+        const open = expanded === m.id;
+        return (
+          <div
+            key={m.id}
+            className={cn("flex gap-3 px-4 py-3.5 cursor-pointer transition-colors hover:bg-muted/40", m.status === "new" && "bg-primary/5")}
+            onClick={() => onExpand(m.id, m.status)}
+          >
+            <span className={cn("mt-1.5 w-2.5 h-2.5 rounded-full shrink-0", m.status === "new" ? "bg-primary" : "bg-transparent")} />
+            <div className="flex-1 min-w-0 flex flex-col gap-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className={cn("text-[15px] truncate", m.status === "new" ? "font-extrabold" : "font-semibold")}>{m.student_name}</span>
+                <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+                  {new Date(m.created_at).toLocaleDateString("he-IL")}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="rounded-md bg-sidebar text-white px-2 py-0.5 font-display text-[11px] font-bold shrink-0">{m.subject}</span>
+                {m.status === "handled" && (
+                  <span className="rounded-md bg-muted text-muted-foreground px-2 py-0.5 font-display text-[11px] font-bold shrink-0">טופל</span>
+                )}
+                <p className={cn("text-sm text-muted-foreground min-w-0", open ? "whitespace-pre-wrap" : "truncate")}>{m.message}</p>
+              </div>
+              {(open || onMarkHandled) && (
+                <div className="flex flex-wrap items-center gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                  {wa && (
+                    <a
+                      href={wa}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-[#25d366] text-white font-display text-xs font-bold hover:opacity-90"
+                    >
+                      <MessageCircle size={14} />
+                      ענה בוואטסאפ
+                    </a>
+                  )}
+                  {m.student_phone && (
+                    <a href={`tel:${m.student_phone}`} className="text-xs text-muted-foreground tabular-nums hover:text-primary" dir="ltr">
+                      {m.student_phone}
+                    </a>
+                  )}
+                  {onMarkHandled && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="ms-auto"
+                      disabled={handling}
+                      onClick={() => onMarkHandled(m.id)}
+                    >
+                      <CheckCircle2 size={14} />
+                      סמן כטופל
+                    </Button>
                   )}
                 </div>
-                <p className="text-sm font-medium mt-1">{m.subject}</p>
-                <p className={`text-sm text-muted-foreground ${expanded === m.id ? "" : "truncate"}`}>{m.message}</p>
-              </div>
-              <span className="text-xs text-muted-foreground shrink-0">
-                {new Date(m.created_at).toLocaleDateString("he-IL")}
-              </span>
+              )}
             </div>
-
-            {onMarkHandled && (
-              <div className="mt-3 flex justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={handling}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onMarkHandled(m.id);
-                  }}
-                >
-                  <CheckCircle2 size={14} className="ml-1.5" />
-                  סמן כטופל
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

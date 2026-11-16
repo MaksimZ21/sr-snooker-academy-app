@@ -101,11 +101,12 @@ function DeltaBadge({ current, prev }: { current: number; prev: number | undefin
   const up  = pct >= 0;
   return (
     <span className={cn(
-      "flex items-center gap-0.5 text-[11px] font-semibold",
+      "flex items-center gap-1 font-display text-xs font-bold",
       up ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400",
     )}>
-      {up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-      {up ? "+" : ""}{pct}%
+      {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+      <span dir="ltr">{up ? "+" : ""}{pct}%</span>
+      <span className="font-sans font-normal text-muted-foreground">מהתקופה הקודמת</span>
     </span>
   );
 }
@@ -144,16 +145,22 @@ function StatCards({
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-3">
-      {cards.map((card) => (
+    <div className="grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr] gap-3.5">
+      {cards.map((card, i) => (
         <div
           key={card.label}
-          className="bg-card border border-border/60 rounded-xl px-3.5 py-3 flex flex-col gap-1.5"
+          className={cn(
+            "rounded-[18px] p-[18px] flex flex-col gap-2 relative overflow-hidden bc-slide",
+            i === 0 ? "col-span-2 md:col-span-1 bg-brand-gradient text-white" : "bg-card border",
+          )}
+          style={{ animationDelay: `${i * 0.07}s` }}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">{card.icon}</span>
+          <div className="flex items-center justify-between gap-2">
+            <span className={i === 0 ? "text-white/80" : "text-muted-foreground"}>{card.icon}</span>
             {!isLoading && card.value !== undefined && card.prevValue !== undefined && (
-              <DeltaBadge current={card.value} prev={card.prevValue} />
+              <span className={cn(i === 0 && "rounded-lg bg-white px-2 py-0.5")}>
+                <DeltaBadge current={card.value} prev={card.prevValue} />
+              </span>
             )}
           </div>
           {isLoading ? (
@@ -163,10 +170,10 @@ function StatCards({
             </>
           ) : (
             <>
-              <span className="bc-num text-2xl leading-none">
+              <span className={cn("bc-num leading-none", i === 0 ? "text-5xl md:text-6xl" : "text-4xl")}>
                 {card.value !== undefined ? card.format(card.value) : "—"}
               </span>
-              <span className="text-[11px] text-muted-foreground leading-tight">{card.label}</span>
+              <span className={cn("font-display text-[13px] font-bold leading-tight", i === 0 ? "text-white/80" : "text-muted-foreground")}>{card.label}</span>
             </>
           )}
         </div>

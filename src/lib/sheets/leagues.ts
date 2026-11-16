@@ -39,9 +39,18 @@ export function canManageLeagues(user: { role: string }): boolean {
   return user.role === "admin";
 }
 
-export async function fetchLeagues(): Promise<League[]> {
-  const { data } = await db.from("leagues").select("*").order("created_at", { ascending: false });
-  return (data ?? []) as League[];
+// With how many players and districts, for the league lists.
+export async function fetchLeagues(): Promise<(League & { participant_count: number; district_count: number })[]> {
+  const { data } = await db
+    .from("leagues")
+    .select("*, league_participants(count), league_districts(count)")
+    .order("created_at", { ascending: false });
+  type Row = League & { league_participants?: { count: number }[]; league_districts?: { count: number }[] };
+  return ((data ?? []) as Row[]).map(({ league_participants, league_districts, ...l }) => ({
+    ...l,
+    participant_count: league_participants?.[0]?.count ?? 0,
+    district_count: league_districts?.[0]?.count ?? 0,
+  }));
 }
 
 export async function createLeague(input: {

@@ -1,6 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { LeagueListRow } from "@/components/league-list-row";
 import { Shield, ChevronLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,17 +47,10 @@ function LeagueList({ title, items }: { title: string; items: League[] }) {
   if (items.length === 0) return null;
   return (
     <div>
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{title}</p>
-      <div className="rounded-2xl border border-border/60 bg-card overflow-hidden divide-y divide-border/40">
+      <h2 className="font-display text-base font-extrabold mb-2">{title}</h2>
+      <div className="rounded-[18px] border bg-card overflow-hidden divide-y">
         {items.map((l) => (
-          <Link
-            key={l.id}
-            href={`/coach/leagues/${l.id}`}
-            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors"
-          >
-            <span className="flex-1 text-sm font-medium">{l.name}</span>
-            <ChevronLeft size={14} className="text-muted-foreground/30 shrink-0" />
-          </Link>
+          <LeagueListRow key={l.id} league={l} href={`/coach/leagues/${l.id}`} />
         ))}
       </div>
     </div>

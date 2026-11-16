@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MatchLine } from "@/components/match-line";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -216,7 +217,7 @@ export function TournamentLocationsView({
           return (
             <>
               {locations.length > 1 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] -mx-1 px-1">
                   {locations.map((l) => {
                     const count = participants.filter((p) => p.location_id === l.id).length;
                     return (
@@ -226,13 +227,13 @@ export function TournamentLocationsView({
                         onClick={() => setLocationId(l.id)}
                         aria-pressed={l.id === selected.id}
                         className={cn(
-                          "rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
+                          "shrink-0 rounded-xl px-4 py-2 font-display text-sm font-bold transition-colors",
                           l.id === selected.id
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-card border-border/60 text-muted-foreground hover:text-foreground",
+                            ? "bg-sidebar text-white"
+                            : "bg-muted text-muted-foreground hover:text-foreground",
                         )}
                       >
-                        {l.label} ({count})
+                        {l.label} <span className="tabular-nums opacity-70">{count}</span>
                       </button>
                     );
                   })}
@@ -241,12 +242,27 @@ export function TournamentLocationsView({
               {[selected].map((location) => {
           const locationHouses = houses.filter((h) => h.location_id === location.id);
           const unassigned = participants.filter((p) => p.location_id === location.id && !p.house_id);
+          const locationMatches = locationHouses.flatMap((h) => h.matches);
+          const locationPlayed = locationMatches.filter((m) => m.frames_a !== null && m.frames_b !== null).length;
           return (
             <div key={location.id} className="rounded-[18px] border bg-card overflow-hidden">
-              <p className="text-sm font-semibold px-4 pt-3 pb-2">{location.label}</p>
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 px-4 py-3 bg-sidebar text-white">
+                <span className="bc-num text-2xl leading-none">{location.label}</span>
+                <span className="flex flex-wrap items-center gap-1.5 font-display text-[11px] font-bold">
+                  <span className="rounded-md bg-white/10 px-1.5 py-0.5">{locationHouses.length} בתים</span>
+                  <span className="rounded-md bg-white/10 px-1.5 py-0.5">
+                    {participants.filter((p) => p.location_id === location.id).length} שחקנים
+                  </span>
+                  {locationMatches.length > 0 && (
+                    <span className="rounded-md bg-primary px-1.5 py-0.5">
+                      {locationPlayed}/{locationMatches.length} משחקים
+                    </span>
+                  )}
+                </span>
+              </div>
 
               {canEdit && (
-                <div className="flex items-end gap-2 px-4 pb-3">
+                <div className="flex items-end gap-2 px-4 py-3">
                   <div className="flex-1">
                     <label className="text-xs text-muted-foreground mb-1 block">בית חדש</label>
                     <Input
@@ -268,11 +284,17 @@ export function TournamentLocationsView({
               )}
 
               {unassigned.length > 0 && (
-                <div className="flex flex-col gap-2 px-4 pb-3 border-t border-border/40 pt-3">
-                  <p className="text-xs font-medium text-muted-foreground">לא משוייכים לבית</p>
+                <div className="flex flex-col gap-2 px-4 py-3 border-t bg-amber-500/8">
+                  <p className="flex items-center gap-2 font-display text-sm font-extrabold text-amber-700 dark:text-amber-400">
+                    לא משוייכים לבית
+                    <span className="rounded-md bg-amber-500 px-1.5 py-0.5 text-[11px] text-white tabular-nums">{unassigned.length}</span>
+                  </p>
                   {unassigned.map((p) => (
-                    <div key={p.id} className="flex items-center gap-2 text-sm">
-                      <span className="flex-1 truncate">
+                    <div key={p.id} className="flex items-center gap-2.5 text-sm">
+                      <span className="w-8 h-8 rounded-lg bg-sidebar text-[#7ee2a4] flex items-center justify-center font-display text-[11px] font-extrabold shrink-0">
+                        {[p.student.first_name, p.student.last_name].filter(Boolean).map((w) => w[0]).join("").slice(0, 2)}
+                      </span>
+                      <span className="flex-1 truncate font-semibold">
                         {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
                       </span>
                       {canEdit && locationHouses.length > 0 && (
@@ -280,8 +302,8 @@ export function TournamentLocationsView({
                           key={`${p.id}-${assignHouseMut.variables?.participantId === p.id ? assignHouseMut.failureCount : 0}`}
                           onValueChange={(v: string | null) => v && assignHouseMut.mutate({ participantId: p.id, houseId: v })}
                         >
-                          <SelectTrigger className="h-8 w-32 text-xs">
-                            <SelectValue placeholder="בחר בית..." />
+                          <SelectTrigger className="h-9 w-32 text-xs font-display font-bold bg-card">
+                            <SelectValue placeholder="שבץ לבית..." />
                           </SelectTrigger>
                           <SelectContent>
                             {locationHouses.map((h) => (
@@ -296,20 +318,25 @@ export function TournamentLocationsView({
               )}
 
               {locationHouses.length > 0 && (
-              <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-4 pb-4 pt-3 border-t border-border/40">
+              <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory p-3 border-t bg-muted/30">
               {locationHouses.map((house) => {
                 const standings = computeHouseStandings(house.memberIds, house.matches);
                 return (
                   <div
                     key={house.id}
-                    className="snap-start shrink-0 w-[88%] sm:w-[440px] rounded-[14px] border bg-card overflow-hidden"
+                    className="snap-start shrink-0 w-[90%] sm:w-[440px] rounded-[14px] border bg-card overflow-hidden shadow-[0_6px_16px_-12px_rgb(13_21_16/0.35)]"
                   >
-                    <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
-                      <p className="text-sm font-semibold">{house.label}</p>
+                    <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-sidebar text-white">
+                      <p className="flex items-baseline gap-2 min-w-0">
+                        <span className="bc-num text-lg leading-none truncate">{house.label}</span>
+                        <span className="font-display text-[11px] font-bold text-white/60 shrink-0">
+                          {house.matches.filter((m) => m.frames_a !== null && m.frames_b !== null).length}/{house.matches.length} משחקים
+                        </span>
+                      </p>
                       {canEdit && (
                         <button
                           type="button"
-                          className="text-xs font-medium text-primary hover:underline"
+                          className="shrink-0 rounded-md bg-white/10 px-2 py-1 font-display text-[11px] font-bold text-[#7ee2a4] hover:bg-white/20"
                           onClick={() =>
                             setHouseNames((prev) => {
                               const next = { ...prev };
@@ -329,7 +356,7 @@ export function TournamentLocationsView({
                         .map((l) => l.replace(/^\s*\d+[.)-]?\s*/, "").trim())
                         .filter(Boolean);
                       return (
-                        <div className="flex flex-col gap-2 px-4 pb-3">
+                        <div className="flex flex-col gap-2 px-4 py-3 border-b bg-muted/30">
                           <Textarea
                             value={houseNames[house.id] ?? ""}
                             onChange={(e) => setHouseNames((prev) => ({ ...prev, [house.id]: e.target.value }))}
@@ -350,23 +377,26 @@ export function TournamentLocationsView({
                       );
                     })()}
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
+                      <table className="w-full text-[13px]">
                         <thead>
-                          <tr className="text-xs text-muted-foreground border-b border-border/40">
-                            <th className="text-right px-4 py-1.5 font-medium">מקום</th>
-                            <th className="text-right px-2 py-1.5 font-medium">שם</th>
-                            <th className="text-center px-2 py-1.5 font-medium">נצחונות</th>
-                            <th className="text-center px-2 py-1.5 font-medium">פריימים לטובה</th>
-                            <th className="text-center px-2 py-1.5 font-medium">פריימים לרעה</th>
-                            <th className="text-center px-2 py-1.5 font-medium">הפרש</th>
+                          <tr className="text-[11px] text-muted-foreground border-b bg-muted/40">
+                            <th className="text-center ps-3 pe-1 py-2 font-display font-bold w-10">#</th>
+                            <th className="text-right px-2 py-2 font-display font-bold">שחקן</th>
+                            <th className="text-center px-2 py-2 font-display font-bold">נ׳</th>
+                            <th className="text-center px-2 py-2 font-display font-bold">פריימים</th>
+                            <th className="text-center px-2 py-2 font-display font-bold">+/-</th>
                           </tr>
                         </thead>
                         <tbody>
                           {standings.map((row, i) => (
-                            <tr key={row.participantId} className="border-b border-border/20 last:border-b-0">
-                              <td className="px-4 py-1.5">{i + 1}</td>
-                              <td className="px-2 py-1.5">
-                                {participantName(row.participantId)}
+                            <tr key={row.participantId} className={cn("border-b border-border/40 last:border-b-0", i === 0 && row.wins > 0 && "bg-primary/8")}>
+                              <td className="ps-3 pe-1 py-2 text-center">
+                                <span className={cn("inline-flex w-7 h-7 items-center justify-center rounded-md bc-num text-sm", i === 0 && row.wins > 0 ? "bg-primary text-white" : "text-muted-foreground")}>
+                                  {i + 1}
+                                </span>
+                              </td>
+                              <td className="px-2 py-2">
+                                <span className="font-semibold">{participantName(row.participantId)}</span>
                                 {canEdit && (
                                   <Select
                                     value={house.id}
@@ -376,7 +406,7 @@ export function TournamentLocationsView({
                                       else assignHouseMut.mutate({ participantId: row.participantId, houseId: v });
                                     }}
                                   >
-                                    <SelectTrigger className="h-6 w-24 text-[11px] mr-2 inline-flex">
+                                    <SelectTrigger className="h-7 w-24 text-[11px] font-display font-bold ms-2 inline-flex" aria-label="העבר לבית">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -388,10 +418,18 @@ export function TournamentLocationsView({
                                   </Select>
                                 )}
                               </td>
-                              <td className="text-center px-2 py-1.5">{row.wins}</td>
-                              <td className="text-center px-2 py-1.5">{row.framesWon}</td>
-                              <td className="text-center px-2 py-1.5">{row.framesLost}</td>
-                              <td className="text-center px-2 py-1.5">
+                              <td className="text-center px-2 py-2"><span className="bc-num text-base">{row.wins}</span></td>
+                              <td className="text-center px-2 py-2 tabular-nums text-muted-foreground" dir="ltr">
+                                {row.framesWon}-{row.framesLost}
+                              </td>
+                              <td
+                                className={cn(
+                                  "text-center px-2 py-2 tabular-nums font-semibold",
+                                  row.framesWon - row.framesLost > 0 && "text-emerald-600 dark:text-emerald-400",
+                                  row.framesWon - row.framesLost < 0 && "text-destructive",
+                                )}
+                                dir="ltr"
+                              >
                                 {row.framesWon - row.framesLost > 0 ? "+" : ""}
                                 {row.framesWon - row.framesLost}
                               </td>
@@ -401,7 +439,7 @@ export function TournamentLocationsView({
                       </table>
                     </div>
 
-                    <div className="flex flex-col gap-2 px-4 py-3 border-t border-border/40">
+                    <div className="flex flex-col gap-2 p-3 border-t">
                       {house.matches.map((m) => {
                         const nameA = participantName(m.participant_a_id);
                         const nameB = participantName(m.participant_b_id);
@@ -478,32 +516,38 @@ function LocationMatchRow({
     onSave(na, nb);
   }
 
+  const box = (value: string, set: (v: string) => void) => (
+    <Input
+      type="number"
+      min={0}
+      value={value}
+      onChange={(e) => set(e.target.value)}
+      className="h-7 w-12 text-center px-1 bc-num text-sm"
+      disabled={saving}
+    />
+  );
+
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-2 text-sm">
-        <span className="flex-1">{nameA} נגד {nameB}</span>
-        {canEdit ? (
-          <>
-            <Input type="number" min={0} value={framesA} onChange={(e) => setFramesA(e.target.value)} className="h-7 w-14 text-center px-1" />
-            <span className="text-muted-foreground">-</span>
-            <Input type="number" min={0} value={framesB} onChange={(e) => setFramesB(e.target.value)} className="h-7 w-14 text-center px-1" />
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs"
-              disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
-              onClick={save}
-            >
-              שמור
-            </Button>
-          </>
-        ) : played ? (
-          <span className="font-medium">{match.frames_a} - {match.frames_b}</span>
-        ) : (
-          <span className="text-muted-foreground text-xs">טרם שוחק</span>
-        )}
-      </div>
-      {handicap && !played && <p className="text-[11px] text-muted-foreground">{handicap}</p>}
-    </div>
+    <MatchLine
+      nameA={nameA}
+      nameB={nameB}
+      framesA={match.frames_a}
+      framesB={match.frames_b}
+      sub={handicap && !played ? handicap : undefined}
+      scoreA={canEdit ? box(framesA, setFramesA) : undefined}
+      scoreB={canEdit ? box(framesB, setFramesB) : undefined}
+      aside={
+        canEdit ? (
+          <Button
+            size="sm"
+            className="h-7 px-3 font-display text-xs font-bold"
+            disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
+            onClick={save}
+          >
+            שמור
+          </Button>
+        ) : undefined
+      }
+    />
   );
 }

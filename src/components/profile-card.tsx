@@ -58,20 +58,18 @@ export function ProfileCard({ email, role }: { email: string; role: string }) {
     window.location.href = "/set-password";
   }
   return (
-    <div className="p-4">
-      <Card className="overflow-hidden">
-        <div className="bg-brand-gradient-soft h-20" />
-        <CardContent className="-mt-10 flex flex-col items-center gap-4 pb-6">
-          <Avatar className="h-20 w-20 ring-4 ring-background bg-primary text-primary-foreground">
-            <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-              {email[0]?.toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="text-center">
-            <div className="font-mono text-sm">{email}</div>
-            <div className="text-xs text-muted-foreground mt-1">
+    <div className="p-4 max-w-xl mx-auto w-full">
+      <Card className="overflow-hidden py-0">
+        <div className="bg-brand-gradient h-24" />
+        <CardContent className="-mt-11 flex flex-col items-center gap-4 pb-6">
+          <div className="h-[88px] w-[88px] rounded-2xl bg-sidebar text-[#7ee2a4] ring-4 ring-card flex items-center justify-center bc-num text-4xl bc-slant">
+            {email[0]?.toUpperCase()}
+          </div>
+          <div className="text-center flex flex-col items-center gap-1.5">
+            <div className="font-display text-base font-bold" dir="ltr">{email}</div>
+            <span className="rounded-md bg-primary text-white px-2.5 py-0.5 font-display text-xs font-bold">
               {role === "admin" ? "מנהל" : role === "student" ? "מתאמן" : "מאמן"}
-            </div>
+            </span>
           </div>
           <ThemeSelector />
           <div className="flex gap-2">

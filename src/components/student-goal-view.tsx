@@ -69,7 +69,7 @@ export function StudentGoalView({ studentId }: { studentId: string }) {
       <h1 className="bc-num text-[24px] md:text-[28px] leading-[1.05]">המטרה שלי</h1>
 
       {!current ? (
-        <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3">
+        <div className="rounded-[18px] border bg-card p-4 flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">
             מטרת העל שלי לחודש הקרוב - אני הכי רוצה לשפר את:
           </p>
@@ -81,10 +81,10 @@ export function StudentGoalView({ studentId }: { studentId: string }) {
                 onClick={() => setSelected(c.key)}
                 className={cn(
                   "text-right rounded-xl border-2 p-3 transition-colors",
-                  selected === c.key ? "border-primary bg-primary/5" : "border-border hover:border-border/80",
+                  selected === c.key ? "border-primary bg-primary/5" : "border-border hover:border-foreground/20",
                 )}
               >
-                <p className="text-sm font-medium">{c.label}</p>
+                <p className="font-display text-[15px] font-extrabold">{c.label}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{c.description}</p>
               </button>
             ))}
@@ -94,11 +94,16 @@ export function StudentGoalView({ studentId }: { studentId: string }) {
           </Button>
         </div>
       ) : (
-        <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            המטרה שלי החודש · {GOAL_CATEGORIES.find((c) => c.key === current.goal.category)?.label}
-          </p>
+        <div className="rounded-[18px] border bg-card overflow-hidden flex flex-col">
+          <div className="bg-brand-gradient text-white px-4 py-3.5">
+            <p className="font-display text-xs font-bold text-white/70">המטרה שלי החודש</p>
+            <p className="bc-num text-2xl leading-tight mt-0.5">
+              {GOAL_CATEGORIES.find((c) => c.key === current.goal.category)?.label}
+            </p>
+          </div>
+          <div className="p-4">
           <GoalChart entries={current.entries} category={current.goal.category} />
+          </div>
         </div>
       )}
 
@@ -118,13 +123,17 @@ function PastGoalRow({ item }: { item: GoalWithEntries }) {
   const [open, setOpen] = useState(false);
   const label = GOAL_CATEGORIES.find((c) => c.key === item.goal.category)?.label ?? item.goal.category;
   return (
-    <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+    <div className="rounded-[18px] border bg-card overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full text-right px-4 py-3 text-sm font-medium"
+        className="w-full flex items-center justify-between gap-3 text-right px-4 py-3 hover:bg-muted/40 transition-colors"
       >
-        {item.goal.month} · {label}
+        <span className="flex items-center gap-2.5">
+          <span className="rounded-md bg-sidebar text-white px-2 py-0.5 font-display text-xs font-bold tabular-nums" dir="ltr">{item.goal.month}</span>
+          <span className="font-semibold text-sm">{label}</span>
+        </span>
+        <span className="text-xs text-muted-foreground">{open ? "הסתר" : "הצג"}</span>
       </button>
       {open && (
         <div className="px-4 pb-4">

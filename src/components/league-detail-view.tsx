@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Shield, ExternalLink, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -18,7 +19,7 @@ import { LeagueDistrictsView } from "@/components/league-districts-view";
 import { LeagueScheduleView } from "@/components/league-schedule-view";
 import { LeagueBreaksView } from "@/components/league-breaks-view";
 import { LeagueLevelsView } from "@/components/league-levels-view";
-import { FoldSection } from "@/components/fold-section";
+import { cn } from "@/lib/utils";
 import { TableSizeBadge, TableSizeSelect } from "@/components/table-size";
 import type { TableSize } from "@/lib/sheets/schemas";
 
@@ -43,6 +44,15 @@ type League = {
   created_at: string;
 };
 
+const LEAGUE_TABS = [
+  ["districts", "מחוזות ותוצאות"],
+  ["schedule", "לוז"],
+  ["players", "שחקנים"],
+  ["levels", "דירוג"],
+  ["breaks", "ברייקים"],
+] as const;
+type LeagueTab = (typeof LEAGUE_TABS)[number][0];
+
 export function LeagueDetailView({
   leagueId,
   backHref,
@@ -53,6 +63,20 @@ export function LeagueDetailView({
   isAdmin: boolean;
 }) {
   const qc = useQueryClient();
+  // Which part of the league is open; remembered per league on this device.
+  const [tab, setTab] = useState<LeagueTab>("districts");
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`league-tab:${leagueId}`);
+      if (saved && LEAGUE_TABS.some(([k]) => k === saved)) setTab(saved as LeagueTab);
+    } catch {}
+  }, [leagueId]);
+  function pickTab(key: LeagueTab) {
+    setTab(key);
+    try {
+      localStorage.setItem(`league-tab:${leagueId}`, key);
+    } catch {}
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ["league", leagueId],
@@ -136,7 +160,7 @@ export function LeagueDetailView({
         }
       />
       <div className="px-4 md:px-6 flex flex-col gap-4">
-        <div className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-2">
+        <div className="rounded-[18px] border bg-card p-4 flex flex-col gap-2">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">קישור ציבורי:</span>
             <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1">
@@ -162,14 +186,35 @@ export function LeagueDetailView({
           </div>
         </div>
 
-        {canEdit && (
-          <div className="rounded-2xl border border-border/60 bg-card p-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">הוספת שחקן</p>
+        {/* One part of the league at a time, like the public page, instead of one long scroll. */}
+        <div className="sticky top-0 z-20 -mx-4 md:mx-0 px-4 md:px-0 py-2 bg-background/95 backdrop-blur">
+          <div className="flex gap-1 overflow-x-auto rounded-xl bg-sidebar p-1 [scrollbar-width:none]">
+            {LEAGUE_TABS.map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => pickTab(key)}
+                aria-pressed={tab === key}
+                className={cn(
+                  "flex-1 shrink-0 whitespace-nowrap rounded-lg px-3 py-2 font-display text-sm font-bold transition-colors",
+                  tab === key ? "bg-primary text-white" : "text-white/60 hover:text-white",
+                )}
+              >
+                {key === "players" ? `${label} (${participants.length})` : label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {canEdit && tab === "players" && (
+          <div className="rounded-[18px] border bg-card p-4">
+            <p className="font-display text-sm font-extrabold mb-2">הוספת שחקן</p>
             <LeagueParticipantPicker leagueId={leagueId} />
           </div>
         )}
 
-        <FoldSection title={`שחקנים (${participants.length})`} storageKey={`league:${leagueId}:players`}>
+        {tab === "players" && (
+          <>
           <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
             {participants.length === 0 ? (
               <div className="py-8 text-center text-sm text-muted-foreground">אין שחקנים עדיין</div>
@@ -221,37 +266,46 @@ export function LeagueDetailView({
               </div>
             )}
           </div>
-        </FoldSection>
+          </>
+        )}
 
-        <FoldSection title="נקודות דירוג (12 פיט)" storageKey={`league:${leagueId}:levels`}>
+        {tab === "levels" && (
+          <>
           <LeagueLevelsView leagueId={leagueId} canEdit={canEdit} />
-        </FoldSection>
+          </>
+        )}
 
-        <FoldSection title="לוז" storageKey={`league:${leagueId}:schedule`}>
+        {tab === "schedule" && (
+          <>
           <LeagueScheduleView
             leagueId={leagueId}
             leagueName={league.name}
             participants={participants}
             canEdit={canEdit}
           />
-        </FoldSection>
+          </>
+        )}
 
-        <FoldSection title="מחוזות ותוצאות" storageKey={`league:${leagueId}:districts`}>
+        {tab === "districts" && (
+          <>
           <LeagueDistrictsView
             leagueId={leagueId}
             participants={participants}
             canEdit={canEdit}
           />
-        </FoldSection>
+          </>
+        )}
 
-        <FoldSection title="טבלת ברייקים" storageKey={`league:${leagueId}:breaks`}>
+        {tab === "breaks" && (
+          <>
           <LeagueBreaksView
             leagueId={leagueId}
             participants={participants}
             districts={districts}
             canEdit={canEdit}
           />
-        </FoldSection>
+          </>
+        )}
       </div>
     </div>
   );

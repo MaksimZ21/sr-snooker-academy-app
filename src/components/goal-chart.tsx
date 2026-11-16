@@ -1,23 +1,23 @@
-"use client";
+﻿"use client";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { GoalCategory, GoalEntry } from "@/lib/sheets/monthly-goals-shared";
 
 // This project's theme colors are oklch(...) values (globals.css), not the
-// bare HSL triples "hsl(var(--x))" expects — nesting oklch(...) inside
+// bare HSL triples "hsl(var(--x))" expects ג€” nesting oklch(...) inside
 // hsl() is invalid CSS, so a stroke/fill using that pattern renders
 // invisibly while Recharts' hover tracking (and its Tooltip) still works
 // regardless, which is exactly what looked like "no graph, only the
 // tooltip on hover". The other chart components avoid this by using a
-// literal brand color instead — same fix here.
-const BRAND = "#0b9e70";
+// literal brand color instead ג€” same fix here.
+const BRAND = "#0e8f45";
 
 export function GoalChart({ entries, category }: { entries: GoalEntry[]; category: GoalCategory }) {
   if (entries.length === 0) {
-    return <p className="text-sm text-muted-foreground text-center py-8">עדיין אין נתונים החודש</p>;
+    return <p className="text-sm text-muted-foreground text-center py-8">׳¢׳“׳™׳™׳ ׳׳™׳ ׳ ׳×׳•׳ ׳™׳ ׳”׳—׳•׳“׳©</p>;
   }
 
   const data = entries.map((e, i) => ({
-    session: `אימון ${i + 1}`,
+    session: `׳׳™׳׳•׳ ${i + 1}`,
     value:
       category === "breaks"
         ? e.best_break ?? 0
@@ -27,9 +27,9 @@ export function GoalChart({ entries, category }: { entries: GoalEntry[]; categor
   return (
     <ResponsiveContainer width="100%" height={200}>
       <LineChart data={data}>
-        <XAxis dataKey="session" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+        <XAxis dataKey="session" tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} />
         <YAxis
-          tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+          tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
           allowDecimals={false}
           unit={category === "breaks" ? "" : "%"}
         />
@@ -37,8 +37,8 @@ export function GoalChart({ entries, category }: { entries: GoalEntry[]; categor
           contentStyle={{
             fontSize: 12,
             borderRadius: 8,
-            border: "1px solid hsl(var(--border))",
-            background: "hsl(var(--background))",
+            border: "1px solid var(--color-border)",
+            background: "var(--color-card)",
           }}
           formatter={(v) => [category === "breaks" ? `${v}` : `${v}%`, ""]}
         />

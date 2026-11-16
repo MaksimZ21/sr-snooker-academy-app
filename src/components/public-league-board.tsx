@@ -71,12 +71,12 @@ export function PublicLeagueBoard({
     const isFolded = folded.has(panel);
     return (
       <div className="rounded-[18px] border bg-card overflow-hidden">
-        <p className="text-sm font-semibold px-4 pt-3 pb-2 md:hidden">{title}</p>
+        <p className="font-display text-base font-extrabold px-4 py-3 border-b md:hidden">{title}</p>
         <button
           type="button"
           onClick={() => toggle(panel)}
           aria-expanded={!isFolded}
-          className="hidden md:flex w-full items-center justify-between gap-2 px-4 pt-3 pb-2 text-sm font-semibold hover:bg-muted/40"
+          className="hidden md:flex w-full items-center justify-between gap-2 px-4 py-3 border-b font-display text-base font-extrabold hover:bg-muted/40"
         >
           {title}
           <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground">

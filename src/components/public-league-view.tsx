@@ -29,7 +29,7 @@ function HandicapTable({
   const sorted = [...players].sort((a, b) => rank(a.level) - rank(b.level) || a.name.localeCompare(b.name, "he"));
   if (sorted.length === 0) return <p className="pb-4 text-center text-sm text-muted-foreground">אין שחקנים במחוז</p>;
   return (
-    <div className="flex flex-col gap-2 px-4 pb-4">
+    <div className="flex flex-col gap-2 px-4 py-3">
       <table className="w-auto text-sm">
         <tbody>
           {sorted.map((p, i) => {
@@ -37,11 +37,17 @@ function HandicapTable({
             const points = p.level ? values[p.level] : undefined;
             return (
               <tr key={p.id} className={newGroup ? "border-t-[6px] border-transparent" : undefined}>
-                <td className="py-1 pe-6">{p.name}</td>
-                <td className="w-10 py-1 text-center font-bold" dir="ltr">
-                  {p.level ?? "—"}
+                <td className="py-1.5 pe-6 font-semibold">{p.name}</td>
+                <td className="w-10 py-1.5 text-center" dir="ltr">
+                  {p.level ? (
+                    <span className="inline-block min-w-6 rounded bg-sidebar text-white px-1 font-display text-xs font-extrabold leading-6">{p.level}</span>
+                  ) : (
+                    "—"
+                  )}
                 </td>
-                <td className="w-10 py-1 text-center tabular-nums">{points ?? "—"}</td>
+                <td className="w-12 py-1.5 text-center">
+                  <span className="bc-num text-base">{points ?? "—"}</span>
+                </td>
               </tr>
             );
           })}

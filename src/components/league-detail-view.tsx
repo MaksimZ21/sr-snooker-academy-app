@@ -65,6 +65,8 @@ export function LeagueDetailView({
   const qc = useQueryClient();
   // Which part of the league is open; remembered per league on this device.
   const [tab, setTab] = useState<LeagueTab>("districts");
+  // Players tab: show one district at a time ("all" / district id / "none").
+  const [playersDistrict, setPlayersDistrict] = useState<string>("all");
   useEffect(() => {
     try {
       const saved = localStorage.getItem(`league-tab:${leagueId}`);
@@ -219,24 +221,61 @@ export function LeagueDetailView({
             {participants.length === 0 ? (
               <div className="py-8 text-center text-sm text-muted-foreground">אין שחקנים עדיין</div>
             ) : (
-              <div className="divide-y divide-border/40">
-                {participants.map((p) => (
-                  <div key={p.id} className="flex items-center gap-3 px-4 py-3">
+              <>
+                <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] px-4 py-3 border-b">
+                  {[
+                    { key: "all", label: "הכל", n: participants.length },
+                    ...districts.map((d) => ({ key: d.id, label: d.label, n: participants.filter((x) => x.district_id === d.id).length })),
+                    { key: "none", label: "ללא מחוז", n: participants.filter((x) => !x.district_id).length },
+                  ]
+                    .filter((c) => c.key !== "none" || c.n > 0)
+                    .map((c) => (
+                      <button
+                        key={c.key}
+                        type="button"
+                        onClick={() => setPlayersDistrict(c.key)}
+                        aria-pressed={playersDistrict === c.key}
+                        className={cn(
+                          "shrink-0 rounded-lg px-3 py-1.5 font-display text-xs font-bold transition-colors",
+                          playersDistrict === c.key ? "bg-sidebar text-white" : "bg-muted text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {c.label} <span className="tabular-nums opacity-70">{c.n}</span>
+                      </button>
+                    ))}
+                </div>
+                <div className="divide-y divide-border/40">
+                {participants
+                  .filter((x) => playersDistrict === "all" || (playersDistrict === "none" ? !x.district_id : x.district_id === playersDistrict))
+                  .map((p) => {
+                  const fullName = [p.student.first_name, p.student.last_name].filter(Boolean).join(" ");
+                  const digits = (p.student.phone ?? "").replace(/\D/g, "");
+                  const wa = digits ? `https://wa.me/${digits.startsWith("972") ? digits : digits.startsWith("0") ? `972${digits.slice(1)}` : digits}` : null;
+                  return (
+                  <div key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+                    <span className="w-9 h-9 rounded-xl bg-sidebar text-[#7ee2a4] flex items-center justify-center font-display text-xs font-extrabold shrink-0">
+                      {fullName.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+                    </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
-                      </p>
-                      {p.student.phone && (
-                        <p className="text-xs text-muted-foreground tabular-nums" dir="ltr">{p.student.phone}</p>
-                      )}
+                      <p className="text-[15px] font-semibold truncate">{fullName}</p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        {p.student.phone && (
+                          <a href={`tel:${p.student.phone}`} className="tabular-nums hover:text-primary" dir="ltr">{p.student.phone}</a>
+                        )}
+                        {wa && (
+                          <a href={wa} target="_blank" rel="noopener noreferrer" className="font-bold text-[#1da851]">WhatsApp</a>
+                        )}
+                      </div>
                     </div>
                     {canEdit ? (
                       <Select
                         value={p.district_id ?? "none"}
                         onValueChange={(v) => assignMut.mutate({ participantId: p.id, districtId: v === "none" ? null : v })}
                       >
-                        <SelectTrigger className="h-8 w-32 text-xs">
-                          <SelectValue placeholder="ללא מחוז" />
+                        <SelectTrigger className={cn("h-9 w-36 text-xs font-display font-bold", !p.district_id && "border-amber-500/60 text-amber-700 dark:text-amber-400")}>
+                          <SelectValue placeholder="ללא מחוז">
+                            {(v: string) => (v === "none" ? "ללא מחוז" : districts.find((d) => d.id === v)?.label ?? v)}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">ללא מחוז</SelectItem>
@@ -246,7 +285,7 @@ export function LeagueDetailView({
                         </SelectContent>
                       </Select>
                     ) : (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="rounded-md bg-muted px-2 py-0.5 font-display text-xs font-bold text-muted-foreground">
                         {districts.find((d) => d.id === p.district_id)?.label ?? "ללא מחוז"}
                       </span>
                     )}
@@ -254,16 +293,21 @@ export function LeagueDetailView({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => removeMut.mutate(p.id)}
+                        className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                        onClick={() => {
+                          if (window.confirm(`להסיר את ${fullName} מהליגה?`)) removeMut.mutate(p.id);
+                        }}
                         disabled={removeMut.isPending}
+                        aria-label="הסרה מהליגה"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={15} />
                       </Button>
                     )}
                   </div>
-                ))}
-              </div>
+                  );
+                })}
+                </div>
+              </>
             )}
           </div>
           </>

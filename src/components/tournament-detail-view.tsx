@@ -599,7 +599,7 @@ export function TournamentDetailView({
                                     else paidMut.mutate({ participantId: p.id, paid: true, paymentMethod: v });
                                   }}
                                   className={cn(
-                                    "flex-1 h-8 px-2.5 rounded-[10px] font-display text-xs font-bold transition-colors",
+                                    "flex-1 h-8 px-2.5 rounded-[10px] font-display text-xs font-bold whitespace-nowrap transition-colors",
                                     paymentValue === v
                                       ? v === "unpaid"
                                         ? "bg-amber-500 text-white"

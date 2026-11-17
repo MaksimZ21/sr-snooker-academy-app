@@ -2,11 +2,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { ArrowRight, UserPlus, User, Users, Banknote, Pencil, FileText, Check, X } from "lucide-react";
+import { ArrowRight, UserPlus, User, Users, Banknote, Pencil, FileText, Check, X, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -24,7 +25,7 @@ import {
   type IntroExperienceLevel,
   type IntroGoal,
 } from "@/lib/sheets/intro-event-fields";
-import type { IntroEventView } from "@/lib/sheets/intro-events";
+import type { IntroEventView, IntroFollowupStatus } from "@/lib/sheets/intro-events";
 
 type Coach = { email: string; name: string; active: boolean };
 
@@ -34,6 +35,8 @@ type IntroEventParticipant = {
   student_id: string;
   experience_level: IntroExperienceLevel | null;
   goal: IntroGoal | null;
+  followup_status: IntroFollowupStatus | null;
+  followup_error: string | null;
   student: { id: string; first_name: string; last_name: string; phone: string };
 };
 
@@ -89,6 +92,22 @@ export function IntroEventDetailView({
       qc.invalidateQueries({ queryKey: ["intro-events"] });
     },
     onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה בעדכון"),
+  });
+
+  const followupMut = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const r = await fetch(`/api/intro-events/${introEventId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ followup_enabled: enabled }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+    },
+    onSuccess: (_d, enabled) => {
+      toast.success(enabled ? "הודעת ההמשך תישלח" : "הודעת ההמשך בוטלה");
+      qc.invalidateQueries({ queryKey: ["intro-event", introEventId] });
+    },
+    onError: () => toast.error("שגיאה בעדכון"),
   });
 
   const [nameDraft, setNameDraft] = useState<string | null>(null);
@@ -265,6 +284,24 @@ export function IntroEventDetailView({
               <p className="text-xs text-muted-foreground mb-2">הוסף משתתף</p>
               <IntroEventParticipantPicker introEventId={introEventId} />
             </div>
+
+            <label className="md:col-span-2 rounded-2xl border border-border/60 bg-card p-4 flex items-start gap-3 cursor-pointer">
+              <Checkbox
+                checked={event.followup_enabled}
+                onCheckedChange={(v) => followupMut.mutate(v === true)}
+                disabled={followupMut.isPending}
+                className="mt-0.5"
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium flex items-center gap-1.5">
+                  <MessageCircle size={14} />
+                  הודעת המשך ב-WhatsApp
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  נשלחת לכל המשתתפים למחרת האירוע ב-12:00 (תבנית academy_event_followup)
+                </span>
+              </span>
+            </label>
           </div>
         )}
 
@@ -297,6 +334,7 @@ export function IntroEventDetailView({
                     <FileText size={14} />
                     הכן דוח אבחון
                   </Link>
+                  <FollowupStatus status={p.followup_status} error={p.followup_error} />
 
                   <div className="flex flex-col gap-2.5">
                     <div>
@@ -359,4 +397,16 @@ export function IntroEventDetailView({
       </div>
     </div>
   );
+}
+
+function FollowupStatus({ status, error }: { status: IntroFollowupStatus | null; error: string | null }) {
+  if (status === "sent") return <p className="-mt-2 text-xs text-emerald-600 dark:text-emerald-400">✓ הודעת המשך נשלחה</p>;
+  if (status === "failed") {
+    return (
+      <p className="-mt-2 text-xs text-destructive" title={error ?? ""}>
+        ✗ הודעת המשך לא נשלחה{error === "אין מספר טלפון" ? " (אין מספר טלפון)" : ""}
+      </p>
+    );
+  }
+  return null;
 }

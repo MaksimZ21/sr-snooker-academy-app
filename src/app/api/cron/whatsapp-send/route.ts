@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
+import { sendDueIntroFollowups } from "@/lib/sheets/intro-followup";
 import { sendWhatsAppMessage, sendWhatsAppFile, sendWhatsAppPoll, updateGroupSettings } from "@/lib/whatsapp/greenapi";
 
 type Row = { id: string; chat_id: string; chat_name: string; message: string };
@@ -88,7 +89,15 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ ok: true, sent, total: rows.length });
+    // Intro event follow-ups ride on this same cron (no extra cron-job.org job).
+    let followups = { sent: 0, failed: 0 };
+    try {
+      followups = await sendDueIntroFollowups();
+    } catch (e) {
+      console.error("[whatsapp-send] intro follow-ups", e);
+    }
+
+    return NextResponse.json({ ok: true, sent, total: rows.length, followups });
   } catch (e) {
     console.error("[whatsapp-send]", e);
     return NextResponse.json({ error: "internal error" }, { status: 500 });

@@ -20,6 +20,7 @@ export type IntroEvent = {
   crm_event_id: string;
   crm_appointment_id: string;
   crm_event_type: string;
+  followup_enabled: boolean;
   created_at: string;
 };
 
@@ -60,8 +61,12 @@ export type IntroEventParticipant = {
   student_id: string;
   experience_level: IntroExperienceLevel | null;
   goal: IntroGoal | null;
+  followup_status: IntroFollowupStatus | null;
+  followup_error: string | null;
   created_at: string;
 };
+
+export type IntroFollowupStatus = "sending" | "sent" | "failed" | "skipped";
 
 export type IntroEventParticipantWithStudent = IntroEventParticipant & {
   student: { id: string; first_name: string; last_name: string; phone: string };
@@ -118,6 +123,11 @@ export async function fetchIntroEventDetail(id: string): Promise<IntroEventDetai
       student: studentsById.get(p.student_id) ?? { id: p.student_id, first_name: "(נמחק)", last_name: "", phone: "" },
     })),
   };
+}
+
+export async function updateIntroEventFollowup(id: string, enabled: boolean): Promise<void> {
+  const { error } = await db.from("intro_events").update({ followup_enabled: enabled }).eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function updateIntroEventName(id: string, name: string): Promise<void> {

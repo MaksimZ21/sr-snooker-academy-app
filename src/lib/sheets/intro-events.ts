@@ -187,16 +187,30 @@ export async function fetchIntroEventByCrmAppointmentId(appointmentId: string): 
 
 // Only intro events ever have an event_date (always set — unlike
 // tournaments, there's no manually-created intro event), so this is
-// exactly what makes one show up on the Schedule for both
-// /admin/schedule and /coach/schedule (no coach-based filtering, same as
-// fetchTournamentsInRange).
-export async function fetchIntroEventsInRange(startIso: string, endIso: string): Promise<IntroEventView[]> {
+// exactly what makes one show up on the Schedule. The admin sees every
+// intro event; pass coachEmail to get only the ones assigned to that coach
+// (a coach sees an intro event only once the admin assigned it to them).
+export async function fetchIntroEventsInRange(
+  startIso: string,
+  endIso: string,
+  coachEmail?: string,
+): Promise<IntroEventView[]> {
   const { data } = await db
     .from("intro_events")
     .select("*, intro_event_participants(count)")
     .gte("event_date", startIso)
-    .lte("event_date", endIso);
-  return toViews((data ?? []) as IntroEventRowWithCount[]);
+    .lte("event_date", endIso)
+    .order("event_date")
+    .order("start_time");
+  const rows = (data ?? []) as IntroEventRowWithCount[];
+  const mine = coachEmail
+    ? rows.filter((r) => isIntroEventCoach(r, coachEmail))
+    : rows;
+  return toViews(mine);
+}
+
+export function isIntroEventCoach(event: { coach_email: string | null }, email: string): boolean {
+  return !!event.coach_email && event.coach_email.toLowerCase() === email.toLowerCase();
 }
 
 // A calendar event whose meeting_type marks it as an intro event becomes

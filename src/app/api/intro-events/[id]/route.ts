@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
-import { fetchIntroEventDetail, updateIntroEventCoach, updateIntroEventName, canManageIntroEvents } from "@/lib/sheets/intro-events";
+import { fetchIntroEventDetail, updateIntroEventCoach, updateIntroEventName, canManageIntroEvents, isIntroEventCoach } from "@/lib/sheets/intro-events";
 import { fetchActiveCoachEmails } from "@/lib/sheets/coaches";
 
 export async function GET(
@@ -16,6 +16,10 @@ export async function GET(
     const { id } = await params;
     const detail = await fetchIntroEventDetail(id);
     if (!detail) return NextResponse.json({ error: "not found" }, { status: 404 });
+    // A coach opens only the intro events assigned to them.
+    if (user.role === "coach" && !isIntroEventCoach(detail.event, user.email)) {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
     return NextResponse.json(detail);
   } catch (e) {
     if (e instanceof Response) return e;

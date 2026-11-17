@@ -5,12 +5,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, CalendarX } from "lucide-react";
+import { ChevronLeft, CalendarX, UserPlus } from "lucide-react";
 import { formatHebrewDate, dayLabelHe } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 import type { CoachStats } from "@/app/api/coach/stats/route";
 import type { Session } from "@/lib/sheets/schemas";
+import type { IntroEventView } from "@/lib/sheets/intro-events";
 import { BallTile, BroadcastRow, LiveTicker, WeekBars, nowHHMM } from "@/components/broadcast";
 
 export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
@@ -27,19 +28,56 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
   const now = nowHHMM();
   const sessions = data?.todaySessions ?? [];
   const live = sessions.filter((x) => x.status !== "cancelled");
-  const nextSession = live.find((x) => x.end_time > now) ?? null;
+  const intros = data?.todayIntroEvents ?? [];
   const namesOf = (x: Session) => x.student_ids.map((id) => data?.studentMap[id] ?? id).join(", ");
+  // The next thing on today's schedule — a session or an intro event.
+  const next: NextItem | null =
+    [
+      ...live.map((x) => ({
+        start: x.start_time,
+        end: x.end_time,
+        href: `/coach/sessions/${x.id}`,
+        line: `${trainingTypeBadge(x.training_type).label} · עד ${x.end_time}${namesOf(x) ? ` · ${namesOf(x)}` : ""}`,
+      })),
+      ...intros.map((e) => ({
+        start: e.start_time,
+        end: e.end_time,
+        href: `/coach/intro-events/${e.id}`,
+        line: `אירוע היכרות · עד ${e.end_time} · ${e.participant_count} משתתפים`,
+      })),
+    ]
+      .filter((x) => x.end > now)
+      .sort((a, b) => a.start.localeCompare(b.start))[0] ?? null;
+  const todayRows = [
+    ...sessions.map((x) => ({
+      start: x.start_time,
+      node: (
+        <BroadcastRow
+          key={x.id}
+          session={x}
+          href={`/coach/sessions/${x.id}`}
+          who={namesOf(x) || "אין מתאמנים"}
+          sub={`${trainingTypeBadge(x.training_type).label} · ${x.student_ids.length} מתאמנים`}
+          now={now}
+        />
+      ),
+    })),
+    ...intros.map((e) => ({ start: e.start_time, node: <IntroRow key={e.id} event={e} now={now} /> })),
+  ].sort((a, b) => a.start.localeCompare(b.start));
 
   return (
     <div className="flex flex-col">
       <LiveTicker
         isLoading={isLoading}
         label="היום שלי"
-        items={live.map((x) => ({
-          id: x.id,
-          time: x.start_time,
-          text: `${trainingTypeBadge(x.training_type).label} · ${namesOf(x) || "אין מתאמנים"}`,
-        }))}
+        items={[
+          ...live.map((x) => ({
+            id: x.id,
+            time: x.start_time,
+            text: `${trainingTypeBadge(x.training_type).label} · ${namesOf(x) || "אין מתאמנים"}`,
+          })),
+          ...intros.map((e) => ({ id: e.id, time: e.start_time, text: `אירוע היכרות · ${e.name}` })),
+        ].sort((a, b) => a.time.localeCompare(b.time))}
       />
       <div className="p-4 md:p-6 flex flex-col gap-5">
       {/* Header */}
@@ -57,8 +95,8 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
 
       {/* Tiles: the next session leads */}
       <div className="grid grid-cols-3 md:grid-cols-[2fr_1fr_1fr_1fr] gap-3.5">
-        <NextTile session={nextSession} isLoading={isLoading} names={nextSession ? namesOf(nextSession) : ""} />
-        <BallTile label="מפגשים היום" value={live.length} ball="red" isLoading={isLoading} delay={0.12} />
+        <NextTile next={next} isLoading={isLoading} />
+        <BallTile label="מפגשים היום" value={live.length + intros.length} ball="red" isLoading={isLoading} delay={0.12} />
         <BallTile label="השבוע" value={data?.weekSessionCount} ball="blue" isLoading={isLoading} delay={0.19} />
         <BallTile label="תלמידים השבוע" value={data?.weekStudentCount} ball="yellow" isLoading={isLoading} delay={0.26} />
       </div>
@@ -76,24 +114,13 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
               <Skeleton className="h-14 w-full rounded-lg" />
               <Skeleton className="h-14 w-full rounded-lg" />
             </div>
-          ) : !sessions.length ? (
+          ) : !todayRows.length ? (
             <div className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
               <CalendarX size={36} className="opacity-30" />
               <span className="text-sm">אין לך מפגשים היום</span>
             </div>
           ) : (
-            <div className="flex flex-col">
-              {sessions.map((x) => (
-                <BroadcastRow
-                  key={x.id}
-                  session={x}
-                  href={`/coach/sessions/${x.id}`}
-                  who={namesOf(x) || "אין מתאמנים"}
-                  sub={`${trainingTypeBadge(x.training_type).label} · ${x.student_ids.length} מתאמנים`}
-                  now={now}
-                />
-              ))}
-            </div>
+            <div className="flex flex-col">{todayRows.map((r) => r.node)}</div>
           )}
         </section>
 
@@ -107,7 +134,7 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
       </div>
 
       {/* Upcoming */}
-      {(isLoading || (data?.upcomingSessions.length ?? 0) > 0) && (
+      {(isLoading || (data?.upcomingSessions.length ?? 0) + (data?.upcomingIntroEvents.length ?? 0) > 0) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold">בקרוב</CardTitle>
@@ -116,7 +143,7 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
             {isLoading ? (
               <Skeleton className="h-24 w-full rounded-lg" />
             ) : (
-              <UpcomingList sessions={data!.upcomingSessions} studentMap={data!.studentMap} />
+              <UpcomingList sessions={data!.upcomingSessions} introEvents={data!.upcomingIntroEvents} studentMap={data!.studentMap} />
             )}
           </CardContent>
         </Card>
@@ -128,8 +155,10 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
 
 /* ─── Sub-components ──────────────────────────────────────────── */
 
-// The big green tile: when the next session starts, with whom.
-function NextTile({ session, isLoading, names }: { session: Session | null; isLoading: boolean; names: string }) {
+type NextItem = { start: string; end: string; href: string; line: string };
+
+// The big green tile: when the next session (or intro event) starts.
+function NextTile({ next, isLoading }: { next: NextItem | null; isLoading: boolean }) {
   const body = (
     <>
       <div className="absolute inset-0 bc-stripes" />
@@ -137,13 +166,10 @@ function NextTile({ session, isLoading, names }: { session: Session | null; isLo
         <p className="font-display font-bold text-[13px] text-white/75">המפגש הבא</p>
         {isLoading ? (
           <Skeleton className="h-20 w-36 mt-2 bg-white/20" />
-        ) : session ? (
+        ) : next ? (
           <>
-            <p className="bc-num text-[64px] md:text-[84px] leading-none mt-2.5">{session.start_time}</p>
-            <p className="text-[13px] text-white/80 mt-1 truncate">
-              {trainingTypeBadge(session.training_type).label} · עד {session.end_time}
-              {names ? ` · ${names}` : ""}
-            </p>
+            <p className="bc-num text-[64px] md:text-[84px] leading-none mt-2.5">{next.start}</p>
+            <p className="text-[13px] text-white/80 mt-1 truncate">{next.line}</p>
           </>
         ) : (
           <p className="bc-num text-[34px] leading-tight mt-3">אין עוד מפגשים היום</p>
@@ -153,12 +179,44 @@ function NextTile({ session, isLoading, names }: { session: Session | null; isLo
   );
   const cls =
     "col-span-3 md:col-span-1 relative overflow-hidden rounded-[18px] p-[18px] text-white bg-linear-to-br from-[#0e8f45] to-[#075a2b] bc-slide";
-  return session ? (
-    <Link href={`/coach/sessions/${session.id}`} className={cn(cls, "transition-transform duration-200 hover:-translate-y-1")}>
+  return next ? (
+    <Link href={next.href} className={cn(cls, "transition-transform duration-200 hover:-translate-y-1")}>
       {body}
     </Link>
   ) : (
     <div className={cls}>{body}</div>
+  );
+}
+
+// An intro event in today's list — same row as a session, sky stripe.
+function IntroRow({ event, now }: { event: IntroEventView; now: string }) {
+  const isNow = event.start_time <= now && now < event.end_time;
+  return (
+    <Link
+      href={`/coach/intro-events/${event.id}`}
+      className={cn(
+        "grid grid-cols-[6px_72px_1fr_auto] items-center gap-3.5 px-[18px] py-3 border-b last:border-b-0 transition-colors",
+        isNow ? "bg-primary/8" : "hover:bg-muted/50",
+      )}
+    >
+      <span className="self-stretch rounded-md bg-[#0ea5e9]" />
+      <div>
+        <p className="bc-num text-[22px] leading-none">{event.start_time}</p>
+        <p className="text-xs text-muted-foreground mt-1 tabular-nums">עד {event.end_time}</p>
+      </div>
+      <div className="min-w-0">
+        <p className="font-bold text-[15px] truncate">{event.name}</p>
+        <p className="text-[13px] text-muted-foreground truncate">{event.participant_count} משתתפים</p>
+      </div>
+      <span
+        className={cn(
+          "flex items-center gap-1 font-display font-bold text-xs px-2.5 py-1 rounded-lg",
+          isNow ? "bg-[#d61f2c] text-white" : "bg-sky-500/12 text-sky-700 dark:text-sky-400",
+        )}
+      >
+        {isNow ? "עכשיו" : (<><UserPlus size={12} />היכרות</>)}
+      </span>
+    </Link>
   );
 }
 
@@ -188,23 +246,55 @@ function SessionRow({ session, studentMap }: { session: Session; studentMap: Rec
   );
 }
 
-function UpcomingList({ sessions, studentMap }: { sessions: Session[]; studentMap: Record<string, string> }) {
-  const byDate = sessions.reduce<Record<string, Session[]>>((acc, s) => {
-    (acc[s.date] ??= []).push(s);
-    return acc;
-  }, {});
+function UpcomingList({
+  sessions,
+  introEvents,
+  studentMap,
+}: {
+  sessions: Session[];
+  introEvents: IntroEventView[];
+  studentMap: Record<string, string>;
+}) {
+  const byDate: Record<string, { start: string; node: React.ReactNode }[]> = {};
+  for (const x of sessions) {
+    (byDate[x.date] ??= []).push({ start: x.start_time, node: <SessionRow key={x.id} session={x} studentMap={studentMap} /> });
+  }
+  for (const e of introEvents) {
+    (byDate[e.event_date] ??= []).push({
+      start: e.start_time,
+      node: (
+        <Link
+          key={e.id}
+          href={`/coach/intro-events/${e.id}`}
+          className="flex items-center gap-3 py-3 hover:bg-muted/40 rounded-lg px-2 -mx-2 transition-colors group"
+        >
+          <div className="w-16 shrink-0 text-left tabular-nums">
+            <div className="text-sm font-semibold">{e.start_time}</div>
+            <div className="text-xs text-muted-foreground">{e.end_time}</div>
+          </div>
+          <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+            <Badge variant="outline" className="text-xs py-0 h-5 w-fit gap-1 border-sky-500/40 text-sky-700 dark:text-sky-400">
+              <UserPlus size={11} />
+              אירוע היכרות
+            </Badge>
+            <div className="text-xs text-muted-foreground truncate">{e.name} · {e.participant_count} משתתפים</div>
+          </div>
+          <ChevronLeft size={14} className="text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </Link>
+      ),
+    });
+  }
+  const dates = Object.keys(byDate).sort();
 
   return (
     <div className="flex flex-col gap-4">
-      {Object.entries(byDate).map(([date, daySessions]) => (
+      {dates.map((date) => (
         <div key={date} className="flex flex-col gap-1">
           <span className="text-xs font-medium text-muted-foreground">
             {dayLabelHe(date)} · {date.slice(5).replace("-", "/")}
           </span>
           <div className="flex flex-col divide-y divide-border/60">
-            {daySessions.map((s) => (
-              <SessionRow key={s.id} session={s} studentMap={studentMap} />
-            ))}
+            {byDate[date].sort((a, b) => a.start.localeCompare(b.start)).map((r) => r.node)}
           </div>
         </div>
       ))}

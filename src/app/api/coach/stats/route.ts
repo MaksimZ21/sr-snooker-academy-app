@@ -7,11 +7,15 @@ import { todayIsoTel, weekRangeFor, dayLabelHe, dayLetterHe } from "@/lib/date";
 import { addDays, format, parseISO } from "date-fns";
 import type { Session } from "@/lib/sheets/schemas";
 import type { DayBar } from "@/app/api/admin/stats/route";
+import { fetchIntroEventsInRange, type IntroEventView } from "@/lib/sheets/intro-events";
 
 export type CoachStats = {
   today: string;
   todaySessions: Session[];
   upcomingSessions: Session[];
+  // Intro events assigned to this coach: today's, and the next 7 days.
+  todayIntroEvents: IntroEventView[];
+  upcomingIntroEvents: IntroEventView[];
   weekSessionCount: number;
   weekStudentCount: number;
   sessionsByDay: DayBar[];
@@ -23,11 +27,12 @@ const fetchCoachStatsData = unstable_cache(
     const { startIso, endIso } = weekRangeFor(today);
     const nextWeekEnd = format(addDays(parseISO(today), 7), "yyyy-MM-dd");
 
-    const [todayRows, weekRows, upcomingRows, students] = await Promise.all([
+    const [todayRows, weekRows, upcomingRows, students, introEvents] = await Promise.all([
       db.from("sessions").select("*").eq("coach_email", coachEmail).eq("date", today).order("start_time"),
       db.from("sessions").select("*").eq("coach_email", coachEmail).gte("date", startIso).lte("date", endIso).neq("status", "cancelled"),
       db.from("sessions").select("*").eq("coach_email", coachEmail).gt("date", today).lte("date", nextWeekEnd).neq("status", "cancelled").order("date").order("start_time").limit(15),
       fetchStudents(),
+      fetchIntroEventsInRange(today, nextWeekEnd, coachEmail),
     ]);
 
     const studentMap: Record<string, string> = {};
@@ -54,6 +59,8 @@ const fetchCoachStatsData = unstable_cache(
       today,
       todaySessions,
       upcomingSessions,
+      todayIntroEvents: introEvents.filter((e) => e.event_date === today),
+      upcomingIntroEvents: introEvents.filter((e) => e.event_date > today),
       weekSessionCount: weekSessions.length,
       weekStudentCount,
       sessionsByDay,

@@ -1,9 +1,11 @@
 "use client";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { ArrowRight, UserPlus, User, Users, Banknote } from "lucide-react";
+import { ArrowRight, UserPlus, User, Users, Banknote, Pencil, FileText, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -89,6 +91,26 @@ export function IntroEventDetailView({
     onError: (e) => toast.error(e instanceof Error && e.message ? e.message : "שגיאה בעדכון"),
   });
 
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const renameMut = useMutation({
+    mutationFn: async (name: string) => {
+      const r = await fetch(`/api/intro-events/${introEventId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+    },
+    onSuccess: () => {
+      toast.success("שם האירוע עודכן");
+      setNameDraft(null);
+      qc.invalidateQueries({ queryKey: ["intro-event", introEventId] });
+      qc.invalidateQueries({ queryKey: ["intro-events"] });
+    },
+    onError: () => toast.error("שגיאה בעדכון השם"),
+  });
+  const reportBase = isAdmin ? "/admin/assessments/new" : "/coach/assessments/new";
+
   const fieldMut = useMutation({
     mutationFn: async ({
       participantId,
@@ -142,10 +164,48 @@ export function IntroEventDetailView({
 
         <div className="relative z-10 flex flex-col items-center text-center px-5 pt-10 pb-7">
           <p className="text-white/55 text-xs tracking-widest mb-2">{formatHebrewDate(event.event_date)}</p>
-          <p className="flex items-center gap-1.5 text-white font-semibold text-base mb-4">
-            <UserPlus size={16} className="shrink-0" />
-            {event.name}
-          </p>
+          {nameDraft !== null ? (
+            <form
+              className="flex items-center gap-1.5 mb-4 w-full max-w-sm"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const v = nameDraft.trim();
+                if (v && v !== event.name) renameMut.mutate(v);
+                else setNameDraft(null);
+              }}
+            >
+              <Input
+                autoFocus
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                maxLength={120}
+                dir="auto"
+                aria-label="שם האירוע"
+                className="h-9 bg-white text-foreground"
+              />
+              <Button type="submit" size="icon" className="h-9 w-9 shrink-0" disabled={renameMut.isPending || !nameDraft.trim()} aria-label="שמור שם">
+                <Check size={16} />
+              </Button>
+              <Button type="button" size="icon" variant="ghost" className="h-9 w-9 shrink-0 text-white hover:bg-white/15" onClick={() => setNameDraft(null)} aria-label="ביטול">
+                <X size={16} />
+              </Button>
+            </form>
+          ) : (
+            <p className="flex items-center gap-1.5 text-white font-semibold text-base mb-4">
+              <UserPlus size={16} className="shrink-0" />
+              {event.name}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setNameDraft(event.name)}
+                  className="rounded-md p-1 text-white/60 hover:text-white hover:bg-white/15"
+                  aria-label="עריכת שם האירוע"
+                >
+                  <Pencil size={13} />
+                </button>
+              )}
+            </p>
+          )}
 
           <div className="flex items-baseline gap-3 mb-5">
             <span className="text-5xl md:text-6xl font-bold tabular-nums text-white leading-none tracking-tight scoreboard-num">
@@ -226,6 +286,17 @@ export function IntroEventDetailView({
                       <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">{p.student.phone}</span>
                     )}
                   </div>
+                  <Link
+                    href={`${reportBase}?${new URLSearchParams({
+                      name: [p.student.first_name, p.student.last_name].filter(Boolean).join(" "),
+                      phone: p.student.phone ?? "",
+                      date: event.event_date,
+                    }).toString()}`}
+                    className="flex items-center justify-center gap-1.5 h-9 rounded-xl bg-sidebar text-white font-display text-[13px] font-bold hover:bg-sidebar/90 transition-colors"
+                  >
+                    <FileText size={14} />
+                    הכן דוח אבחון
+                  </Link>
 
                   <div className="flex flex-col gap-2.5">
                     <div>

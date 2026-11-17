@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
-import { fetchIntroEventDetail, updateIntroEventCoach, canManageIntroEvents } from "@/lib/sheets/intro-events";
+import { fetchIntroEventDetail, updateIntroEventCoach, updateIntroEventName, canManageIntroEvents } from "@/lib/sheets/intro-events";
 import { fetchActiveCoachEmails } from "@/lib/sheets/coaches";
 
 export async function GET(
@@ -24,7 +24,8 @@ export async function GET(
 }
 
 const UpdateSchema = z.object({
-  coach_email: z.email().nullable(),
+  coach_email: z.email().nullable().optional(),
+  name: z.string().trim().min(1).max(120).optional(),
 });
 
 export async function PATCH(
@@ -39,14 +40,15 @@ export async function PATCH(
     if (!canManageIntroEvents(user)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    const { coach_email } = UpdateSchema.parse(await req.json());
-    if (coach_email !== null) {
+    const { coach_email, name } = UpdateSchema.parse(await req.json());
+    if (coach_email) {
       const activeCoachEmails = await fetchActiveCoachEmails();
       if (!activeCoachEmails.map((e) => e.toLowerCase()).includes(coach_email.toLowerCase())) {
         return NextResponse.json({ error: "coach_email must be an active coach" }, { status: 400 });
       }
     }
-    await updateIntroEventCoach(id, coach_email);
+    if (coach_email !== undefined) await updateIntroEventCoach(id, coach_email);
+    if (name !== undefined) await updateIntroEventName(id, name);
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;

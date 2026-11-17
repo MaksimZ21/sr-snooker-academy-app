@@ -20,7 +20,18 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPath?: string }) {
+export function AssessmentForm({
+  returnPath = "/coach/assessments",
+  initialName = "",
+  initialPhone = "",
+  initialDate,
+}: {
+  returnPath?: string;
+  // Prefilled when opened from an intro event participant.
+  initialName?: string;
+  initialPhone?: string;
+  initialDate?: string;
+}) {
   const router      = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
@@ -29,9 +40,9 @@ export function AssessmentForm({ returnPath = "/coach/assessments" }: { returnPa
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
 
   /* Fields */
-  const [participantName,  setParticipantName]  = useState("");
-  const [participantPhone, setParticipantPhone] = useState("");
-  const [eventDate,        setEventDate]        = useState(today());
+  const [participantName,  setParticipantName]  = useState(initialName);
+  const [participantPhone, setParticipantPhone] = useState(initialPhone);
+  const [eventDate,        setEventDate]        = useState(initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? initialDate : today());
   const [strongHand,       setStrongHand]       = useState<HandEye | undefined>();
   const [strongEye,        setStrongEye]        = useState<HandEye | undefined>();
   const [technique,        setTechnique]        = useState<Partial<Record<TechniqueKey, TechniqueRating>>>({});

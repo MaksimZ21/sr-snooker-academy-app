@@ -120,6 +120,11 @@ export async function fetchIntroEventDetail(id: string): Promise<IntroEventDetai
   };
 }
 
+export async function updateIntroEventName(id: string, name: string): Promise<void> {
+  const { error } = await db.from("intro_events").update({ name }).eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
 export async function updateIntroEventCoach(id: string, coachEmail: string | null): Promise<void> {
   const { error } = await db.from("intro_events").update({ coach_email: coachEmail }).eq("id", id);
   if (error) throw new Error(error.message);
@@ -236,7 +241,10 @@ export async function upsertIntroEventFromCrm(input: {
   let action: "created" | "updated";
 
   if (existing) {
-    const { error } = await db.from("intro_events").update(fields).eq("id", existing.id);
+    // The name is only set on creation — the admin may rename it in the app.
+    const { name: _crmName, ...updateFields } = fields;
+    void _crmName;
+    const { error } = await db.from("intro_events").update(updateFields).eq("id", existing.id);
     if (error) throw new Error(error.message);
     id = existing.id;
     action = "updated";

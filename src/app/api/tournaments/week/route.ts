@@ -4,8 +4,8 @@ import { fetchTournamentsInRange } from "@/lib/sheets/tournaments";
 
 // Only CRM-created tournaments (the ones with an event_date) ever come
 // back here — a manually-created tournament never appears on the
-// Schedule. No manager-based filtering, matching GET /api/tournaments:
-// any admin or coach sees every tournament.
+// Schedule. The admin sees every tournament; a coach sees only the ones
+// they manage (manager_email).
 export async function GET(req: NextRequest) {
   try {
     const user = await requireUser();
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     }
     const start = req.nextUrl.searchParams.get("start")!;
     const end = req.nextUrl.searchParams.get("end")!;
-    const tournaments = await fetchTournamentsInRange(start, end);
+    const tournaments = await fetchTournamentsInRange(start, end, user.role === "coach" ? user.email : undefined);
     return NextResponse.json({ tournaments });
   } catch (e) {
     if (e instanceof Response) return e;

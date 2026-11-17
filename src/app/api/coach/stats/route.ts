@@ -17,7 +17,7 @@ export type CoachStats = {
   // Intro events assigned to this coach: today's, and the next 7 days.
   todayIntroEvents: IntroEventView[];
   upcomingIntroEvents: IntroEventView[];
-  // Every tournament held today (same as the schedule: not filtered by coach).
+  // Today's tournaments this coach manages.
   todayTournaments: Tournament[];
   weekSessionCount: number;
   weekStudentCount: number;
@@ -36,7 +36,7 @@ const fetchCoachStatsData = unstable_cache(
       db.from("sessions").select("*").eq("coach_email", coachEmail).gt("date", today).lte("date", nextWeekEnd).neq("status", "cancelled").order("date").order("start_time").limit(15),
       fetchStudents(),
       fetchIntroEventsInRange(today, nextWeekEnd, coachEmail),
-      fetchTournamentsInRange(today, today),
+      fetchTournamentsInRange(today, today, coachEmail),
     ]);
 
     const studentMap: Record<string, string> = {};

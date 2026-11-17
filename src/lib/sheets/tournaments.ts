@@ -384,14 +384,22 @@ export async function fetchTournamentByCrmAppointmentId(appointmentId: string): 
 // manually-created one) — this is exactly what makes a tournament show up
 // on the Schedule alongside sessions, for both /admin/schedule and
 // /coach/schedule (no manager-based filtering, same as fetchTournaments).
-export async function fetchTournamentsInRange(startIso: string, endIso: string): Promise<Tournament[]> {
+// Pass managerEmail to keep only the tournaments that coach manages.
+export async function fetchTournamentsInRange(
+  startIso: string,
+  endIso: string,
+  managerEmail?: string,
+): Promise<Tournament[]> {
   const { data } = await db
     .from("tournaments")
     .select("*")
     .not("event_date", "is", null)
     .gte("event_date", startIso)
     .lte("event_date", endIso);
-  return (data ?? []) as Tournament[];
+  const rows = (data ?? []) as Tournament[];
+  if (!managerEmail) return rows;
+  const me = managerEmail.trim().toLowerCase();
+  return rows.filter((t) => t.manager_email?.trim().toLowerCase() === me);
 }
 
 // A calendar event whose meeting_type marks it as a tournament becomes a

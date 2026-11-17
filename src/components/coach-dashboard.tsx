@@ -5,13 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, CalendarX, UserPlus } from "lucide-react";
+import { ChevronLeft, CalendarX, UserPlus, Trophy } from "lucide-react";
 import { formatHebrewDate, dayLabelHe } from "@/lib/date";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 import type { CoachStats } from "@/app/api/coach/stats/route";
 import type { Session } from "@/lib/sheets/schemas";
 import type { IntroEventView } from "@/lib/sheets/intro-events";
+import type { Tournament } from "@/lib/sheets/tournaments";
 import { BallTile, BroadcastRow, LiveTicker, WeekBars, nowHHMM } from "@/components/broadcast";
 
 export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
@@ -29,6 +30,8 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
   const sessions = data?.todaySessions ?? [];
   const live = sessions.filter((x) => x.status !== "cancelled");
   const intros = data?.todayIntroEvents ?? [];
+  // Tournaments have no hour, so they lead today's list.
+  const tournaments = data?.todayTournaments ?? [];
   const namesOf = (x: Session) => x.student_ids.map((id) => data?.studentMap[id] ?? id).join(", ");
   // The next thing on today's schedule — a session or an intro event.
   const next: NextItem | null =
@@ -77,7 +80,9 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
             text: `${trainingTypeBadge(x.training_type).label} · ${namesOf(x) || "אין מתאמנים"}`,
           })),
           ...intros.map((e) => ({ id: e.id, time: e.start_time, text: `אירוע היכרות · ${e.name}` })),
-        ].sort((a, b) => a.time.localeCompare(b.time))}
+        ]
+          .sort((a, b) => a.time.localeCompare(b.time))
+          .concat(tournaments.map((t) => ({ id: t.id, time: "היום", text: `טורניר · ${t.name}` })))}
       />
       <div className="p-4 md:p-6 flex flex-col gap-5">
       {/* Header */}
@@ -96,7 +101,7 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
       {/* Tiles: the next session leads */}
       <div className="grid grid-cols-3 md:grid-cols-[2fr_1fr_1fr_1fr] gap-3.5">
         <NextTile next={next} isLoading={isLoading} />
-        <BallTile label="מפגשים היום" value={live.length + intros.length} ball="red" isLoading={isLoading} delay={0.12} />
+        <BallTile label="מפגשים היום" value={live.length + intros.length + tournaments.length} ball="red" isLoading={isLoading} delay={0.12} />
         <BallTile label="השבוע" value={data?.weekSessionCount} ball="blue" isLoading={isLoading} delay={0.19} />
         <BallTile label="תלמידים השבוע" value={data?.weekStudentCount} ball="yellow" isLoading={isLoading} delay={0.26} />
       </div>
@@ -114,13 +119,18 @@ export function CoachDashboard({ displayName = "" }: { displayName?: string }) {
               <Skeleton className="h-14 w-full rounded-lg" />
               <Skeleton className="h-14 w-full rounded-lg" />
             </div>
-          ) : !todayRows.length ? (
+          ) : !todayRows.length && !tournaments.length ? (
             <div className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
               <CalendarX size={36} className="opacity-30" />
               <span className="text-sm">אין לך מפגשים היום</span>
             </div>
           ) : (
-            <div className="flex flex-col">{todayRows.map((r) => r.node)}</div>
+            <div className="flex flex-col">
+              {tournaments.map((t) => (
+                <TournamentRow key={t.id} tournament={t} />
+              ))}
+              {todayRows.map((r) => r.node)}
+            </div>
           )}
         </section>
 
@@ -185,6 +195,32 @@ function NextTile({ next, isLoading }: { next: NextItem | null; isLoading: boole
     </Link>
   ) : (
     <div className={cls}>{body}</div>
+  );
+}
+
+// A tournament in today's list — gold stripe; it has no hour of its own.
+function TournamentRow({ tournament }: { tournament: Tournament }) {
+  return (
+    <Link
+      href={`/coach/tournaments/${tournament.id}`}
+      className="grid grid-cols-[6px_72px_1fr_auto] items-center gap-3.5 px-[18px] py-3 border-b last:border-b-0 transition-colors hover:bg-muted/50"
+    >
+      <span className="self-stretch rounded-md bg-[#f2b705]" />
+      <div>
+        <p className="bc-num text-[22px] leading-none">היום</p>
+        <p className="text-xs text-muted-foreground mt-1">כל היום</p>
+      </div>
+      <div className="min-w-0">
+        <p className="font-bold text-[15px] truncate">{tournament.name}</p>
+        <p className="text-[13px] text-muted-foreground truncate">
+          {tournament.completed ? "הסתיים" : tournament.registration_closed ? "ההרשמה סגורה" : "טורניר"}
+        </p>
+      </div>
+      <span className="flex items-center gap-1 font-display font-bold text-xs px-2.5 py-1 rounded-lg bg-[#f2b705]/15 text-amber-700 dark:text-amber-400">
+        <Trophy size={12} />
+        טורניר
+      </span>
+    </Link>
   );
 }
 

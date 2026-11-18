@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
-import { fetchAssessmentById } from "@/lib/sheets/assessments";
+import { fetchAssessmentById, studentCanSeeAssessment } from "@/lib/sheets/assessments";
 
 export async function GET(
   _req: Request,
@@ -12,6 +12,9 @@ export async function GET(
     const assessment = await fetchAssessmentById(id);
     if (!assessment) return new NextResponse("not found", { status: 404 });
     if (user.role === "coach" && assessment.coach_email !== user.email) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
+    if (user.role === "student" && !(await studentCanSeeAssessment(user.email, assessment))) {
       return new NextResponse("Forbidden", { status: 403 });
     }
     return NextResponse.json({ assessment });

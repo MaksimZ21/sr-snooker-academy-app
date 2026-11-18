@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth/requireUser";
+import { requireStaff } from "@/lib/auth/requireUser";
 import { signAssessmentToken } from "@/lib/auth/assessment-token";
 import { fetchAssessmentById } from "@/lib/sheets/assessments";
 
@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     const { id } = await params;
 
     if (user.role === "coach") {

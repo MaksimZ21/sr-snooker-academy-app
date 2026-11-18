@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireUser } from "@/lib/auth/requireUser";
+import { requireStaff } from "@/lib/auth/requireUser";
 import { fetchAssessments, createAssessment } from "@/lib/sheets/assessments";
 
 const TechniqueSchema = z.record(z.string(), z.enum(["good", "medium", "bad"]));
@@ -18,7 +18,7 @@ const CreateSchema = z.object({
 
 export async function GET() {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     const list = await fetchAssessments(user.role === "coach" ? user.email : undefined);
     return NextResponse.json({ assessments: list });
   } catch (e) {
@@ -29,7 +29,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireStaff();
     if (user.role === "denied") return new NextResponse("Forbidden", { status: 403 });
 
     const body = CreateSchema.parse(await req.json());

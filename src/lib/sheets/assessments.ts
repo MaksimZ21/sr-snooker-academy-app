@@ -2,6 +2,8 @@ import { db } from "@/lib/db/client";
 export type { TechniqueKey, Technique, TechniqueRating, Assessment } from "./assessment-types";
 export { TECHNIQUE_CRITERIA, normalizeTechniqueRating } from "./assessment-types";
 import type { Assessment } from "./assessment-types";
+import { assessmentMatchesStudent } from "./assessment-match";
+import { getStudentByEmail } from "./students";
 
 export async function fetchAssessments(coachEmail?: string): Promise<Assessment[]> {
   let q = db
@@ -12,6 +14,25 @@ export async function fetchAssessments(coachEmail?: string): Promise<Assessment[
   if (coachEmail) q = q.eq("coach_email", coachEmail);
   const { data } = await q;
   return (data ?? []) as Assessment[];
+}
+
+// The reports written for this student at intro events, matched on phone +
+// exact full name (see assessmentMatchesStudent). Phones in assessments are
+// stored as typed, so the match runs here rather than as a DB filter.
+export async function fetchAssessmentsForStudent(student: {
+  first_name: string;
+  last_name: string;
+  phone: string | null | undefined;
+}): Promise<Assessment[]> {
+  if (!student.phone) return [];
+  const all = await fetchAssessments();
+  return all.filter((a) => assessmentMatchesStudent(a, student));
+}
+
+// For API routes: may this logged-in student open this assessment?
+export async function studentCanSeeAssessment(email: string, a: Assessment): Promise<boolean> {
+  const student = await getStudentByEmail(email);
+  return !!student && assessmentMatchesStudent(a, student);
 }
 
 export async function fetchAssessmentById(id: string): Promise<Assessment | null> {

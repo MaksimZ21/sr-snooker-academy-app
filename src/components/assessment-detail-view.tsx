@@ -43,11 +43,14 @@ export function AssessmentDetailView({
   backHref,
   backLabel = "חזרה",
   showCoach = false,
+  readOnly = false,
 }: {
   assessmentId: string;
   backHref: string;
   backLabel?: string;
   showCoach?: boolean;
+  // The student's own view: download only, no sending.
+  readOnly?: boolean;
 }) {
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [masterGroups, setMasterGroups] = useState<WhatsAppGroup[] | null>(null);
@@ -286,7 +289,7 @@ export function AssessmentDetailView({
               <FileText size={15} />
               הורד PDF
             </a>
-            {a.participant_phone && (
+            {!readOnly && a.participant_phone && (
               <button
                 type="button"
                 onClick={() => sendWhatsApp(a)}
@@ -299,6 +302,7 @@ export function AssessmentDetailView({
           </div>
 
           {/* Send to Master Class group */}
+          {!readOnly && (
           <div ref={pickerRef} className="relative">
             <button
               type="button"
@@ -333,6 +337,7 @@ export function AssessmentDetailView({
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     </div>

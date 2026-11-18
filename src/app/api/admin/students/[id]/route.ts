@@ -4,7 +4,7 @@ import { fetchGroupsAll } from "@/lib/sheets/groups";
 import { fetchStudents } from "@/lib/sheets/students";
 import { fetchNotesForStudent } from "@/lib/sheets/notes";
 import { fetchAttendanceForStudent } from "@/lib/sheets/attendance";
-import { fetchAssessments } from "@/lib/sheets/assessments";
+import { fetchAssessmentsForStudent } from "@/lib/sheets/assessments";
 import { fetchSessionsByIds } from "@/lib/sheets/sessions";
 
 export async function GET(
@@ -31,15 +31,10 @@ export async function GET(
     const [notes, attendance, allAssessments] = await Promise.all([
       fetchNotesForStudent(id),
       fetchAttendanceForStudent(id),
-      fetchAssessments(),
+      fetchAssessmentsForStudent(student),
     ]);
 
-    const studentAssessments = allAssessments.filter(
-      (a) =>
-        a.participant_phone && student.phone &&
-        (a.participant_phone === student.phone ||
-          a.participant_name.toLowerCase() === [student.first_name, student.last_name].join(" ").toLowerCase()),
-    );
+    const studentAssessments = allAssessments;
 
     const present = attendance.filter((a) => a.status === "present" || a.status === "late").length;
     const absent = attendance.filter((a) => a.status === "absent").length;

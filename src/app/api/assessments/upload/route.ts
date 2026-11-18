@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth/requireUser";
+import { requireStaff } from "@/lib/auth/requireUser";
 import { db } from "@/lib/db/client";
 
 const BUCKET = "assessments";
 
 export async function POST(req: Request) {
   try {
-    await requireUser();
+    await requireStaff();
     const form = await req.formData();
     const file = form.get("file") as File | null;
     if (!file) return NextResponse.json({ error: "no file" }, { status: 400 });

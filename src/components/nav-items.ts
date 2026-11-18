@@ -20,6 +20,8 @@ export const STUDENT_NAV: NavItem[] = [
   { href: "/student", label: "האימונים שלי", icon: "Calendar" },
   { href: "/student/tournaments", label: "הטורנירים שלי", icon: "Trophy" },
   { href: "/student/goal", label: "המטרה שלי", icon: "Target" },
+  // Shown only to students who have a report (filtered in the student layout)
+  { href: "/student/assessments", label: "דוח האבחון שלי", icon: "ClipboardList" },
   { href: "/student/history", label: "היסטוריה", icon: "History" },
   { href: "/student/contact", label: "פנייה לאדמין", icon: "MessageSquare" },
   { href: "/student/profile", label: "פרופיל", icon: "User" },

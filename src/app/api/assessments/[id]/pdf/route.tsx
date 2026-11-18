@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { requireUser } from "@/lib/auth/requireUser";
 import { verifyAssessmentToken } from "@/lib/auth/assessment-token";
-import { fetchAssessmentById } from "@/lib/sheets/assessments";
+import { fetchAssessmentById, studentCanSeeAssessment } from "@/lib/sheets/assessments";
 import { AssessmentPdfDocument } from "@/components/assessment-pdf";
 
 export async function GET(
@@ -27,6 +27,16 @@ export async function GET(
         const assessment = await fetchAssessmentById(id);
         if (!assessment) return new NextResponse("Not found", { status: 404 });
         if (assessment.coach_email !== user.email) {
+          return new NextResponse("Forbidden", { status: 403 });
+        }
+        const buffer = await renderToBuffer(<AssessmentPdfDocument assessment={assessment} />);
+        return pdfResponse(buffer, assessment.participant_name);
+      }
+      if (user.role === "student") {
+        // A student may only download their own report (phone + name match)
+        const assessment = await fetchAssessmentById(id);
+        if (!assessment) return new NextResponse("Not found", { status: 404 });
+        if (!(await studentCanSeeAssessment(user.email, assessment))) {
           return new NextResponse("Forbidden", { status: 403 });
         }
         const buffer = await renderToBuffer(<AssessmentPdfDocument assessment={assessment} />);

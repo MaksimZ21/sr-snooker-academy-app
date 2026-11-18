@@ -21,6 +21,7 @@ import { TournamentKnockoutView } from "@/components/tournament-knockout-view";
 import { EditTournamentDialog } from "@/components/edit-tournament-dialog";
 import { ParticipantNote } from "@/components/participant-note";
 import { FoldSection } from "@/components/fold-section";
+import { IspaBrand } from "@/components/ispa-brand";
 import { type TableSize } from "@/lib/sheets/schemas";
 import { useSkillLevels } from "@/components/use-skill-levels";
 import { TableSizeBadge } from "@/components/table-size";
@@ -305,13 +306,8 @@ export function TournamentDetailView({
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        icon={
-          tournament.type === "multi_location" ? (
-            <img src="/israel-flag.svg" alt="דגל ישראל" className="w-8 rounded-[3px]" />
-          ) : (
-            <Trophy size={20} />
-          )
-        }
+        icon={<Trophy size={20} />}
+        brand={tournament.type === "multi_location" ? <IspaBrand /> : undefined}
         title={tournament.name}
         subtitle={subtitle || undefined}
         action={

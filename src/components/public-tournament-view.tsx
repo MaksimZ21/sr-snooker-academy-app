@@ -8,6 +8,7 @@ import type { PublicTournament, PublicParticipant } from "@/lib/sheets/tournamen
 import type { HouseWithMatches } from "@/lib/sheets/tournament-houses";
 import { LiveTicker } from "@/components/broadcast";
 import { HeroBackdrop } from "@/components/motion/hero-backdrop";
+import { IspaBrand } from "@/components/ispa-brand";
 
 // Polled instead of a one-time server fetch so a spectator watching results
 // come in sees them without manually refreshing the page. 15s keeps it
@@ -102,19 +103,7 @@ export function PublicTournamentView({
         <HeroBackdrop />
         {tournament.multiLocation ? (
           // External (multi-location) tournaments run under ISPA's logo.
-          <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-white px-4 py-2 shadow-sm">
-              <Image src="/ispa-logo.png" alt="ISPA" width={160} height={80} className="object-contain" priority />
-            </div>
-            <Image
-              src="/israel-flag.svg"
-              alt="דגל ישראל"
-              width={88}
-              height={64}
-              className="rounded-lg shadow-sm"
-              priority
-            />
-          </div>
+          <IspaBrand size="lg" />
         ) : (
           <Image src="/logo.png" alt="" width={52} height={52} className="object-contain" />
         )}

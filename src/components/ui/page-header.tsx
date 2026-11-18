@@ -5,10 +5,12 @@ interface PageHeaderProps {
   subtitle?: string;
   action?: React.ReactNode;
   icon?: React.ReactNode;
+  // Shown as-is in place of the dark icon box (e.g. logos).
+  brand?: React.ReactNode;
   className?: string;
 }
 
-export function PageHeader({ title, subtitle, action, icon, className }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, action, icon, brand, className }: PageHeaderProps) {
   return (
     <div className={cn(
       "relative flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 pt-5 pb-4 border-b border-border/60 bc-slide",
@@ -17,7 +19,8 @@ export function PageHeader({ title, subtitle, action, icon, className }: PageHea
       className,
     )}>
       <div className="flex items-center gap-3 min-w-0 flex-1 basis-60">
-        {icon && (
+        {brand}
+        {!brand && icon && (
           <div className="h-11 w-11 rounded-xl bg-sidebar text-[#7ee2a4] flex items-center justify-center shrink-0 bc-slant">
             {icon}
           </div>

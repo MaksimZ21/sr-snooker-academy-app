@@ -20,6 +20,7 @@ import { TournamentLocationsView } from "@/components/tournament-locations-view"
 import { TournamentKnockoutView } from "@/components/tournament-knockout-view";
 import { EditTournamentDialog } from "@/components/edit-tournament-dialog";
 import { ParticipantNote } from "@/components/participant-note";
+import { FoldSection } from "@/components/fold-section";
 import { type TableSize } from "@/lib/sheets/schemas";
 import { useSkillLevels } from "@/components/use-skill-levels";
 import { TableSizeBadge } from "@/components/table-size";
@@ -406,6 +407,7 @@ export function TournamentDetailView({
           </div>
         )}
 
+        <FoldSection title="רשימת משתתפים" storageKey="tournament:participants">
         <div className="rounded-[18px] border bg-card overflow-hidden">
           <div className="flex flex-col gap-2.5 px-4 py-3 border-b">
             <p className="font-display text-base font-extrabold">{`משתתפים (${participants.length})`}</p>
@@ -703,30 +705,37 @@ export function TournamentDetailView({
             })()
           )}
         </div>
+        </FoldSection>
 
         {participants.length > 0 && tournament.type === "regular" && (
-          <TournamentHousesView
-            tournamentId={tournamentId}
-            participants={participants}
-            canEdit={canEdit}
-          />
+          <FoldSection title="בתים" storageKey="tournament:houses">
+            <TournamentHousesView
+              tournamentId={tournamentId}
+              participants={participants}
+              canEdit={canEdit}
+            />
+          </FoldSection>
         )}
 
         {tournament.type === "multi_location" && (
-          <TournamentLocationsView
-            tournamentId={tournamentId}
-            participants={participants}
-            handicapPointsPerRatingGap={tournament.handicap_points_per_rating_gap}
-            canEdit={canEdit}
-          />
+          <FoldSection title="מיקומים ובתים" storageKey="tournament:locations">
+            <TournamentLocationsView
+              tournamentId={tournamentId}
+              participants={participants}
+              handicapPointsPerRatingGap={tournament.handicap_points_per_rating_gap}
+              canEdit={canEdit}
+            />
+          </FoldSection>
         )}
 
         {participants.length > 0 && (
-          <TournamentKnockoutView
-            tournamentId={tournamentId}
-            participants={participants}
-            canEdit={canEdit}
-          />
+          <FoldSection title="נוקאאוט" storageKey="tournament:knockout">
+            <TournamentKnockoutView
+              tournamentId={tournamentId}
+              participants={participants}
+              canEdit={canEdit}
+            />
+          </FoldSection>
         )}
       </div>
     </div>

@@ -102,8 +102,18 @@ export function PublicTournamentView({
         <HeroBackdrop />
         {tournament.multiLocation ? (
           // External (multi-location) tournaments run under ISPA's logo.
-          <div className="rounded-2xl bg-white px-4 py-2 shadow-sm">
-            <Image src="/ispa-logo.png" alt="ISPA" width={160} height={80} className="object-contain" priority />
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl bg-white px-4 py-2 shadow-sm">
+              <Image src="/ispa-logo.png" alt="ISPA" width={160} height={80} className="object-contain" priority />
+            </div>
+            <Image
+              src="/israel-flag.svg"
+              alt="דגל ישראל"
+              width={88}
+              height={64}
+              className="rounded-lg shadow-sm"
+              priority
+            />
           </div>
         ) : (
           <Image src="/logo.png" alt="" width={52} height={52} className="object-contain" />

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +63,17 @@ export function TournamentLocationsView({
   const [houseNames, setHouseNames] = useState<Record<string, string>>({});
   // One location at a time, picked with its button.
   const [locationId, setLocationId] = useState<string | null>(null);
+  // Houses folded away by the admin, like the regular tournament's houses.
+  const [collapsedHouseIds, setCollapsedHouseIds] = useState<Set<string>>(new Set());
+
+  function toggleCollapsed(houseId: string) {
+    setCollapsedHouseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(houseId)) next.delete(houseId);
+      else next.add(houseId);
+      return next;
+    });
+  }
 
   const { data: locationsData, isLoading: locationsLoading } = useQuery({
     queryKey: ["tournament-locations", tournamentId],
@@ -318,22 +329,33 @@ export function TournamentLocationsView({
               )}
 
               {locationHouses.length > 0 && (
-              <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory p-3 border-t bg-muted/30">
+              <div className="flex items-start gap-3 overflow-x-auto snap-x snap-mandatory p-3 border-t bg-muted/30">
               {locationHouses.map((house) => {
                 const standings = computeHouseStandings(house.memberIds, house.matches);
+                const collapsed = collapsedHouseIds.has(house.id);
                 return (
                   <div
                     key={house.id}
                     className="snap-start shrink-0 w-[90%] sm:w-[440px] rounded-[14px] border bg-card overflow-hidden shadow-[0_6px_16px_-12px_rgb(13_21_16/0.35)]"
                   >
                     <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-sidebar text-white">
-                      <p className="flex items-baseline gap-2 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleCollapsed(house.id)}
+                        aria-expanded={!collapsed}
+                        className="flex flex-1 items-center gap-2 min-w-0 text-right"
+                      >
                         <span className="bc-num text-lg leading-none truncate">{house.label}</span>
                         <span className="font-display text-[11px] font-bold text-white/60 shrink-0">
                           {house.matches.filter((m) => m.frames_a !== null && m.frames_b !== null).length}/{house.matches.length} משחקים
                         </span>
-                      </p>
-                      {canEdit && (
+                        {collapsed ? (
+                          <ChevronDown size={16} className="shrink-0 text-white/60" />
+                        ) : (
+                          <ChevronUp size={16} className="shrink-0 text-white/60" />
+                        )}
+                      </button>
+                      {canEdit && !collapsed && (
                         <button
                           type="button"
                           className="shrink-0 rounded-md bg-white/10 px-2 py-1 font-display text-[11px] font-bold text-[#7ee2a4] hover:bg-white/20"
@@ -350,6 +372,8 @@ export function TournamentLocationsView({
                         </button>
                       )}
                     </div>
+                    {!collapsed && (
+                    <>
                     {canEdit && house.id in houseNames && (() => {
                       const names = (houseNames[house.id] ?? "")
                         .split(/\r?\n/)
@@ -464,6 +488,8 @@ export function TournamentLocationsView({
                         );
                       })}
                     </div>
+                    </>
+                    )}
                   </div>
                 );
               })}

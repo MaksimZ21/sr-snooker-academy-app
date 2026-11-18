@@ -304,7 +304,13 @@ export function TournamentDetailView({
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        icon={<Trophy size={20} />}
+        icon={
+          tournament.type === "multi_location" ? (
+            <img src="/israel-flag.svg" alt="דגל ישראל" className="w-8 rounded-[3px]" />
+          ) : (
+            <Trophy size={20} />
+          )
+        }
         title={tournament.name}
         subtitle={subtitle || undefined}
         action={

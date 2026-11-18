@@ -46,6 +46,13 @@ export type PublicTournament = {
   locations: TournamentLocation[];
 };
 
+// Just the tournament's type — a single small query, so the page can pick
+// the right loading screen before the full (slower) fetch.
+export async function fetchPublicTournamentType(slug: string): Promise<string | null> {
+  const { data } = await db.from("tournaments").select("type").eq("public_slug", slug).maybeSingle();
+  return data ? (data.type as string) : null;
+}
+
 export async function fetchPublicTournament(slug: string): Promise<PublicTournament | null> {
   const { data: tournament } = await db
     .from("tournaments")

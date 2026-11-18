@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth/requireUser";
 import {
   fetchIntroEventDetail,
   updateIntroEventParticipant,
+  removeIntroEventParticipant,
   canManageIntroEvents,
   INTRO_EXPERIENCE_LEVELS,
   INTRO_GOALS,
@@ -28,6 +29,26 @@ export async function PATCH(
     }
     const body = UpdateSchema.parse(await req.json());
     await updateIntroEventParticipant(id, participantId, body);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    if (e instanceof Response) return e;
+    if (e instanceof Error) return NextResponse.json({ error: e.message }, { status: 400 });
+    return NextResponse.json({ error: "internal error" }, { status: 500 });
+  }
+}
+
+// Removes the participant from the event (the student record stays).
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string; participantId: string }> },
+) {
+  try {
+    const user = await requireUser();
+    if (!canManageIntroEvents(user)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const { id, participantId } = await params;
+    await removeIntroEventParticipant(id, participantId);
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;

@@ -186,6 +186,15 @@ export async function updateIntroEventParticipant(
   if (error) throw new Error(error.message);
 }
 
+export async function removeIntroEventParticipant(introEventId: string, participantId: string): Promise<void> {
+  const { error } = await db
+    .from("intro_event_participants")
+    .delete()
+    .eq("id", participantId)
+    .eq("intro_event_id", introEventId);
+  if (error) throw new Error(error.message);
+}
+
 export async function fetchIntroEventByCrmAppointmentId(appointmentId: string): Promise<IntroEvent | null> {
   const { data } = await db
     .from("intro_events")

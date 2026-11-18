@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { ArrowRight, UserPlus, User, Users, Banknote, Pencil, FileText, Check, X, MessageCircle } from "lucide-react";
+import { ArrowRight, UserPlus, User, Users, Banknote, Pencil, FileText, Check, X, MessageCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,6 +129,19 @@ export function IntroEventDetailView({
     onError: () => toast.error("שגיאה בעדכון השם"),
   });
   const reportBase = isAdmin ? "/admin/assessments/new" : "/coach/assessments/new";
+
+  const removeMut = useMutation({
+    mutationFn: async (participantId: string) => {
+      const r = await fetch(`/api/intro-events/${introEventId}/participants/${participantId}`, { method: "DELETE" });
+      if (!r.ok) throw new Error(await r.text());
+    },
+    onSuccess: () => {
+      toast.success("המשתתף הוצא מהאירוע");
+      qc.invalidateQueries({ queryKey: ["intro-event", introEventId] });
+      qc.invalidateQueries({ queryKey: ["intro-events"] });
+    },
+    onError: () => toast.error("שגיאה בהוצאה מהאירוע"),
+  });
 
   const fieldMut = useMutation({
     mutationFn: async ({
@@ -319,9 +332,28 @@ export function IntroEventDetailView({
                     <span className="font-medium">
                       {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
                     </span>
-                    {p.student.phone && (
-                      <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">{p.student.phone}</span>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {p.student.phone && (
+                        <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">{p.student.phone}</span>
+                      )}
+                      {isAdmin && (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 -my-1 text-muted-foreground hover:text-destructive"
+                          onClick={() => {
+                            const fullName = [p.student.first_name, p.student.last_name].filter(Boolean).join(" ");
+                            if (window.confirm(`להוציא את ${fullName} מהאירוע?`)) removeMut.mutate(p.id);
+                          }}
+                          disabled={removeMut.isPending}
+                          aria-label="הוצאה מהאירוע"
+                          title="הוצאה מהאירוע"
+                        >
+                          <Trash2 size={15} />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <Link
                     href={`${reportBase}?${new URLSearchParams({

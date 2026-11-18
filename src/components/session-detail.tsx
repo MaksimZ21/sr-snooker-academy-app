@@ -19,7 +19,7 @@ import { monthOf } from "@/lib/sheets/monthly-goals-shared";
 import { trainingTypeBadge } from "@/lib/training-type";
 import { cn } from "@/lib/utils";
 import { TYPE_COLORS } from "@/components/broadcast";
-import { User, Users, Trash2 } from "lucide-react";
+import { User, Users, Trash2, Target } from "lucide-react";
 import { HeroBackdrop } from "@/components/motion/hero-backdrop";
 
 type Coach = { email: string; name: string; active: boolean };
@@ -46,6 +46,7 @@ export function SessionDetail({
   const qc = useQueryClient();
   const router = useRouter();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [tab, setTab] = useState<string>("attendance");
 
   const { data, isLoading } = useQuery({
     queryKey: ["session", sessionId],
@@ -105,6 +106,9 @@ export function SessionDetail({
   const { session, students, attendance, notesByStudent, goalsByStudent } = data;
   const { label } = trainingTypeBadge(session.training_type);
   const cancelled = session.status === "cancelled";
+  // Goals reset every calendar month, so the first session of a month is
+  // where the coach sets them: until each student has one, say so loudly.
+  const missingGoal = canEditAttendance && !cancelled ? students.filter((s) => !goalsByStudent[s.id]?.goal) : [];
   const coachName = session.coach_email
     ? ((coachesQ.data?.coaches ?? []).find((c) => c.email === session.coach_email)?.name ?? session.coach_email.split("@")[0])
     : null;
@@ -208,10 +212,37 @@ export function SessionDetail({
             <SessionHeldButton sessionId={sessionId} cancelled={cancelled} />
           </div>
         )}
-        <Tabs defaultValue="attendance">
+        {missingGoal.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setTab("notes")}
+            className="flex items-center gap-3 rounded-[18px] border-2 border-amber-400 bg-amber-50 dark:bg-amber-500/10 px-4 py-3.5 text-start hover:bg-amber-100 dark:hover:bg-amber-500/15 transition-colors"
+          >
+            <span className="w-10 h-10 rounded-xl bg-amber-400 text-white flex items-center justify-center shrink-0">
+              <Target size={20} />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-display text-[15px] font-extrabold text-amber-900 dark:text-amber-200">
+                צריך להכניס מטרה חודשית למתאמנים
+              </span>
+              <span className="block text-xs text-amber-800/80 dark:text-amber-200/70 mt-0.5 truncate">
+                {missingGoal.length === students.length
+                  ? "המטרות התאפסו לחודש החדש"
+                  : `חסרה מטרה ל-${missingGoal.length} מתאמנים`}
+                {" · "}
+                {missingGoal.map((s) => s.first_name).join(", ")}
+              </span>
+            </span>
+            <span className="font-display text-xs font-bold text-amber-900 dark:text-amber-200 shrink-0">להכנסה ←</span>
+          </button>
+        )}
+        <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
           <TabsList className="grid grid-cols-2">
             <TabsTrigger value="attendance">נוכחות</TabsTrigger>
-            <TabsTrigger value="notes">הערות</TabsTrigger>
+            <TabsTrigger value="notes">
+              הערות ומטרות
+              {missingGoal.length > 0 && <span className="ms-1.5 inline-block w-2 h-2 rounded-full bg-amber-400" />}
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="attendance">
             <AttendancePanel

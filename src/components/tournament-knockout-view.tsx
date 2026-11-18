@@ -4,6 +4,7 @@ import { useState, useRef, useLayoutEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Swords, CheckCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { ClearResultButton } from "@/components/clear-result-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -130,6 +131,21 @@ export function TournamentKnockoutView({
       qc.invalidateQueries({ queryKey: ["tournament-knockout", tournamentId] });
     },
     onError: () => toast.error("שגיאה בסיום השיבוץ"),
+  });
+
+  const clearMut = useMutation({
+    mutationFn: async (matchId: string) => {
+      const r = await fetch(`/api/tournaments/${tournamentId}/knockout/matches/${matchId}/result`, { method: "DELETE" });
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "שגיאה במחיקת התוצאה");
+      }
+    },
+    onSuccess: () => {
+      toast.success("התוצאה נמחקה");
+      qc.invalidateQueries({ queryKey: ["tournament-knockout", tournamentId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה במחיקת התוצאה"),
   });
 
   const resultMut = useMutation({
@@ -326,6 +342,8 @@ export function TournamentKnockoutView({
                           onAssign={(side, participantId) => assignMut.mutate({ matchId: m.id, side, participantId })}
                           onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
                           saving={resultMut.isPending}
+                          onClear={() => clearMut.mutate(m.id)}
+                          clearing={clearMut.isPending}
                         />
                       </div>
                     );
@@ -351,6 +369,8 @@ function KnockoutMatchCard({
   onAssign,
   onSave,
   saving,
+  onClear,
+  clearing,
 }: {
   match: KnockoutMatch;
   round: number;
@@ -362,6 +382,8 @@ function KnockoutMatchCard({
   onAssign: (side: "a" | "b", participantId: string | null) => void;
   onSave: (framesA: number, framesB: number) => void;
   saving: boolean;
+  onClear: () => void;
+  clearing: boolean;
 }) {
   const [framesA, setFramesA] = useState(match.frames_a?.toString() ?? "");
   const [framesB, setFramesB] = useState(match.frames_b?.toString() ?? "");
@@ -445,6 +467,11 @@ function KnockoutMatchCard({
           </div>
         );
       })}
+      {canEdit && played && (
+        <div className="flex justify-end px-2.5 py-1">
+          <ClearResultButton onClear={onClear} disabled={clearing} />
+        </div>
+      )}
     </div>
   );
 }

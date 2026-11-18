@@ -319,3 +319,21 @@ export async function scheduleLeagueMatches(
     if (error) throw new Error(error.message);
   }
 }
+
+// Clears a league match back to "not played" (keeps its scheduled date).
+// Ratings are not rolled back — same forward-only rule as entering one.
+export async function clearLeagueMatchResult(leagueId: string, matchId: string): Promise<void> {
+  const { data: match } = await db.from("league_matches").select("id, district_id").eq("id", matchId).maybeSingle();
+  if (!match) throw new Error("match not found");
+  const { data: district } = await db
+    .from("league_districts")
+    .select("id, league_id")
+    .eq("id", match.district_id)
+    .maybeSingle();
+  if (!district || district.league_id !== leagueId) throw new Error("match not found");
+  const { error } = await db
+    .from("league_matches")
+    .update({ frames_a: null, frames_b: null, level_a: null, level_b: null, result_at: null })
+    .eq("id", matchId);
+  if (error) throw new Error(error.message);
+}

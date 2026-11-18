@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
+import { ClearResultButton } from "@/components/clear-result-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MatchLine } from "@/components/match-line";
@@ -188,6 +189,21 @@ export function TournamentLocationsView({
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tournament-houses", tournamentId] }),
     onError: () => toast.error("שגיאה בשמירת התוצאה"),
+  });
+
+  const clearMut = useMutation({
+    mutationFn: async (matchId: string) => {
+      const r = await fetch(`/api/tournaments/${tournamentId}/houses/matches/${matchId}`, { method: "DELETE" });
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "שגיאה במחיקת התוצאה");
+      }
+    },
+    onSuccess: () => {
+      toast.success("התוצאה נמחקה");
+      qc.invalidateQueries({ queryKey: ["tournament-houses", tournamentId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה במחיקת התוצאה"),
   });
 
   function participantName(id: string) {
@@ -484,6 +500,8 @@ export function TournamentLocationsView({
                             canEdit={canEdit}
                             onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
                             saving={resultMut.isPending}
+                            onClear={() => clearMut.mutate(m.id)}
+                            clearing={clearMut.isPending}
                           />
                         );
                       })}
@@ -514,6 +532,8 @@ function LocationMatchRow({
   canEdit,
   onSave,
   saving,
+  onClear,
+  clearing,
 }: {
   nameA: string;
   nameB: string;
@@ -522,6 +542,8 @@ function LocationMatchRow({
   canEdit: boolean;
   onSave: (framesA: number, framesB: number) => void;
   saving: boolean;
+  onClear: () => void;
+  clearing: boolean;
 }) {
   const [framesA, setFramesA] = useState(match.frames_a?.toString() ?? "");
   const [framesB, setFramesB] = useState(match.frames_b?.toString() ?? "");
@@ -564,14 +586,17 @@ function LocationMatchRow({
       scoreB={canEdit ? box(framesB, setFramesB) : undefined}
       aside={
         canEdit ? (
-          <Button
-            size="sm"
-            className="h-7 px-3 font-display text-xs font-bold"
-            disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
-            onClick={save}
-          >
-            שמור
-          </Button>
+          <span className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="h-7 px-3 font-display text-xs font-bold"
+              disabled={saving || framesA.trim() === "" || framesB.trim() === ""}
+              onClick={save}
+            >
+              שמור
+            </Button>
+            {played && <ClearResultButton onClear={onClear} disabled={clearing} />}
+          </span>
         ) : undefined
       }
     />

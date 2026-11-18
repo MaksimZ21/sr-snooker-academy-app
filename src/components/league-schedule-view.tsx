@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ClipboardCopy, ClipboardPaste, ImageDown, X } from "lucide-react";
 import { toast } from "sonner";
+import { ClearResultButton } from "@/components/clear-result-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MatchLine } from "@/components/match-line";
@@ -90,6 +91,21 @@ export function LeagueScheduleView({
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["league-districts", leagueId] }),
     onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בשמירת התוצאה"),
+  });
+
+  const clearMut = useMutation({
+    mutationFn: async (matchId: string) => {
+      const r = await fetch(`/api/leagues/${leagueId}/matches/${matchId}`, { method: "DELETE" });
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "שגיאה במחיקת התוצאה");
+      }
+    },
+    onSuccess: () => {
+      toast.success("התוצאה נמחקה");
+      qc.invalidateQueries({ queryKey: ["league-districts", leagueId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה במחיקת התוצאה"),
   });
 
   async function copyOpenMatches() {
@@ -232,6 +248,7 @@ export function LeagueScheduleView({
                         busy={resultMut.isPending || scheduleMut.isPending}
                         onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
                         onRemove={() => scheduleMut.mutate([{ matchId: m.id, date: null }])}
+                        onClear={() => clearMut.mutate(m.id)}
                       />
                     ))}
                   </div>
@@ -266,6 +283,7 @@ function ScheduleRow({
   busy,
   onSave,
   onRemove,
+  onClear,
 }: {
   nameA: string;
   nameB: string;
@@ -275,6 +293,7 @@ function ScheduleRow({
   busy: boolean;
   onSave: (framesA: number, framesB: number) => void;
   onRemove: () => void;
+  onClear: () => void;
 }) {
   const [framesA, setFramesA] = useState(match.frames_a?.toString() ?? "");
   const [framesB, setFramesB] = useState(match.frames_b?.toString() ?? "");
@@ -326,6 +345,8 @@ function ScheduleRow({
             <X size={12} />
             הסר מהלוז
           </button>
+        ) : canEdit && played ? (
+          <ClearResultButton onClear={onClear} disabled={busy} />
         ) : undefined
       }
     />

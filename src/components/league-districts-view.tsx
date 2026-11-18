@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { ClearResultButton } from "@/components/clear-result-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -186,6 +187,21 @@ export function LeagueDistrictsView({
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["league-districts", leagueId] }),
     onError: () => toast.error("שגיאה בשמירת התוצאה"),
+  });
+
+  const clearMut = useMutation({
+    mutationFn: async (matchId: string) => {
+      const r = await fetch(`/api/leagues/${leagueId}/matches/${matchId}`, { method: "DELETE" });
+      if (!r.ok) {
+        const body = (await r.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "שגיאה במחיקת התוצאה");
+      }
+    },
+    onSuccess: () => {
+      toast.success("התוצאה נמחקה");
+      qc.invalidateQueries({ queryKey: ["league-districts", leagueId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה במחיקת התוצאה"),
   });
 
   const scheduleMut = useMutation({
@@ -427,6 +443,8 @@ export function LeagueDistrictsView({
                               canEdit={canEdit}
                               onSave={(framesA, framesB) => resultMut.mutate({ matchId: m.id, framesA, framesB })}
                               saving={resultMut.isPending}
+                              onClear={() => clearMut.mutate(m.id)}
+                              clearing={clearMut.isPending}
                               onSchedule={(date) => scheduleMut.mutate([{ matchId: m.id, date }])}
                             />
                           );
@@ -453,6 +471,8 @@ function MatchRow({
   canEdit,
   onSave,
   saving,
+  onClear,
+  clearing,
   onSchedule,
 }: {
   nameA: string;
@@ -462,6 +482,8 @@ function MatchRow({
   canEdit: boolean;
   onSave: (framesA: number, framesB: number) => void;
   saving: boolean;
+  onClear: () => void;
+  clearing: boolean;
   onSchedule: (date: string | null) => void;
 }) {
   const [framesA, setFramesA] = useState(match.frames_a?.toString() ?? "");
@@ -512,6 +534,7 @@ function MatchRow({
               onKeyDown={onEnter}
               className="h-7 w-14 text-center px-1"
             />
+            {played && <ClearResultButton onClear={onClear} disabled={clearing} />}
           </>
         ) : played ? (
           <span className="font-medium">{match.frames_a} - {match.frames_b}</span>

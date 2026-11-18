@@ -314,3 +314,18 @@ export async function enterHouseMatchResult(
   const { error: ratingBError } = await db.from("students").update({ rating: newRatingB }).eq("id", sb.id);
   if (ratingBError) throw new Error(ratingBError.message);
 }
+
+// Clears a house match back to "not played". Ratings are not rolled back
+// (same forward-only rule as entering/correcting a result).
+export async function clearHouseMatchResult(tournamentId: string, matchId: string): Promise<void> {
+  const { data: match } = await db.from("tournament_house_matches").select("id, house_id").eq("id", matchId).maybeSingle();
+  if (!match) throw new Error("match not found");
+  const { data: house } = await db
+    .from("tournament_houses")
+    .select("id, tournament_id")
+    .eq("id", match.house_id)
+    .maybeSingle();
+  if (!house || house.tournament_id !== tournamentId) throw new Error("match not found");
+  const { error } = await db.from("tournament_house_matches").update({ frames_a: null, frames_b: null }).eq("id", matchId);
+  if (error) throw new Error(error.message);
+}

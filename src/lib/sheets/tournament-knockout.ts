@@ -232,3 +232,40 @@ export async function enterKnockoutMatchResult(
     if (advanceError) throw new Error(advanceError.message);
   }
 }
+
+// Clears a knockout result and pulls the winner back out of the next
+// round. Refused while the next-round match already has a result — that
+// one has to be cleared first. Ratings are not rolled back.
+export async function clearKnockoutMatchResult(tournamentId: string, matchId: string): Promise<void> {
+  const { data: match } = await db
+    .from("tournament_knockout_matches")
+    .select("*")
+    .eq("id", matchId)
+    .maybeSingle();
+  if (!match || match.tournament_id !== tournamentId) throw new Error("match not found");
+
+  if (match.next_match_id) {
+    const { data: next } = await db
+      .from("tournament_knockout_matches")
+      .select("id, frames_a, frames_b")
+      .eq("id", match.next_match_id)
+      .maybeSingle();
+    if (next && next.frames_a !== null && next.frames_b !== null) {
+      throw new Error("יש תוצאה במשחק של השלב הבא - מחק אותה קודם");
+    }
+    if (next) {
+      const nextSide = match.slot % 2 === 0 ? "participant_a_id" : "participant_b_id";
+      const { error: unadvanceError } = await db
+        .from("tournament_knockout_matches")
+        .update({ [nextSide]: null })
+        .eq("id", next.id);
+      if (unadvanceError) throw new Error(unadvanceError.message);
+    }
+  }
+
+  const { error } = await db
+    .from("tournament_knockout_matches")
+    .update({ frames_a: null, frames_b: null })
+    .eq("id", matchId);
+  if (error) throw new Error(error.message);
+}

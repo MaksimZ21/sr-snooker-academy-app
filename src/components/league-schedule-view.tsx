@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ClipboardCopy, ClipboardPaste, ImageDown, X } from "lucide-react";
+import { ClipboardCopy, ClipboardPaste, ImageDown, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { ClearResultButton } from "@/components/clear-result-button";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   type ScheduleParticipant,
 } from "@/lib/sheets/league-schedule-parse";
 import { LeagueSchedulePasteDialog } from "@/components/league-schedule-paste-dialog";
+import { LeagueScheduleAddDialog } from "@/components/league-schedule-add-dialog";
 import { ClearDayButton } from "@/components/league-clear-day-button";
 import { DayColumns } from "@/components/day-strip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -40,6 +41,7 @@ export function LeagueScheduleView({
 }) {
   const qc = useQueryClient();
   const [pasteOpen, setPasteOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [districtFilter, setDistrictFilter] = useState(ALL_DISTRICTS);
 
   // Same key and URL as LeagueDistrictsView, so the two share one cache entry.
@@ -180,6 +182,10 @@ export function LeagueScheduleView({
               <ClipboardCopy size={14} className="ml-1.5" />
               העתק משחקים פתוחים
             </Button>
+            <Button size="sm" variant="outline" onClick={() => setAddOpen(true)} disabled={districts.length === 0}>
+              <Plus size={14} className="ml-1.5" />
+              הוסף משחק
+            </Button>
             <Button size="sm" onClick={() => setPasteOpen(true)} disabled={districts.length === 0}>
               <ClipboardPaste size={14} className="ml-1.5" />
               הדבק לוז
@@ -258,6 +264,21 @@ export function LeagueScheduleView({
           />
         )}
       </div>
+
+      {canEdit && (
+        <LeagueScheduleAddDialog
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          participants={people}
+          matches={allMatches}
+          districtLabels={districtLabels}
+          onSave={async (a) => {
+            await scheduleMut.mutateAsync([a]);
+            toast.success("המשחק נוסף ללוז");
+          }}
+          saving={scheduleMut.isPending}
+        />
+      )}
 
       {canEdit && (
         <LeagueSchedulePasteDialog

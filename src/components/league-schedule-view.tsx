@@ -203,9 +203,9 @@ export function LeagueScheduleView({
                   <FileDown size={14} className="ml-1.5" />
                   הורד משחקים פתוחים
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
+                <DropdownMenuContent className="min-w-60">
                   {districts.map((d) => (
-                    <DropdownMenuItem key={d.id} onClick={() => downloadOpenMatches(d)}>
+                    <DropdownMenuItem key={d.id} onClick={() => downloadOpenMatches(d)} className="whitespace-nowrap py-1.5">
                       {d.label}
                       <span className="ms-auto ps-3 text-xs text-muted-foreground tabular-nums">
                         {d.matches.filter((m) => m.frames_a === null).length}

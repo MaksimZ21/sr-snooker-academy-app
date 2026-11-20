@@ -1,8 +1,8 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, ClipboardPaste, FileDown, ImageDown, Plus, X } from "lucide-react";
-import { addDays, format, parseISO } from "date-fns";
+import { ClipboardPaste, FileDown, ImageDown, Plus, X } from "lucide-react";
+import { WeekScheduleNav, defaultWeekStart } from "@/components/week-schedule-nav";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { ClearResultButton } from "@/components/clear-result-button";
@@ -181,12 +181,9 @@ export function LeagueScheduleView({
 
   // Week navigation: opens on the week of the next match day (or the last
   // one, once the league is over), then moves a week at a time.
-  const today = todayIsoTel();
-  const currentWeek = weekRangeFor(today);
-  const week = weekRangeFor(weekStart ?? days.find((d) => d >= today) ?? days.at(-1) ?? today);
+  const week = weekRangeFor(weekStart ?? defaultWeekStart(days));
   const weekDays = days.filter((d) => d >= week.startIso && d <= week.endIso);
   const weekCount = datedMatches.filter((m) => weekDays.includes(m.scheduled_date as string)).length;
-  const shiftWeek = (n: number) => setWeekStart(format(addDays(parseISO(week.startIso), 7 * n), "yyyy-MM-dd"));
 
   return (
     <div className="rounded-[18px] border bg-card overflow-hidden">
@@ -262,28 +259,7 @@ export function LeagueScheduleView({
           <p className="py-6 text-center text-sm text-muted-foreground">אין משחקים משובצים</p>
         ) : (
           <>
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => shiftWeek(-1)} aria-label="שבוע קודם">
-              <ChevronRight size={16} />
-            </Button>
-            <div className="min-w-40 text-center">
-              <p className="font-display text-sm font-extrabold tabular-nums">
-                {shortDate(week.startIso)} – {shortDate(week.endIso)}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                {week.startIso === currentWeek.startIso ? "השבוע · " : ""}
-                {weekCount > 0 ? `${weekCount} משחקים` : "אין משחקים"}
-              </p>
-            </div>
-            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => shiftWeek(1)} aria-label="שבוע הבא">
-              <ChevronLeft size={16} />
-            </Button>
-            {week.startIso !== currentWeek.startIso && (
-              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setWeekStart(currentWeek.startIso)}>
-                לשבוע הנוכחי
-              </Button>
-            )}
-          </div>
+          <WeekScheduleNav startIso={week.startIso} count={weekCount} onChange={setWeekStart} />
           {weekDays.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">אין משחקים משובצים בשבוע הזה</p>
           ) : (

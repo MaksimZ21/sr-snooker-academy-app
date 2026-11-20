@@ -5,7 +5,7 @@ import { PublicBreaksPanel } from "@/components/public-breaks-panel";
 import { PublicLeagueBoard } from "@/components/public-league-board";
 import type { PublicLeague, PublicLeagueParticipant } from "@/lib/sheets/leagues-public";
 import { weekRangeFor, todayIsoTel, dayLabelHe } from "@/lib/date";
-import { DayColumns } from "@/components/day-strip";
+import { PublicWeekSchedule } from "@/components/public-week-schedule";
 import { PublicThemeToggle } from "@/components/public-theme-toggle";
 import { shortDate } from "@/lib/sheets/league-schedule-parse";
 import { LiveTicker } from "@/components/broadcast";
@@ -73,40 +73,26 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
   // last week's results already show in the standings below.
   const { startIso } = weekRangeFor(todayIsoTel());
   const districtLabel = new Map(league.districts.map((d) => [d.id, d.label]));
-  const scheduled = league.districts
-    .flatMap((d) => d.matches)
-    .filter((m) => m.scheduled_date !== null && m.scheduled_date >= startIso);
+  // Every match with a play date — the schedule pages through them a week
+  // at a time. The ticker only shows this week onward.
+  const allScheduled = league.districts.flatMap((d) => d.matches).filter((m) => m.scheduled_date !== null);
+  const scheduled = allScheduled.filter((m) => (m.scheduled_date as string) >= startIso);
 
-  // The day strip for a set of matches; null when there's nothing scheduled.
-  function renderSchedule(matches: typeof scheduled): React.ReactNode | null {
-    const days = [...new Set(matches.map((m) => m.scheduled_date as string))].sort();
-    if (days.length === 0) return null;
+  // The week-by-week schedule for a set of matches; null when nothing is scheduled.
+  function renderSchedule(matches: typeof allScheduled): React.ReactNode | null {
+    if (matches.length === 0) return null;
     return (
-      <div className="px-4 py-3">
-        <DayColumns
-          items={days.map((day) => {
-            const dayMatches = matches.filter((m) => m.scheduled_date === day);
-            return {
-              day,
-              count: dayMatches.length,
-              content: (
-                <div className="flex flex-col gap-2">
-                  {dayMatches.map((m) => (
-                    <MatchLine
-                      key={m.id}
-                      nameA={lookup(m.participant_a_id)?.name ?? "?"}
-                      nameB={lookup(m.participant_b_id)?.name ?? "?"}
-                      framesA={m.frames_a}
-                      framesB={m.frames_b}
-                      sub={districtLabel.get(m.district_id)}
-                    />
-                  ))}
-                </div>
-              ),
-            };
-          })}
-        />
-      </div>
+      <PublicWeekSchedule
+        rows={matches.map((m) => ({
+          id: m.id,
+          date: m.scheduled_date as string,
+          nameA: lookup(m.participant_a_id)?.name ?? "?",
+          nameB: lookup(m.participant_b_id)?.name ?? "?",
+          framesA: m.frames_a,
+          framesB: m.frames_b,
+          sub: districtLabel.get(m.district_id),
+        }))}
+      />
     );
   }
 
@@ -161,11 +147,11 @@ export function PublicLeagueView({ league }: { league: PublicLeague }) {
         {league.districts.length > 0 || league.participants.length > 0 ? (
           <PublicLeagueBoard
             schedule={
-              renderSchedule(scheduled)
+              renderSchedule(allScheduled)
             }
             districts={league.districts.map((district) => {
               const standings = computeLeagueStandings(district.memberIds, district.matches);
-              const districtSchedule = renderSchedule(scheduled.filter((m) => m.district_id === district.id));
+              const districtSchedule = renderSchedule(allScheduled.filter((m) => m.district_id === district.id));
               // Only matches that already have a result.
               const playedMatches = district.matches.filter((m) => m.frames_a !== null && m.frames_b !== null);
               // Newest first; a result entered without a play date goes last.

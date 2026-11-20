@@ -1,7 +1,8 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ClipboardCopy, ClipboardPaste, ImageDown, Plus, X } from "lucide-react";
+import { ClipboardPaste, FileDown, ImageDown, Plus, X } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { ClearResultButton } from "@/components/clear-result-button";
 import { Button } from "@/components/ui/button";
@@ -110,13 +111,22 @@ export function LeagueScheduleView({
     onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה במחיקת התוצאה"),
   });
 
-  async function copyOpenMatches() {
-    try {
-      await navigator.clipboard.writeText(buildOpenMatchesText(leagueName, districts, people));
-      toast.success("המשחקים הפתוחים הועתקו");
-    } catch {
-      toast.error("ההעתקה נכשלה");
+  // One district's open matches as a .txt file (to hand to whoever plans the week).
+  function downloadOpenMatches(district: District) {
+    const open = district.matches.filter((m) => m.frames_a === null);
+    if (open.length === 0) {
+      toast.error(`אין משחקים פתוחים ב${district.label}`);
+      return;
     }
+    const text = buildOpenMatchesText(`${leagueName} · ${district.label}`, [district], people);
+    // BOM so Hebrew opens correctly in Windows Notepad
+    const blob = new Blob(["\uFEFF" + text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `משחקים פתוחים - ${leagueName} - ${district.label}.txt`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   // The week (Sun-Sat) of the next day that has matches, from today on.
@@ -178,10 +188,33 @@ export function LeagueScheduleView({
         </Button>
         {canEdit && (
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={copyOpenMatches} disabled={districts.length === 0}>
-              <ClipboardCopy size={14} className="ml-1.5" />
-              העתק משחקים פתוחים
-            </Button>
+            {filteredDistrict || districts.length === 1 ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => downloadOpenMatches(filteredDistrict ?? districts[0])}
+              >
+                <FileDown size={14} className="ml-1.5" />
+                הורד משחקים פתוחים
+              </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button size="sm" variant="outline" disabled={districts.length === 0} />}>
+                  <FileDown size={14} className="ml-1.5" />
+                  הורד משחקים פתוחים
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {districts.map((d) => (
+                    <DropdownMenuItem key={d.id} onClick={() => downloadOpenMatches(d)}>
+                      {d.label}
+                      <span className="ms-auto ps-3 text-xs text-muted-foreground tabular-nums">
+                        {d.matches.filter((m) => m.frames_a === null).length}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button size="sm" variant="outline" onClick={() => setAddOpen(true)} disabled={districts.length === 0}>
               <Plus size={14} className="ml-1.5" />
               הוסף משחק

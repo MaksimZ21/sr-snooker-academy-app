@@ -1,7 +1,8 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ClipboardPaste, FileDown, ImageDown, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ClipboardPaste, FileDown, ImageDown, Plus, X } from "lucide-react";
+import { addDays, format, parseISO } from "date-fns";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { ClearResultButton } from "@/components/clear-result-button";
@@ -43,6 +44,8 @@ export function LeagueScheduleView({
   const qc = useQueryClient();
   const [pasteOpen, setPasteOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  // Sunday of the week on screen; null = pick it automatically.
+  const [weekStart, setWeekStart] = useState<string | null>(null);
   const [districtFilter, setDistrictFilter] = useState(ALL_DISTRICTS);
 
   // Same key and URL as LeagueDistrictsView, so the two share one cache entry.
@@ -129,16 +132,13 @@ export function LeagueScheduleView({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  // The week (Sun-Sat) of the next day that has matches, from today on.
+  // The week on screen.
   async function downloadWeekImage() {
-    const today = todayIsoTel();
-    const nextDay = days.find((d) => d >= today);
-    if (!nextDay) {
-      toast.error("אין משחקים משובצים מהיום והלאה");
+    const { startIso, endIso } = week;
+    if (weekDays.length === 0) {
+      toast.error("אין משחקים משובצים בשבוע הזה");
       return;
     }
-    const { startIso, endIso } = weekRangeFor(nextDay);
-    const weekDays = days.filter((d) => d >= startIso && d <= endIso);
     try {
       const blob = await drawScheduleImage({
         leagueName: filteredDistrict ? `${leagueName} · ${filteredDistrict.label}` : leagueName,
@@ -179,10 +179,19 @@ export function LeagueScheduleView({
   const showDistrict = !filteredDistrict && districts.length > 1;
   const days = [...new Set(datedMatches.map((m) => m.scheduled_date as string))].sort();
 
+  // Week navigation: opens on the week of the next match day (or the last
+  // one, once the league is over), then moves a week at a time.
+  const today = todayIsoTel();
+  const currentWeek = weekRangeFor(today);
+  const week = weekRangeFor(weekStart ?? days.find((d) => d >= today) ?? days.at(-1) ?? today);
+  const weekDays = days.filter((d) => d >= week.startIso && d <= week.endIso);
+  const weekCount = datedMatches.filter((m) => weekDays.includes(m.scheduled_date as string)).length;
+  const shiftWeek = (n: number) => setWeekStart(format(addDays(parseISO(week.startIso), 7 * n), "yyyy-MM-dd"));
+
   return (
     <div className="rounded-[18px] border bg-card overflow-hidden">
       <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-2 flex-wrap">
-        <Button size="sm" variant="outline" onClick={downloadWeekImage} disabled={days.length === 0}>
+        <Button size="sm" variant="outline" onClick={downloadWeekImage} disabled={weekDays.length === 0}>
           <ImageDown size={14} className="ml-1.5" />
           הורד תמונה של השבוע
         </Button>
@@ -252,9 +261,35 @@ export function LeagueScheduleView({
         ) : days.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">אין משחקים משובצים</p>
         ) : (
+          <>
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => shiftWeek(-1)} aria-label="שבוע קודם">
+              <ChevronRight size={16} />
+            </Button>
+            <div className="min-w-40 text-center">
+              <p className="font-display text-sm font-extrabold tabular-nums">
+                {shortDate(week.startIso)} – {shortDate(week.endIso)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {week.startIso === currentWeek.startIso ? "השבוע · " : ""}
+                {weekCount > 0 ? `${weekCount} משחקים` : "אין משחקים"}
+              </p>
+            </div>
+            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => shiftWeek(1)} aria-label="שבוע הבא">
+              <ChevronLeft size={16} />
+            </Button>
+            {week.startIso !== currentWeek.startIso && (
+              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setWeekStart(currentWeek.startIso)}>
+                לשבוע הנוכחי
+              </Button>
+            )}
+          </div>
+          {weekDays.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">אין משחקים משובצים בשבוע הזה</p>
+          ) : (
           <DayColumns
-            key={districtFilter}
-            items={days.map((day) => {
+            key={`${districtFilter}:${week.startIso}`}
+            items={weekDays.map((day) => {
               const dayMatches = datedMatches.filter((m) => m.scheduled_date === day);
               return {
                 day,
@@ -295,6 +330,8 @@ export function LeagueScheduleView({
               };
             })}
           />
+          )}
+          </>
         )}
       </div>
 

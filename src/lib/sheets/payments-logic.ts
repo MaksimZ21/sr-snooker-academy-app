@@ -69,7 +69,8 @@ export function summarizePayments(rows: PaymentFields[], todayIso: string, weekE
 }
 
 // The weekly summary as a WhatsApp message (copied or shared by hand):
-// who is late and who renews this week, by name, plus the money expected.
+// who is late and who renews this week, by name. The 3-month standing order
+// charges itself, so those players are left out.
 export type SummaryRow = PaymentFields & { first_name: string; last_name: string };
 
 export function buildPaymentsSummaryText(
@@ -82,7 +83,7 @@ export function buildPaymentsSummaryText(
   const nis = (n: number) => `₪${n.toLocaleString("he-IL")}`;
   const pick = (status: PaymentStatus) =>
     rows
-      .filter((r) => paymentStatus(r, todayIso, weekEndIso) === status)
+      .filter((r) => r.payment_method !== PAYMENT_METHODS[0] && paymentStatus(r, todayIso, weekEndIso) === status)
       .sort((a, b) => (a.next_payment_date ?? "").localeCompare(b.next_payment_date ?? ""));
   const line = (r: SummaryRow) =>
     [
@@ -93,14 +94,11 @@ export function buildPaymentsSummaryText(
     ]
       .filter(Boolean)
       .join(" – ");
-  const sum = (list: SummaryRow[]) => list.reduce((n, r) => n + (r.payment_amount ?? 0), 0);
-
   const overdue = pick("overdue");
   const due = pick("due_week");
   const parts = [`*סיכום תשלומים לשבוע ${dm(weekStartIso)}–${dm(weekEndIso)}*`];
   parts.push("", `*באיחור (${overdue.length}):*`, ...(overdue.length ? overdue.map(line) : ["אין"]));
   parts.push("", `*לתשלום השבוע (${due.length}):*`, ...(due.length ? due.map(line) : ["אין"]));
-  parts.push("", `צפוי להיכנס: *${nis(sum(overdue) + sum(due))}*`);
   return parts.join("\n");
 }
 

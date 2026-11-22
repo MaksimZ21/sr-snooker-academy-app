@@ -90,7 +90,13 @@ describe("buildPaymentsSummaryText", () => {
   });
   it("lists late and due-this-week players by name with the expected total", () => {
     const text = buildPaymentsSummaryText(
-      [row("דנה", "2026-11-20", 500), row("אבי", "2026-11-26"), row("גל", "2026-12-20"), row("רון", "2026-11-18", 450, true)],
+      [
+        row("דנה", "2026-11-20", 500),
+        row("אבי", "2026-11-26"),
+        row("גל", "2026-12-20"),
+        row("רון", "2026-11-18", 450, true),
+        { ...row("הוקי", "2026-11-19"), payment_method: "הוק לשלושה חודשים" },
+      ],
       "2026-11-23",
       "2026-11-22",
       "2026-11-28",
@@ -100,7 +106,8 @@ describe("buildPaymentsSummaryText", () => {
     expect(text).toContain("*לתשלום השבוע (1):*\n• אבי כהן – 26/11");
     expect(text).not.toContain("גל");
     expect(text).not.toContain("רון");
-    expect(text).toContain("₪950");
+    expect(text).not.toContain("הוקי");
+    expect(text).not.toContain("צפוי להיכנס");
   });
   it("says none for empty lists", () => {
     const text = buildPaymentsSummaryText([], "2026-11-23", "2026-11-22", "2026-11-28");

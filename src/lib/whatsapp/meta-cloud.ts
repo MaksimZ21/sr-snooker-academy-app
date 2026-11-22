@@ -68,3 +68,30 @@ export function introFollowupTemplate(customerName: string): TemplateMessage {
 export async function sendIntroFollowupTemplate(phone: string, customerName: string): Promise<void> {
   await sendTemplate(phone, introFollowupTemplate(customerName));
 }
+
+// "payments_weekly_summary" Utility template, sent every Sunday to the
+// academy's own number: the week, how many are overdue / due this week and
+// the money expected. Its URL button (fixed) opens the payments tab.
+export type PaymentsSummaryNumbers = { week: string; overdue: number; due: number; amount: number };
+
+export function paymentsSummaryTemplate(n: PaymentsSummaryNumbers): TemplateMessage {
+  return {
+    name: "payments_weekly_summary",
+    language: { code: "he" },
+    components: [
+      {
+        type: "body",
+        parameters: [
+          { type: "text", parameter_name: "week", text: n.week },
+          { type: "text", parameter_name: "overdue", text: String(n.overdue) },
+          { type: "text", parameter_name: "due", text: String(n.due) },
+          { type: "text", parameter_name: "amount", text: n.amount.toLocaleString("he-IL") },
+        ],
+      },
+    ],
+  };
+}
+
+export async function sendPaymentsSummaryTemplate(phone: string, n: PaymentsSummaryNumbers): Promise<void> {
+  await sendTemplate(phone, paymentsSummaryTemplate(n));
+}

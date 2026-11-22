@@ -1,16 +1,17 @@
 import { Banknote } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { SalaryView } from "@/components/salary-view";
+import { FinanceTabs } from "@/components/finance-tabs";
 
-export default function SalaryPage() {
+export default async function SalaryPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab } = await searchParams;
   return (
     <div className="flex flex-col">
       <PageHeader
         icon={<Banknote size={20} />}
         title="פיננסים"
-        subtitle="הוצאות לפי מאמן ותקופה"
+        subtitle="שכר מאמנים ותשלומי מתאמנים"
       />
-      <SalaryView />
+      <FinanceTabs initialTab={tab === "students" ? "students" : "coaches"} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { sendDueIntroFollowups } from "@/lib/sheets/intro-followup";
+import { sendWeeklyPaymentsSummaryIfDue } from "@/lib/sheets/payments-summary";
 import { sendWhatsAppMessage, sendWhatsAppFile, sendWhatsAppPoll, updateGroupSettings } from "@/lib/whatsapp/greenapi";
 
 type Row = { id: string; chat_id: string; chat_name: string; message: string };
@@ -97,7 +98,16 @@ export async function POST(req: Request) {
       console.error("[whatsapp-send] intro follow-ups", e);
     }
 
-    return NextResponse.json({ ok: true, sent, total: rows.length, followups });
+    // The Sunday payments summary rides on it too.
+    let paymentsSummary: "sent" | "skipped" | "failed" = "skipped";
+    try {
+      paymentsSummary = await sendWeeklyPaymentsSummaryIfDue();
+    } catch (e) {
+      paymentsSummary = "failed";
+      console.error("[whatsapp-send] payments summary", e);
+    }
+
+    return NextResponse.json({ ok: true, sent, total: rows.length, followups, paymentsSummary });
   } catch (e) {
     console.error("[whatsapp-send]", e);
     return NextResponse.json({ error: "internal error" }, { status: 500 });

@@ -403,8 +403,13 @@ function HouseCard({
             <div key={m.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-2 text-sm">
               <span className={cn("truncate", aWon ? "font-extrabold" : done ? "text-muted-foreground" : "")}>{a?.name ?? "?"}</span>
               {done ? (
-                <span className="bc-num text-base rounded-md bg-sidebar text-white px-2 py-0.5 leading-none" dir="rtl">
-                  {m.frames_a}-{m.frames_b}
+                // Separate spans in an RTL flex row, so each player's frames sit on
+                // their own side ("3-1" as one string would render left-to-right
+                // and put A's frames next to B).
+                <span className="bc-num text-base rounded-md bg-sidebar text-white px-2 py-0.5 leading-none flex items-center gap-1" dir="rtl">
+                  <span>{m.frames_a}</span>
+                  <span>-</span>
+                  <span>{m.frames_b}</span>
                 </span>
               ) : (
                 <span className="rounded-md bg-muted px-2 py-0.5 font-display text-[11px] font-bold text-muted-foreground">נגד</span>

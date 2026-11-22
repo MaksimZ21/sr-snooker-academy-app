@@ -3,6 +3,7 @@ import { levelForTable, type TableSize } from "./schemas";
 import { fetchTournamentHouses, type HouseWithMatches } from "./tournament-houses";
 import { fetchKnockoutBracket, type KnockoutMatch } from "./tournament-knockout";
 import { fetchTournamentLocations, type TournamentLocation } from "./tournament-locations";
+import { computeBreakTable, type BreakTableRow } from "./tournament-logic";
 
 // Deliberately separate from tournaments.ts/tournament-houses.ts's own
 // internal types: these shapes are what's safe to put in front of an
@@ -44,6 +45,10 @@ export type PublicTournament = {
   // product decision: multi-location tournament participants aren't
   // expected to be existing academy students with accounts.
   locations: TournamentLocation[];
+  // Multi-location only: high breaks, best first (players with none dropped).
+  breakRows: BreakTableRow[];
+  // participant id -> location label, for the breaks table.
+  locationOf: Record<string, string>;
 };
 
 // Just the tournament's type — a single small query, so the page can pick
@@ -65,9 +70,9 @@ export async function fetchPublicTournament(slug: string): Promise<PublicTournam
 
   const { data: participantRows } = await db
     .from("tournament_participants")
-    .select("id, student_id, local_name")
+    .select("id, student_id, local_name, location_id")
     .eq("tournament_id", tournamentId);
-  const rows = (participantRows ?? []) as { id: string; student_id: string | null; local_name: string | null }[];
+  const rows = (participantRows ?? []) as { id: string; student_id: string | null; local_name: string | null; location_id: string | null }[];
 
   const studentIds = rows.map((r) => r.student_id).filter((id): id is string => id !== null);
   const { data: studentRows } = studentIds.length
@@ -90,11 +95,20 @@ export async function fetchPublicTournament(slug: string): Promise<PublicTournam
     };
   });
 
-  const [houses, knockoutMatches, locations] = await Promise.all([
+  const multi = tournament.type === "multi_location";
+  const [houses, knockoutMatches, locations, breaks] = await Promise.all([
     fetchTournamentHouses(tournamentId),
     fetchKnockoutBracket(tournamentId),
-    tournament.type === "multi_location" ? fetchTournamentLocations(tournamentId) : Promise.resolve([]),
+    multi ? fetchTournamentLocations(tournamentId) : Promise.resolve([]),
+    multi ? fetchPublicBreaks(tournamentId) : Promise.resolve([]),
   ]);
+  const breakRows = computeBreakTable(rows.map((r) => r.id), breaks).filter((r) => r.breaks.length > 0);
+  const labelById = new Map(locations.map((l) => [l.id, l.label]));
+  const locationOf: Record<string, string> = {};
+  for (const r of rows) {
+    const label = r.location_id ? labelById.get(r.location_id) : undefined;
+    if (label) locationOf[r.id] = label;
+  }
 
   return {
     name: tournament.name as string,
@@ -105,7 +119,15 @@ export async function fetchPublicTournament(slug: string): Promise<PublicTournam
     houses,
     knockoutMatches,
     locations,
+    breakRows,
+    locationOf,
   };
+}
+
+// Only the columns safe for the public page.
+async function fetchPublicBreaks(tournamentId: string): Promise<{ id: string; participant_id: string; value: number }[]> {
+  const { data } = await db.from("tournament_breaks").select("id, participant_id, value").eq("tournament_id", tournamentId);
+  return (data ?? []) as { id: string; participant_id: string; value: number }[];
 }
 
 export type PublicPlayerTournament = {

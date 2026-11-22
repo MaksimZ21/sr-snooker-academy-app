@@ -9,6 +9,7 @@ import type { HouseWithMatches } from "@/lib/sheets/tournament-houses";
 import { LiveTicker } from "@/components/broadcast";
 import { HeroBackdrop } from "@/components/motion/hero-backdrop";
 import { IspaBrand } from "@/components/ispa-brand";
+import { PublicBreaksPanel } from "@/components/public-breaks-panel";
 
 // Polled instead of a one-time server fetch so a spectator watching results
 // come in sees them without manually refreshing the page. 15s keeps it
@@ -299,6 +300,21 @@ export function PublicTournamentView({
                   </div>
                 ))}
               </div>
+            </div>
+          </section>
+        )}
+
+        {(tournament.breakRows?.length ?? 0) > 0 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="bc-num text-2xl md:text-3xl">טבלת ברייקים</h2>
+            <div className="rounded-[18px] border bg-card overflow-hidden pt-3">
+              <PublicBreaksPanel
+                rows={tournament.breakRows}
+                names={Object.fromEntries(tournament.participants.map((p) => [p.id, p.name]))}
+                districts={tournament.locationOf ?? {}}
+                scope="בטורניר"
+                hideEmpty
+              />
             </div>
           </section>
         )}

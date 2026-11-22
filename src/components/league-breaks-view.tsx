@@ -16,11 +16,16 @@ type LeagueBreak = { id: string; participant_id: string; value: number };
 
 export function LeagueBreaksView({
   leagueId,
+  apiBase = `/api/leagues/${leagueId}`,
+  scope,
   participants,
   districts,
   canEdit,
 }: {
   leagueId: string;
+  // Tournaments reuse this view with their own routes.
+  apiBase?: string;
+  scope?: string;
   participants: Participant[];
   districts: District[];
   canEdit: boolean;
@@ -29,9 +34,9 @@ export function LeagueBreaksView({
   const [query, setQuery] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["league-breaks", leagueId],
+    queryKey: ["breaks", apiBase],
     queryFn: async () => {
-      const r = await fetch(`/api/leagues/${leagueId}/breaks`);
+      const r = await fetch(`${apiBase}/breaks`);
       if (!r.ok) throw new Error("fetch failed");
       return (await r.json()) as { breaks: LeagueBreak[] };
     },
@@ -57,7 +62,7 @@ export function LeagueBreaksView({
 
   const addMut = useMutation({
     mutationFn: async ({ participantId, value }: { participantId: string; value: number }) => {
-      const r = await fetch(`/api/leagues/${leagueId}/breaks`, {
+      const r = await fetch(`${apiBase}/breaks`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ participantId, value }),
@@ -69,17 +74,17 @@ export function LeagueBreaksView({
     },
     onSuccess: () => {
       toast.success("הברייק נוסף");
-      qc.invalidateQueries({ queryKey: ["league-breaks", leagueId] });
+      qc.invalidateQueries({ queryKey: ["breaks", apiBase] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בהוספת הברייק"),
   });
 
   const deleteMut = useMutation({
     mutationFn: async (breakId: string) => {
-      const r = await fetch(`/api/leagues/${leagueId}/breaks/${breakId}`, { method: "DELETE" });
+      const r = await fetch(`${apiBase}/breaks/${breakId}`, { method: "DELETE" });
       if (!r.ok) throw new Error("failed");
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["league-breaks", leagueId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["breaks", apiBase] }),
     onError: () => toast.error("שגיאה במחיקת הברייק"),
   });
 
@@ -95,6 +100,7 @@ export function LeagueBreaksView({
           renderName={nameOf}
           nameText={nameOf}
           query={query}
+          scope={scope}
           districtOf={districtOf}
           onDelete={canEdit ? (id) => deleteMut.mutate(id) : undefined}
           deleting={deleteMut.isPending}

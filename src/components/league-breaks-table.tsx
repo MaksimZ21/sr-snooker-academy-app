@@ -23,7 +23,13 @@ export function LeagueBreaksTable({
   renderAdd,
   query = "",
   nameText,
+  scope = "בליגה",
+  hideEmpty = false,
 }: {
+  // How the header and empty states name the event ("בליגה" / "בטורניר").
+  scope?: string;
+  // Public tournament page: only players who have a break.
+  hideEmpty?: boolean;
   rows: BreakTableRow[];
   // Name search: rows whose nameText doesn't contain the query are hidden;
   // places stay those of the full table.
@@ -36,11 +42,12 @@ export function LeagueBreaksTable({
   renderAdd?: (participantId: string) => React.ReactNode;
 }) {
   if (rows.length === 0) {
-    return <p className="py-6 text-center text-sm text-muted-foreground">אין שחקנים בליגה</p>;
+    return <p className="py-6 text-center text-sm text-muted-foreground">{`אין שחקנים ${scope}`}</p>;
   }
   const q = query.trim().toLowerCase();
   const visible = rows
     .map((row, i) => ({ row, place: i + 1 }))
+    .filter(({ row }) => !hideEmpty || row.breaks.length > 0)
     .filter(({ row }) => !q || !nameText || nameText(row.participantId).toLowerCase().includes(q));
   const top = rows[0]?.breaks[0] ? rows[0] : null;
   const total = rows.reduce((n, r) => n + r.breaks.length, 0);
@@ -49,12 +56,12 @@ export function LeagueBreaksTable({
       {top && (
         <div className="mx-4 mb-3 flex items-center justify-between gap-3 rounded-xl bg-brand-gradient text-white px-4 py-3">
           <div className="min-w-0">
-            <p className="font-display text-xs font-bold text-white/70">הברייק הגבוה בליגה</p>
+            <p className="font-display text-xs font-bold text-white/70">{`הברייק הגבוה ${scope}`}</p>
             <p className="font-display text-base font-extrabold truncate">{renderName(top.participantId)}</p>
           </div>
           <div className="text-center shrink-0">
             <p className="bc-num text-4xl leading-none">{top.breaks[0].value}</p>
-            <p className="text-[11px] text-white/70 mt-0.5">{total} ברייקים בליגה</p>
+            <p className="text-[11px] text-white/70 mt-0.5">{total} ברייקים {scope}</p>
           </div>
         </div>
       )}

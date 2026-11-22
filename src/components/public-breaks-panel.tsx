@@ -10,7 +10,11 @@ export function PublicBreaksPanel({
   rows,
   names,
   districts,
+  scope,
+  hideEmpty,
 }: {
+  scope?: string;
+  hideEmpty?: boolean;
   rows: BreakTableRow[];
   names: Record<string, string>;
   districts: Record<string, string>;
@@ -24,6 +28,8 @@ export function PublicBreaksPanel({
         renderName={(id) => names[id] ?? "?"}
         nameText={(id) => names[id] ?? ""}
         query={query}
+        scope={scope}
+        hideEmpty={hideEmpty}
         districtOf={(id) => districts[id] ?? ""}
       />
     </>

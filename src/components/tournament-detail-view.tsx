@@ -1,4 +1,5 @@
 "use client";
+import { LeagueBreaksView } from "@/components/league-breaks-view";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Trophy, ExternalLink, Trash2, Copy } from "lucide-react";
@@ -719,6 +720,19 @@ export function TournamentDetailView({
               tournamentId={tournamentId}
               participants={participants}
               handicapPointsPerRatingGap={tournament.handicap_points_per_rating_gap}
+              canEdit={canEdit}
+            />
+          </FoldSection>
+        )}
+
+        {tournament.type === "multi_location" && participants.length > 0 && (
+          <FoldSection title="ברייקים" storageKey="tournament:breaks">
+            <LeagueBreaksView
+              leagueId={tournamentId}
+              apiBase={`/api/tournaments/${tournamentId}`}
+              scope="בטורניר"
+              participants={participants.map((p) => ({ id: p.id, district_id: p.location_id, student: p.student }))}
+              districts={locations}
               canEdit={canEdit}
             />
           </FoldSection>

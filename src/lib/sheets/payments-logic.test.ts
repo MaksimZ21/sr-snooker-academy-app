@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { firstTrainingAfter, nextRenewalDate, paymentStatus, summarizePayments, type PaymentFields } from "./payments-logic";
+import { buildPaymentsSummaryText, firstTrainingAfter, nextRenewalDate, paymentStatus, summarizePayments, type PaymentFields } from "./payments-logic";
 
 const base: PaymentFields = { payment_method: "אשראי", payment_amount: 450, next_payment_date: "2026-11-25", payment_frozen: false };
 const TODAY = "2026-11-22"; // Sunday
@@ -76,5 +76,34 @@ describe("firstTrainingAfter", () => {
   });
   it("no sessions at all -> null", () => {
     expect(firstTrainingAfter("2026-11-17", [])).toBeNull();
+  });
+});
+
+describe("buildPaymentsSummaryText", () => {
+  const row = (first_name: string, next: string | null, amount = 450, frozen = false) => ({
+    first_name,
+    last_name: "כהן",
+    payment_method: "מזומן",
+    payment_amount: amount,
+    next_payment_date: next,
+    payment_frozen: frozen,
+  });
+  it("lists late and due-this-week players by name with the expected total", () => {
+    const text = buildPaymentsSummaryText(
+      [row("דנה", "2026-11-20", 500), row("אבי", "2026-11-26"), row("גל", "2026-12-20"), row("רון", "2026-11-18", 450, true)],
+      "2026-11-23",
+      "2026-11-22",
+      "2026-11-28",
+    );
+    expect(text).toContain("סיכום תשלומים לשבוע 22/11–28/11");
+    expect(text).toContain("*באיחור (1):*\n• דנה כהן – 20/11 – ₪500 – מזומן");
+    expect(text).toContain("*לתשלום השבוע (1):*\n• אבי כהן – 26/11");
+    expect(text).not.toContain("גל");
+    expect(text).not.toContain("רון");
+    expect(text).toContain("₪950");
+  });
+  it("says none for empty lists", () => {
+    const text = buildPaymentsSummaryText([], "2026-11-23", "2026-11-22", "2026-11-28");
+    expect(text).toContain("*באיחור (0):*\nאין");
   });
 });

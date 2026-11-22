@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CalendarClock, Check, CircleHelp, Loader2, Pencil, Search, Send, Snowflake, Wallet } from "lucide-react";
+import { AlertTriangle, CalendarClock, Check, CircleHelp, Copy, Loader2, Pencil, Search, Send, Snowflake, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { StudentPaymentDialog } from "@/components/student-payment-dialog";
 import { PaidOnDialog } from "@/components/paid-on-dialog";
 import { cn } from "@/lib/utils";
 import { todayIsoTel, weekRangeFor } from "@/lib/date";
-import { paymentStatus, summarizePayments, type PaymentStatus } from "@/lib/sheets/payments-logic";
+import { buildPaymentsSummaryText, paymentStatus, summarizePayments, type PaymentStatus } from "@/lib/sheets/payments-logic";
 import type { PaymentBoardRow, PaymentGroup } from "@/lib/sheets/payments";
 import type { PaymentBoardResponse } from "@/app/api/admin/payments/route";
 
@@ -134,16 +134,20 @@ export function StudentPaymentsView() {
     onSettled: () => qc.invalidateQueries({ queryKey: QUERY_KEY }),
   });
 
-  const sendSummary = useMutation({
-    mutationFn: async () => {
-      const r = await fetch("/api/admin/payments/summary", { method: "POST" });
-      const body = (await r.json().catch(() => ({}))) as { error?: string };
-      if (!r.ok) throw new Error(body.error ?? "send_failed");
-    },
-    onSuccess: () => toast.success("הסיכום נשלח לוואטסאפ"),
-    onError: (e) =>
-      toast.error(e.message === "no_phone" ? "לא הוגדר מספר לסיכום התשלומים" : "השליחה נכשלה — ייתכן שהתבנית עוד לא אושרה"),
-  });
+  // The weekly summary for the branch/group currently chosen.
+  const summaryText = () => buildPaymentsSummaryText(inCollege, today, weekRangeFor(today).startIso, weekEnd);
+  const copySummary = async () => {
+    try {
+      await navigator.clipboard.writeText(summaryText());
+      toast.success("הסיכום הועתק — אפשר להדביק בוואטסאפ");
+    } catch {
+      toast.error("לא הצלחתי להעתיק");
+    }
+  };
+  // WhatsApp opens with the text ready; you pick the group to send it to.
+  const shareSummary = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(summaryText())}`, "_blank", "noopener");
+  };
 
   const tiles: { key: Filter; label: string; value: number; money?: number; icon: React.ReactNode; className: string }[] = [
     {
@@ -235,18 +239,20 @@ export function StudentPaymentsView() {
             </button>
           ))}
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-8 rounded-full text-xs sm:ms-auto"
-          disabled={sendSummary.isPending}
-          onClick={() => {
-            if (window.confirm("לשלוח עכשיו את סיכום התשלומים של השבוע לוואטסאפ?")) sendSummary.mutate();
-          }}
-        >
-          {sendSummary.isPending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-          שלח סיכום עכשיו
-        </Button>
+        <div className="flex gap-1.5 sm:ms-auto">
+          <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" onClick={copySummary}>
+            <Copy size={13} />
+            העתק סיכום
+          </Button>
+          <Button
+            size="sm"
+            className="h-8 rounded-full bg-[#25D366] text-xs text-white hover:bg-[#1fb857]"
+            onClick={shareSummary}
+          >
+            <Send size={13} />
+            שלח בוואטסאפ
+          </Button>
+        </div>
         {colleges.length > 1 && (
           <select
             value={college}

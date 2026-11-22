@@ -68,6 +68,42 @@ export function summarizePayments(rows: PaymentFields[], todayIso: string, weekE
   return s;
 }
 
+// The weekly summary as a WhatsApp message (copied or shared by hand):
+// who is late and who renews this week, by name, plus the money expected.
+export type SummaryRow = PaymentFields & { first_name: string; last_name: string };
+
+export function buildPaymentsSummaryText(
+  rows: SummaryRow[],
+  todayIso: string,
+  weekStartIso: string,
+  weekEndIso: string,
+): string {
+  const dm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  const nis = (n: number) => `₪${n.toLocaleString("he-IL")}`;
+  const pick = (status: PaymentStatus) =>
+    rows
+      .filter((r) => paymentStatus(r, todayIso, weekEndIso) === status)
+      .sort((a, b) => (a.next_payment_date ?? "").localeCompare(b.next_payment_date ?? ""));
+  const line = (r: SummaryRow) =>
+    [
+      `• ${[r.first_name, r.last_name].filter(Boolean).join(" ")}`,
+      r.next_payment_date ? dm(r.next_payment_date) : null,
+      r.payment_amount ? nis(r.payment_amount) : null,
+      r.payment_method,
+    ]
+      .filter(Boolean)
+      .join(" – ");
+  const sum = (list: SummaryRow[]) => list.reduce((n, r) => n + (r.payment_amount ?? 0), 0);
+
+  const overdue = pick("overdue");
+  const due = pick("due_week");
+  const parts = [`*סיכום תשלומים לשבוע ${dm(weekStartIso)}–${dm(weekEndIso)}*`];
+  parts.push("", `*באיחור (${overdue.length}):*`, ...(overdue.length ? overdue.map(line) : ["אין"]));
+  parts.push("", `*לתשלום השבוע (${due.length}):*`, ...(due.length ? due.map(line) : ["אין"]));
+  parts.push("", `צפוי להיכנס: *${nis(sum(overdue) + sum(due))}*`);
+  return parts.join("\n");
+}
+
 // The first training after a payment: the group's earliest session on or after
 // the payment day (paying on a training day counts that session). With no
 // session scheduled yet, the group's last session rolled forward a week at a

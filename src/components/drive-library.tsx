@@ -1,104 +1,134 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
-  ChevronLeft,
-  ChevronDown,
-  ExternalLink,
-  FolderOpen,
   AlertCircle,
-  FileText,
-  FileSpreadsheet,
-  Presentation,
-  FileVideo,
-  FileImage,
+  ChevronLeft,
+  ExternalLink,
   FileAudio,
+  FileImage,
+  FileSpreadsheet,
+  FileText,
+  FileVideo,
+  Folder,
+  FolderOpen,
+  Home,
+  Presentation,
+  Search,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { DriveFolder, DriveFile } from "@/lib/google/drive";
+import type { DriveFile, DriveFolder } from "@/lib/google/drive";
 
 // Each file type in its own color, like the Drive icons people know.
-const MIME_ICONS: Record<string, [LucideIcon, string]> = {
-  "application/vnd.google-apps.document": [FileText, "#4285f4"],
-  "application/vnd.google-apps.spreadsheet": [FileSpreadsheet, "#0f9d58"],
-  "application/vnd.google-apps.presentation": [Presentation, "#f4b400"],
-  "application/pdf": [FileText, "#db4437"],
+type FileKind = { icon: LucideIcon; color: string; label: string };
+
+const MIME_KINDS: Record<string, FileKind> = {
+  "application/vnd.google-apps.document": { icon: FileText, color: "#4285f4", label: "מסמך" },
+  "application/vnd.google-apps.spreadsheet": { icon: FileSpreadsheet, color: "#0f9d58", label: "גיליון" },
+  "application/vnd.google-apps.presentation": { icon: Presentation, color: "#f4b400", label: "מצגת" },
+  "application/pdf": { icon: FileText, color: "#db4437", label: "PDF" },
 };
 
-function mimeIcon(mimeType: string): [LucideIcon, string] {
-  if (MIME_ICONS[mimeType]) return MIME_ICONS[mimeType];
-  if (mimeType.startsWith("video/")) return [FileVideo, "#db4437"];
-  if (mimeType.startsWith("image/")) return [FileImage, "#0f9d58"];
-  if (mimeType.startsWith("audio/")) return [FileAudio, "#78716c"];
-  return [FileText, "#4285f4"];
+function fileKind(mimeType: string): FileKind {
+  if (MIME_KINDS[mimeType]) return MIME_KINDS[mimeType];
+  if (mimeType.startsWith("video/")) return { icon: FileVideo, color: "#db4437", label: "וידאו" };
+  if (mimeType.startsWith("image/")) return { icon: FileImage, color: "#0f9d58", label: "תמונה" };
+  if (mimeType.startsWith("audio/")) return { icon: FileAudio, color: "#78716c", label: "אודיו" };
+  return { icon: FileText, color: "#4285f4", label: "קובץ" };
 }
 
-function FileRow({ file }: { file: DriveFile }) {
+function countFiles(folder: DriveFolder): number {
+  return folder.files.length + folder.subfolders.reduce((n, sub) => n + countFiles(sub), 0);
+}
+
+// Every file in the tree with the folder path it sits in, for search.
+function flatten(folder: DriveFolder, path: string[] = []): { file: DriveFile; path: string[] }[] {
+  return [
+    ...folder.files.map((file) => ({ file, path })),
+    ...folder.subfolders.flatMap((sub) => flatten(sub, [...path, sub.name])),
+  ];
+}
+
+function FolderCard({ folder, index, onOpen }: { folder: DriveFolder; index: number; onOpen: () => void }) {
+  const files = countFiles(folder);
+  const subs = folder.subfolders.length;
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      style={{ animationDelay: `${index * 40}ms` }}
+      className="animate-fade-in-up group relative flex flex-col items-start gap-3 rounded-[18px] border bg-card p-4 text-right transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-1 hover:border-amber-400/60 hover:shadow-[0_16px_30px_-18px_rgb(13_21_16/0.35)]"
+    >
+      <span className="relative flex h-14 w-16 items-center justify-center">
+        <span className="absolute inset-0 rounded-2xl bg-amber-400/15 blur-md opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+        <Folder
+          size={52}
+          strokeWidth={1.4}
+          className="relative text-amber-500 fill-amber-400/90 transition-transform duration-200 group-hover:scale-105"
+        />
+      </span>
+      <span className="w-full">
+        <span className="block font-display text-[15px] font-bold leading-tight line-clamp-2">{folder.name}</span>
+        <span className="mt-1 block text-xs text-muted-foreground">
+          {files} קבצים{subs > 0 ? ` · ${subs} תיקיות` : ""}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+function FileCard({ file, index, path }: { file: DriveFile; index: number; path?: string[] }) {
+  const kind = fileKind(file.mimeType);
+  const Icon = kind.icon;
   return (
     <a
       href={file.webViewLink}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 transition-colors group"
+      style={{ animationDelay: `${index * 40}ms` }}
+      className="animate-fade-in-up group flex flex-col overflow-hidden rounded-[18px] border bg-card transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_16px_30px_-18px_rgb(13_21_16/0.35)]"
     >
-      {(() => {
-        const [Icon, color] = mimeIcon(file.mimeType);
-        return (
-          <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${color}1f`, color }}>
-            <Icon size={16} strokeWidth={2} />
-          </span>
-        );
-      })()}
-      <span className="flex-1 text-sm truncate">{file.name}</span>
-      <ExternalLink
-        size={13}
-        className="shrink-0 text-muted-foreground/40 group-hover:text-primary transition-colors"
-      />
+      <span
+        className="relative flex h-24 items-center justify-center"
+        style={{ background: `linear-gradient(135deg, ${kind.color}26, ${kind.color}0d)` }}
+      >
+        <Icon size={38} strokeWidth={1.6} style={{ color: kind.color }} className="transition-transform duration-200 group-hover:scale-110" />
+        <span
+          className="absolute top-2 right-2 rounded-full px-2 py-0.5 text-[11px] font-bold text-white"
+          style={{ background: kind.color }}
+        >
+          {kind.label}
+        </span>
+        <ExternalLink size={14} className="absolute top-2.5 left-2.5 text-foreground/30 transition-colors group-hover:text-primary" />
+      </span>
+      <span className="flex items-start gap-2 p-3">
+        <Icon size={15} className="mt-0.5 shrink-0" style={{ color: kind.color }} />
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold leading-snug line-clamp-2">{file.name}</span>
+          {path && path.length > 0 && (
+            <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{path.join(" › ")}</span>
+          )}
+        </span>
+      </span>
     </a>
   );
 }
 
-function FolderSection({ folder }: { folder: DriveFolder }) {
-  const [open, setOpen] = useState(true);
-  const isEmpty = folder.files.length === 0 && folder.subfolders.length === 0;
-
+function SectionTitle({ children, count }: { children: React.ReactNode; count: number }) {
   return (
-    <div className="flex flex-col">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 py-2 px-1 rounded-lg hover:bg-muted/40 transition-colors w-full text-right"
-      >
-        <FolderOpen size={16} className="text-amber-500 shrink-0" />
-        <span className="flex-1 font-semibold text-sm">{folder.name}</span>
-        <span className="text-xs text-muted-foreground shrink-0">
-          {folder.files.length + folder.subfolders.length} ׳₪׳¨׳™׳˜׳™׳
-        </span>
-        {open ? (
-          <ChevronDown size={14} className="text-muted-foreground shrink-0" />
-        ) : (
-          <ChevronLeft size={14} className="text-muted-foreground shrink-0" />
-        )}
-      </button>
-
-      {open && (
-        <div className={cn("mr-3 border-r border-border/50 pr-2 flex flex-col gap-0.5 mt-0.5")}>
-          {isEmpty && (
-            <p className="text-xs text-muted-foreground px-3 py-2">׳×׳™׳§׳™׳™׳” ׳¨׳™׳§׳”</p>
-          )}
-          {folder.subfolders.map((sub) => (
-            <FolderSection key={sub.id} folder={sub} />
-          ))}
-          {folder.files.map((f) => (
-            <FileRow key={f.id} file={f} />
-          ))}
-        </div>
-      )}
-    </div>
+    <h3 className="flex items-center gap-2 font-display text-sm font-bold text-muted-foreground">
+      {children}
+      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] tabular-nums">{count}</span>
+    </h3>
   );
 }
+
+const GRID = "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3";
 
 export function DriveLibrary() {
   const { data, isLoading, isError } = useQuery<DriveFolder>({
@@ -111,45 +141,134 @@ export function DriveLibrary() {
     staleTime: 5 * 60_000,
   });
 
+  // The folders opened so far, from the top; the last one is on screen.
+  const [trail, setTrail] = useState<DriveFolder[]>([]);
+  const [query, setQuery] = useState("");
+
+  const allFiles = useMemo(() => (data ? flatten(data) : []), [data]);
+
   if (isLoading) {
     return (
-      <div className="p-4 flex flex-col gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full rounded-lg" />
+      <div className={cn("p-4", GRID)}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} className="h-36 w-full rounded-[18px]" />
         ))}
       </div>
     );
   }
 
-  if (isError) {
+  if (isError || !data) {
     return (
       <div className="p-4 flex flex-col items-center gap-3 py-16 text-muted-foreground">
         <AlertCircle size={36} className="opacity-40" />
-        <p className="text-sm text-center">׳׳ ׳ ׳™׳×׳ ׳׳˜׳¢׳•׳ ׳§׳‘׳¦׳™׳ ׳›׳¨׳’׳¢</p>
+        <p className="text-sm text-center">לא ניתן לטעון קבצים כרגע</p>
       </div>
     );
   }
 
-  const hasContent =
-    (data?.files.length ?? 0) > 0 || (data?.subfolders.length ?? 0) > 0;
-
-  if (!hasContent) {
-    return (
-      <div className="p-4 flex flex-col items-center gap-3 py-16 text-muted-foreground">
-        <FolderOpen size={36} className="opacity-25" />
-        <p className="text-sm">׳׳™׳ ׳§׳‘׳¦׳™׳ ׳‘׳×׳™׳§׳™׳™׳”</p>
-      </div>
-    );
-  }
+  const current = trail.at(-1) ?? data;
+  const q = query.trim().toLowerCase();
+  const results = q ? allFiles.filter(({ file }) => file.name.toLowerCase().includes(q)) : [];
+  const isEmpty = current.files.length === 0 && current.subfolders.length === 0;
 
   return (
-    <div className="p-4 flex flex-col gap-1">
-      {data!.subfolders.map((folder) => (
-        <FolderSection key={folder.id} folder={folder} />
-      ))}
-      {data!.files.map((file) => (
-        <FileRow key={file.id} file={file} />
-      ))}
+    <div className="p-4 flex flex-col gap-5">
+      {/* Search across every folder */}
+      <div className="relative max-w-md">
+        <Search size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="חיפוש קובץ בכל התיקיות..."
+          className="h-10 rounded-xl pr-9 pl-9"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="נקה חיפוש"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:text-foreground"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {q ? (
+        <section className="flex flex-col gap-3">
+          <SectionTitle count={results.length}>תוצאות חיפוש</SectionTitle>
+          {results.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">לא נמצאו קבצים בשם הזה</p>
+          ) : (
+            <div className={GRID}>
+              {results.map(({ file, path }, i) => (
+                <FileCard key={file.id} file={file} path={path} index={i} />
+              ))}
+            </div>
+          )}
+        </section>
+      ) : (
+        <>
+          {/* Breadcrumbs */}
+          <nav className="flex flex-wrap items-center gap-1 rounded-xl bg-muted/50 px-2 py-1.5 text-sm">
+            <button
+              type="button"
+              onClick={() => setTrail([])}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-2 py-1 font-semibold transition-colors hover:bg-background",
+                trail.length === 0 ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              <Home size={14} />
+              כל הקבצים
+            </button>
+            {trail.map((f, i) => (
+              <span key={f.id} className="flex items-center gap-1">
+                <ChevronLeft size={14} className="text-muted-foreground/60" />
+                <button
+                  type="button"
+                  onClick={() => setTrail(trail.slice(0, i + 1))}
+                  className={cn(
+                    "rounded-lg px-2 py-1 font-semibold transition-colors hover:bg-background",
+                    i === trail.length - 1 ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {f.name}
+                </button>
+              </span>
+            ))}
+          </nav>
+
+          {isEmpty && (
+            <div className="flex flex-col items-center gap-3 py-16 text-muted-foreground">
+              <FolderOpen size={40} className="opacity-25" />
+              <p className="text-sm">{trail.length === 0 ? "אין קבצים בתיקייה" : "תיקייה ריקה"}</p>
+            </div>
+          )}
+
+          {current.subfolders.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <SectionTitle count={current.subfolders.length}>תיקיות</SectionTitle>
+              <div key={`folders:${current.id}`} className={GRID}>
+                {current.subfolders.map((sub, i) => (
+                  <FolderCard key={sub.id} folder={sub} index={i} onOpen={() => setTrail([...trail, sub])} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {current.files.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <SectionTitle count={current.files.length}>קבצים</SectionTitle>
+              <div key={`files:${current.id}`} className={GRID}>
+                {current.files.map((file, i) => (
+                  <FileCard key={file.id} file={file} index={i} />
+                ))}
+              </div>
+            </section>
+          )}
+        </>
+      )}
     </div>
   );
 }

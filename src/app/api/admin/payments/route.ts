@@ -30,8 +30,8 @@ export async function POST(req: Request) {
   try {
     const user = await requireAdmin();
     const { student_id } = RecordBody.parse(await req.json());
-    const paymentId = await recordPayment(student_id, user.email);
-    return NextResponse.json({ ok: true, payment_id: paymentId });
+    const { paymentId, firstTraining } = await recordPayment(student_id, user.email);
+    return NextResponse.json({ ok: true, payment_id: paymentId, first_training_date: firstTraining });
   } catch (e) {
     if (e instanceof Response) return e;
     console.error("[payments POST]", e);

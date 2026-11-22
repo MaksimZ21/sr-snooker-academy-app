@@ -1,7 +1,8 @@
 import { db } from "@/lib/db/client";
 import { revalidateTag } from "next/cache";
+import { addDays, format, parseISO } from "date-fns";
 import { todayIsoTel } from "@/lib/date";
-import { nextRenewalDate, type PaymentFields } from "./payments-logic";
+import { firstTrainingAfter, nextRenewalDate, type PaymentFields } from "./payments-logic";
 
 export type PaymentGroup = {
   id: string;
@@ -18,6 +19,7 @@ export type PaymentBoardRow = PaymentFields & {
   phone: string;
   college_name: string;
   last_payment_date: string | null;
+  first_training_date: string | null;
   payment_notes: string;
   group: PaymentGroup | null;
 };
@@ -25,7 +27,7 @@ export type PaymentBoardRow = PaymentFields & {
 type StudentPaymentRow = Omit<PaymentBoardRow, "group">;
 
 const STUDENT_COLUMNS =
-  "id, first_name, last_name, phone, college_name, payment_method, payment_amount, last_payment_date, next_payment_date, payment_notes, payment_frozen";
+  "id, first_name, last_name, phone, college_name, payment_method, payment_amount, last_payment_date, next_payment_date, first_training_date, payment_notes, payment_frozen";
 
 // Every active academy student (not tournament-only players) with their
 // payment details and the group they train in, for the finance tab and the
@@ -72,6 +74,7 @@ export type PaymentDetailsPatch = {
   payment_amount?: number | null;
   last_payment_date?: string | null;
   next_payment_date?: string | null;
+  first_training_date?: string | null;
   payment_notes?: string;
   payment_frozen?: boolean;
 };
@@ -82,12 +85,33 @@ export async function updatePaymentDetails(studentId: string, patch: PaymentDeta
   revalidateTag("students", { expire: 0 });
 }
 
-// "שולם": records the payment and moves the renewal a month on. Returns the
-// payment id so the press can be undone.
-export async function recordPayment(studentId: string, markedBy: string): Promise<string> {
+// The student's first training on or after a day: the sessions of the groups
+// they're in (and sessions they're on by name), not cancelled. Looks back two
+// months so a group with nothing scheduled yet can be rolled forward.
+async function findFirstTraining(studentId: string, fromIso: string): Promise<string | null> {
+  const since = format(addDays(parseISO(fromIso), -60), "yyyy-MM-dd");
+  const { data: groups } = await db.from("groups").select("id").contains("student_ids", [studentId]);
+  const groupIds = ((groups ?? []) as { id: string }[]).map((g) => g.id);
+  const [byGroup, byName] = await Promise.all([
+    groupIds.length
+      ? db.from("sessions").select("date").in("group_id", groupIds).neq("status", "cancelled").gte("date", since)
+      : Promise.resolve({ data: [] as { date: string }[] }),
+    db.from("sessions").select("date").contains("student_ids", [studentId]).neq("status", "cancelled").gte("date", since),
+  ]);
+  const dates = [...(byGroup.data ?? []), ...(byName.data ?? [])].map((r) => (r as { date: string }).date);
+  return firstTrainingAfter(fromIso, dates);
+}
+
+// "שולם": records the payment, moves the renewal a month on and finds the
+// first training after it. Returns the payment id (so the press can be
+// undone) and that training date.
+export async function recordPayment(
+  studentId: string,
+  markedBy: string,
+): Promise<{ paymentId: string; firstTraining: string | null }> {
   const { data: student, error } = await db
     .from("students")
-    .select("payment_method, payment_amount, last_payment_date, next_payment_date")
+    .select("payment_method, payment_amount, last_payment_date, next_payment_date, first_training_date")
     .eq("id", studentId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -95,6 +119,7 @@ export async function recordPayment(studentId: string, markedBy: string): Promis
 
   const today = todayIsoTel();
   const covered = (student.next_payment_date as string | null) ?? null;
+  const firstTraining = await findFirstTraining(studentId, today);
   const { data: payment, error: insertError } = await db
     .from("student_payments")
     .insert({
@@ -105,6 +130,8 @@ export async function recordPayment(studentId: string, markedBy: string): Promis
       covered_date: covered,
       prev_last_payment_date: student.last_payment_date,
       prev_next_payment_date: student.next_payment_date,
+      first_training_date: firstTraining,
+      prev_first_training_date: student.first_training_date,
       marked_by: markedBy,
     })
     .select("id")
@@ -114,15 +141,16 @@ export async function recordPayment(studentId: string, markedBy: string): Promis
   await updatePaymentDetails(studentId, {
     last_payment_date: today,
     next_payment_date: nextRenewalDate(covered, today),
+    first_training_date: firstTraining,
   });
-  return payment.id as string;
+  return { paymentId: payment.id as string, firstTraining };
 }
 
 // Puts the student's dates back to what they were before the press.
 export async function undoPayment(paymentId: string): Promise<void> {
   const { data: payment, error } = await db
     .from("student_payments")
-    .select("student_id, prev_last_payment_date, prev_next_payment_date")
+    .select("student_id, prev_last_payment_date, prev_next_payment_date, prev_first_training_date")
     .eq("id", paymentId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -130,6 +158,7 @@ export async function undoPayment(paymentId: string): Promise<void> {
   await updatePaymentDetails(payment.student_id as string, {
     last_payment_date: payment.prev_last_payment_date as string | null,
     next_payment_date: payment.prev_next_payment_date as string | null,
+    first_training_date: payment.prev_first_training_date as string | null,
   });
   const { error: deleteError } = await db.from("student_payments").delete().eq("id", paymentId);
   if (deleteError) throw new Error(deleteError.message);

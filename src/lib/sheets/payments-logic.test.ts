@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextRenewalDate, paymentStatus, summarizePayments, type PaymentFields } from "./payments-logic";
+import { firstTrainingAfter, nextRenewalDate, paymentStatus, summarizePayments, type PaymentFields } from "./payments-logic";
 
 const base: PaymentFields = { payment_method: "אשראי", payment_amount: 450, next_payment_date: "2026-11-25", payment_frozen: false };
 const TODAY = "2026-11-22"; // Sunday
@@ -58,5 +58,23 @@ describe("summarizePayments", () => {
     expect(s.missing).toBe(1);
     expect(s.frozen).toBe(1);
     expect(s.monthly).toBe(1350);
+  });
+});
+
+describe("firstTrainingAfter", () => {
+  // Monday group: 2026-11-16, 11-23, 11-30.
+  const mondays = ["2026-11-16", "2026-11-23", "2026-11-30"];
+  it("paid on a Tuesday -> the next Monday", () => {
+    expect(firstTrainingAfter("2026-11-17", mondays)).toBe("2026-11-23");
+  });
+  it("paid on the training day itself -> that session", () => {
+    expect(firstTrainingAfter("2026-11-23", mondays)).toBe("2026-11-23");
+  });
+  it("nothing scheduled ahead -> the last session rolled forward by weeks", () => {
+    expect(firstTrainingAfter("2026-12-02", mondays)).toBe("2026-12-07");
+    expect(firstTrainingAfter("2026-12-07", mondays)).toBe("2026-12-07");
+  });
+  it("no sessions at all -> null", () => {
+    expect(firstTrainingAfter("2026-11-17", [])).toBeNull();
   });
 });

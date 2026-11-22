@@ -1,4 +1,4 @@
-import { addMonths, format, parseISO } from "date-fns";
+import { addDays, addMonths, differenceInCalendarDays, format, parseISO } from "date-fns";
 
 // The ways a student pays, as written in the academy's payments sheet.
 // Every method renews monthly (the 3-month standing order charges monthly too).
@@ -66,4 +66,18 @@ export function summarizePayments(rows: PaymentFields[], todayIso: string, weekE
     }
   }
   return s;
+}
+
+// The first training after a payment: the group's earliest session on or after
+// the payment day (paying on a training day counts that session). With no
+// session scheduled yet, the group's last session rolled forward a week at a
+// time. null when the student has no sessions at all.
+export function firstTrainingAfter(paidOnIso: string, sessionDates: string[]): string | null {
+  const sorted = [...sessionDates].sort();
+  const upcoming = sorted.find((d) => d >= paidOnIso);
+  if (upcoming) return upcoming;
+  const last = sorted.at(-1);
+  if (!last) return null;
+  const weeks = Math.ceil(differenceInCalendarDays(parseISO(paidOnIso), parseISO(last)) / 7);
+  return format(addDays(parseISO(last), weeks * 7), "yyyy-MM-dd");
 }

@@ -10,6 +10,7 @@ const Body = z.object({
   payment_amount: z.number().int().min(0).max(100000).nullable().optional(),
   last_payment_date: IsoDate.nullable().optional(),
   next_payment_date: IsoDate.nullable().optional(),
+  first_training_date: IsoDate.nullable().optional(),
   payment_notes: z.string().max(500).optional(),
   payment_frozen: z.boolean().optional(),
 });

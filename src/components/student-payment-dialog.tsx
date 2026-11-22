@@ -19,6 +19,7 @@ export function StudentPaymentDialog({ row, onClose }: { row: PaymentBoardRow | 
   const [amount, setAmount] = useState("");
   const [lastDate, setLastDate] = useState("");
   const [nextDate, setNextDate] = useState("");
+  const [firstDate, setFirstDate] = useState("");
   const [notes, setNotes] = useState("");
   const [frozen, setFrozen] = useState(false);
 
@@ -28,6 +29,7 @@ export function StudentPaymentDialog({ row, onClose }: { row: PaymentBoardRow | 
     setAmount(row.payment_amount === null ? "" : String(row.payment_amount));
     setLastDate(row.last_payment_date ?? "");
     setNextDate(row.next_payment_date ?? "");
+    setFirstDate(row.first_training_date ?? "");
     setNotes(row.payment_notes);
     setFrozen(row.payment_frozen);
   }, [row]);
@@ -43,6 +45,7 @@ export function StudentPaymentDialog({ row, onClose }: { row: PaymentBoardRow | 
           payment_amount: amount.trim() === "" ? null : Math.round(Number(amount)),
           last_payment_date: lastDate || null,
           next_payment_date: nextDate || null,
+          first_training_date: firstDate || null,
           payment_notes: notes.trim(),
           payment_frozen: frozen,
         }),
@@ -61,7 +64,7 @@ export function StudentPaymentDialog({ row, onClose }: { row: PaymentBoardRow | 
 
   return (
     <Dialog open={row !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             פרטי תשלום · {row?.first_name} {row?.last_name}
@@ -90,7 +93,7 @@ export function StudentPaymentDialog({ row, onClose }: { row: PaymentBoardRow | 
             <Label htmlFor="pay-amount">סכום חודשי (₪)</Label>
             <Input id="pay-amount" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="450" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="pay-last">תשלום אחרון</Label>
               <Input id="pay-last" type="date" value={lastDate} onChange={(e) => setLastDate(e.target.value)} />
@@ -98,6 +101,10 @@ export function StudentPaymentDialog({ row, onClose }: { row: PaymentBoardRow | 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="pay-next">תאריך חידוש</Label>
               <Input id="pay-next" type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="pay-first">אימון ראשון</Label>
+              <Input id="pay-first" type="date" value={firstDate} onChange={(e) => setFirstDate(e.target.value)} />
             </div>
           </div>
           <div className="flex flex-col gap-1.5">

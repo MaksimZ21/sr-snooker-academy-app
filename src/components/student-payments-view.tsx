@@ -96,10 +96,11 @@ export function StudentPaymentsView() {
         body: JSON.stringify({ student_id: row.id }),
       });
       if (!r.ok) throw new Error("failed");
-      return (await r.json()) as { payment_id: string };
+      return (await r.json()) as { payment_id: string; first_training_date: string | null };
     },
-    onSuccess: ({ payment_id }, row) => {
+    onSuccess: ({ payment_id, first_training_date }, row) => {
       toast.success(`נרשם תשלום של ${row.first_name}`, {
+        description: first_training_date ? `אימון ראשון: ${ddmm(first_training_date)}` : undefined,
         action: {
           label: "בטל",
           onClick: async () => {
@@ -293,6 +294,7 @@ export function StudentPaymentsView() {
                             <span>{r.payment_method || "אין צורת תשלום"}</span>
                             {r.payment_amount !== null && <span className="font-semibold text-foreground">{nis(r.payment_amount)}</span>}
                             <span>שולם {ddmm(r.last_payment_date)}</span>
+                            {r.first_training_date && <span>אימון ראשון {ddmm(r.first_training_date)}</span>}
                             <span className={cn(status === "overdue" && "font-bold text-rose-600", status === "due_week" && "font-bold text-amber-600")}>
                               חידוש {ddmm(r.next_payment_date)}
                             </span>

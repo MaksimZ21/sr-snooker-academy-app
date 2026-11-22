@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireStaff } from "@/lib/auth/requireUser";
 import { fetchSessionById } from "@/lib/sheets/sessions";
-import { deleteAttendance, upsertAttendance } from "@/lib/sheets/attendance";
+import { clearSessionAttendance, deleteAttendance, upsertAttendance } from "@/lib/sheets/attendance";
 import { z } from "zod";
 
 const Body = z.object({
@@ -46,7 +46,8 @@ export async function POST(
   }
 }
 
-const DeleteBody = z.object({ student_id: z.string().min(1) });
+// One student, or { all: true } to clear the whole session's attendance.
+const DeleteBody = z.union([z.object({ student_id: z.string().min(1) }), z.object({ all: z.literal(true) })]);
 
 export async function DELETE(
   req: Request,
@@ -60,8 +61,12 @@ export async function DELETE(
     if (user.role === "coach" && session.coach_email !== user.email) {
       return new NextResponse("Forbidden", { status: 403 });
     }
-    const { student_id } = DeleteBody.parse(await req.json());
-    await deleteAttendance(id, student_id, user.role === "admin" ? undefined : ["present", "absent", "late"]);
+    const body = DeleteBody.parse(await req.json());
+    if ("all" in body) {
+      await clearSessionAttendance(id);
+    } else {
+      await deleteAttendance(id, body.student_id, user.role === "admin" ? undefined : ["present", "absent", "late"]);
+    }
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof Response) return e;

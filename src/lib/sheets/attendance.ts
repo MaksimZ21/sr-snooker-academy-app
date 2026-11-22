@@ -60,6 +60,19 @@ export async function upsertAttendance(row: Attendance): Promise<void> {
   revalidateTag(`attendance:${row.session_id}`, { expire: 0 });
 }
 
+// Clears what was marked in the room (present/late/absent) for the whole
+// session. The students' own confirmed/declined answers stay.
+export async function clearSessionAttendance(sessionId: string): Promise<void> {
+  const { error } = await db
+    .from("attendance")
+    .delete()
+    .eq("session_id", sessionId)
+    .in("status", MARKED_STATUSES);
+  if (error) throw new Error(error.message);
+  revalidateTag("attendance:all", { expire: 0 });
+  revalidateTag(`attendance:${sessionId}`, { expire: 0 });
+}
+
 // A coach can clear only what is marked in the room; the student's own
 // confirmed/declined answer stays unless an admin clears it.
 export async function deleteAttendance(sessionId: string, studentId: string, onlyStatuses?: string[]): Promise<void> {

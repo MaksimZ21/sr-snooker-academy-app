@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCheck, Loader2, MessageSquarePlus } from "lucide-react";
+import { CheckCheck, Eraser, Loader2, MessageSquarePlus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Attendance, Note, NoteVisibility, Student } from "@/lib/sheets/schemas";
@@ -197,6 +197,25 @@ export function AttendancePanel({
     },
   });
 
+  // Wipes present/late/absent for everyone (the RSVPs stay), to start over.
+  const clearAll = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/sessions/${sessionId}/attendance`, {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+      if (!r.ok) throw new Error("write failed");
+    },
+    onSuccess: () => toast.success("הנוכחות נוקתה"),
+    onError: () => toast.error("שגיאה בניקוי הנוכחות"),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["session", sessionId] });
+      qc.invalidateQueries({ queryKey: ["sessions:week"] });
+      qc.invalidateQueries({ queryKey: ["sessions:mine"] });
+    },
+  });
+
   return (
     <div className="flex flex-col gap-2.5 mt-4">
       {students.length > 0 && (
@@ -208,6 +227,21 @@ export function AttendancePanel({
               <span className="text-xs text-amber-300">· {students.length - marked} לא סומנו</span>
             )}
           </div>
+          <div className="flex items-center gap-1.5">
+          {!readOnly && marked > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                if (window.confirm(`לנקות את הנוכחות של ${marked} מתאמנים באימון הזה?`)) clearAll.mutate();
+              }}
+              disabled={clearAll.isPending || allPresent.isPending}
+              className="h-9 px-3 text-white/80 hover:text-white hover:bg-white/10"
+            >
+              {clearAll.isPending ? <Loader2 size={15} className="animate-spin" /> : <Eraser size={15} />}
+              נקה נוכחות
+            </Button>
+          )}
           {!readOnly && unmarked.length > 0 && (
             <Button
               size="sm"
@@ -219,6 +253,7 @@ export function AttendancePanel({
               כל השאר נוכחים
             </Button>
           )}
+          </div>
         </div>
       )}
       {students.map((s) => (

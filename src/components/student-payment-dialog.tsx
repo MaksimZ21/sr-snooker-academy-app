@@ -45,7 +45,7 @@ export function StudentPaymentDialog({ row, onClose }: { row: PaymentBoardRow | 
 
   return (
     <Dialog open={row !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             פרטי תשלום · {row?.first_name} {row?.last_name}

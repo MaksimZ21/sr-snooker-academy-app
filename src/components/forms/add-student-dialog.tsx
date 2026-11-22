@@ -104,7 +104,7 @@ export function AddStudentDialog() {
         <Plus className="ml-2 h-4 w-4" />
         הוסף מתאמן
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>הוסף מתאמן</DialogTitle>
         </DialogHeader>
@@ -183,7 +183,7 @@ export function AddStudentDialog() {
             />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="sticky bottom-0 z-10 bg-popover">
           <Button
             variant="outline"
             onClick={() => setOpen(false)}

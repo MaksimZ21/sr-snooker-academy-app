@@ -110,7 +110,7 @@ export function EditStudentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>עריכת מתאמן — {student.id}</DialogTitle>
         </DialogHeader>
@@ -205,7 +205,7 @@ export function EditStudentDialog({
             </Select>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="sticky bottom-0 z-10 bg-popover">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={mut.isPending}>
             ביטול
           </Button>

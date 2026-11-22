@@ -45,6 +45,7 @@ export function StudentPaymentsView() {
 
   const [filter, setFilter] = useState<Filter>("all");
   const [college, setCollege] = useState<string>("all");
+  const [groupId, setGroupId] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<PaymentBoardRow | null>(null);
 
@@ -57,7 +58,21 @@ export function StudentPaymentsView() {
     () => [...new Set(rows.map((r) => r.group?.college_name || r.college_name).filter(Boolean))].sort(),
     [rows],
   );
-  const inCollege = rows.filter((r) => college === "all" || (r.group?.college_name || r.college_name) === college);
+  const inCollege = rows.filter(
+    (r) =>
+      (college === "all" || (r.group?.college_name || r.college_name) === college) &&
+      (groupId === "all" || (r.group?.id ?? "__none") === groupId),
+  );
+  // The groups to pick from, within the chosen branch.
+  const groupOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const r of rows) {
+      if (college !== "all" && (r.group?.college_name || r.college_name) !== college) continue;
+      const g = r.group;
+      seen.set(g?.id ?? "__none", g ? [g.name, g.college_name].filter(Boolean).join(" · ") : "ללא קבוצה");
+    }
+    return [...seen.entries()].sort((a, b) => (a[0] === "__none" ? 1 : b[0] === "__none" ? -1 : a[1].localeCompare(b[1], "he")));
+  }, [rows, college]);
   const summary = summarizePayments(inCollege, today, weekEnd);
 
   const q = query.trim();
@@ -231,7 +246,10 @@ export function StudentPaymentsView() {
         {colleges.length > 1 && (
           <select
             value={college}
-            onChange={(e) => setCollege(e.target.value)}
+            onChange={(e) => {
+              setCollege(e.target.value);
+              setGroupId("all");
+            }}
             className="h-8 rounded-full border bg-background px-3 text-xs font-bold"
             aria-label="סניף"
           >
@@ -239,6 +257,21 @@ export function StudentPaymentsView() {
             {colleges.map((c) => (
               <option key={c} value={c}>
                 {c}
+              </option>
+            ))}
+          </select>
+        )}
+        {groupOptions.length > 1 && (
+          <select
+            value={groupId}
+            onChange={(e) => setGroupId(e.target.value)}
+            className="h-8 max-w-56 rounded-full border bg-background px-3 text-xs font-bold"
+            aria-label="קבוצה"
+          >
+            <option value="all">כל הקבוצות</option>
+            {groupOptions.map(([id, label]) => (
+              <option key={id} value={id}>
+                {label}
               </option>
             ))}
           </select>

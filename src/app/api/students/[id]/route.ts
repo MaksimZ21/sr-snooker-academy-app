@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { deleteStudent, updateStudent } from "@/lib/sheets/students";
 import { assertValidLevel } from "@/lib/sheets/skill-levels";
+import { PaymentBodyShape } from "@/lib/sheets/payment-body";
 
 const PatchBody = z.object({
   first_name: z.string().optional(),
@@ -13,10 +14,10 @@ const PatchBody = z.object({
   subscription_type: z.string().optional(),
   general_notes: z.string().optional(),
   birth_date: z.string().nullable().optional(),
-  last_payment_date: z.string().nullable().optional(),
   active: z.boolean().optional(),
   skill_level: z.string().nullable().optional(),
   skill_level_9ft: z.string().nullable().optional(),
+  ...PaymentBodyShape,
 });
 
 export async function PATCH(

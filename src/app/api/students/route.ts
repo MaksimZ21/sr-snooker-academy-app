@@ -1,3 +1,4 @@
+import { PaymentBodyShape } from "@/lib/sheets/payment-body";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
@@ -30,9 +31,9 @@ export async function POST(req: Request) {
         subscription_type: z.string().optional(),
         general_notes: z.string().optional(),
         birth_date: z.string().nullable().optional(),
-        last_payment_date: z.string().nullable().optional(),
         skill_level: z.string().nullable().optional(),
         skill_level_9ft: z.string().nullable().optional(),
+        ...PaymentBodyShape,
       })
       .parse(await req.json());
     await assertValidLevel("12", body.skill_level);

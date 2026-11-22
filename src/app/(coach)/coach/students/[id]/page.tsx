@@ -89,9 +89,9 @@ export default function CoachStudentDetailPage({ params }: { params: Promise<{ i
                 {student.phone}
               </span>
             )}
-            {student.subscription_type && (
+            {(student.payment_method || student.subscription_type) && (
               <span className="rounded-lg bg-white/15 px-2.5 py-1 font-display text-xs font-bold text-white">
-                {student.subscription_type}
+                {student.payment_method || student.subscription_type}
               </span>
             )}
             {student.college_name && (

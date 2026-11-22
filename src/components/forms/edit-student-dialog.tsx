@@ -17,6 +17,12 @@ import { toast } from "sonner";
 import type { Student } from "@/lib/sheets/schemas";
 import { useSkillLevels } from "@/components/use-skill-levels";
 import type { College } from "@/lib/sheets/colleges";
+import {
+  PaymentFieldsEditor,
+  paymentDraftFrom,
+  paymentDraftInvalid,
+  paymentDraftToBody,
+} from "@/components/forms/payment-fields-editor";
 
 export function EditStudentDialog({
   student,
@@ -32,10 +38,9 @@ export function EditStudentDialog({
   const [phone, setPhone] = useState(student.phone);
   const [email, setEmail] = useState(student.email);
   const [collegeName, setCollegeName] = useState(student.college_name || "__none__");
-  const [subscriptionType, setSubscriptionType] = useState(student.subscription_type);
   const [notes, setNotes] = useState(student.general_notes);
   const [birthDate, setBirthDate] = useState(student.birth_date ?? "");
-  const [lastPaymentDate, setLastPaymentDate] = useState(student.last_payment_date ?? "");
+  const [payment, setPayment] = useState(() => paymentDraftFrom(student));
   const [active, setActive] = useState(student.active);
   const [skillLevel, setSkillLevel] = useState(student.skill_level ?? "__none__");
   const [skillLevel9, setSkillLevel9] = useState(student.skill_level_9ft ?? "__none__");
@@ -59,10 +64,9 @@ export function EditStudentDialog({
       setPhone(student.phone);
       setEmail(student.email);
       setCollegeName(student.college_name || "__none__");
-      setSubscriptionType(student.subscription_type);
       setNotes(student.general_notes);
       setBirthDate(student.birth_date ?? "");
-      setLastPaymentDate(student.last_payment_date ?? "");
+      setPayment(paymentDraftFrom(student));
       setActive(student.active);
       setSkillLevel(student.skill_level ?? "__none__");
       setSkillLevel9(student.skill_level_9ft ?? "__none__");
@@ -80,13 +84,12 @@ export function EditStudentDialog({
           phone: phone.trim(),
           email: email.trim(),
           college_name: collegeName === "__none__" ? "" : collegeName,
-          subscription_type: subscriptionType.trim(),
           general_notes: notes.trim(),
           birth_date: birthDate || null,
-          last_payment_date: lastPaymentDate || null,
           active,
           skill_level: skillLevel === "__none__" ? null : skillLevel,
           skill_level_9ft: skillLevel9 === "__none__" ? null : skillLevel9,
+          ...paymentDraftToBody(payment),
         }),
       });
       if (!r.ok) {
@@ -97,12 +100,13 @@ export function EditStudentDialog({
     onSuccess: () => {
       toast.success("הפרטים עודכנו");
       qc.invalidateQueries({ queryKey: ["students"] });
+      qc.invalidateQueries({ queryKey: ["payments:board"] });
       onOpenChange(false);
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בעדכון הפרטים"),
   });
 
-  const canSubmit = (firstName.trim().length > 0 || lastName.trim().length > 0) && !mut.isPending;
+  const canSubmit = (firstName.trim().length > 0 || lastName.trim().length > 0) && !mut.isPending && !paymentDraftInvalid(payment);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -142,16 +146,8 @@ export function EditStudentDialog({
             </Select>
           </div>
           <div>
-            <Label>סוג מנוי</Label>
-            <Input value={subscriptionType} onChange={(e) => setSubscriptionType(e.target.value)} />
-          </div>
-          <div>
             <Label>תאריך לידה</Label>
             <Input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
-          </div>
-          <div>
-            <Label>תאריך תשלום אחרון</Label>
-            <Input type="date" value={lastPaymentDate} onChange={(e) => setLastPaymentDate(e.target.value)} />
           </div>
           <div>
             <Label>סיווג 9-10 פיט</Label>
@@ -180,6 +176,10 @@ export function EditStudentDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="rounded-xl border bg-muted/30 p-3">
+            <p className="mb-2 font-display text-sm font-extrabold">תשלום</p>
+            <PaymentFieldsEditor value={payment} onChange={setPayment} legacySubscription={student.subscription_type} />
           </div>
           <div>
             <Label>הערות כלליות</Label>

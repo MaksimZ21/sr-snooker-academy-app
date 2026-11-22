@@ -1,3 +1,4 @@
+import type { PaymentInput } from "./payment-body";
 import { unstable_cache, revalidateTag } from "next/cache";
 import { db } from "@/lib/db/client";
 import { ensureStudentInCollegeGroup, assignStudentToExistingGroup, toConstructForm } from "./groups";
@@ -72,9 +73,15 @@ async function findPhonelessStudentIdByName(firstName: string, lastName: string)
   return matches.length === 1 ? (matches[0].id as string) : null;
 }
 
+// Only the payment fields the caller actually sent (the CRM sends none).
+function paymentColumns(input: PaymentInput): PaymentInput {
+  const keys = ["payment_method", "payment_amount", "next_payment_date", "first_training_date", "payment_notes", "payment_frozen"] as const;
+  return Object.fromEntries(keys.filter((k) => input[k] !== undefined).map((k) => [k, input[k]])) as PaymentInput;
+}
+
 // Find-or-create: with a phone number that already belongs to someone, this
 // returns that player rather than adding a copy.
-export async function appendStudent(input: {
+export async function appendStudent(input: PaymentInput & {
   first_name?: string;
   last_name?: string;
   phone?: string;
@@ -126,6 +133,7 @@ export async function appendStudent(input: {
     public_slug: input.public_slug ?? null,
     skill_level: input.skill_level ?? null,
     skill_level_9ft: input.skill_level_9ft ?? null,
+    ...paymentColumns(input),
   });
   if (error) {
     // Two deliveries of the same registration at once: the other one won.
@@ -140,7 +148,7 @@ export async function appendStudent(input: {
 // The admin's "add student" form. A number that belongs to someone who has
 // only played tournaments/leagues makes them a real student, keeping their
 // history. A number that belongs to an existing student is a mistake to show.
-export async function createOrPromoteStudent(input: {
+export async function createOrPromoteStudent(input: PaymentInput & {
   first_name?: string;
   last_name?: string;
   phone?: string;
@@ -212,7 +220,7 @@ export async function deleteStudent(id: string): Promise<void> {
 
 export async function updateStudent(
   id: string,
-  input: {
+  input: PaymentInput & {
     first_name?: string;
     last_name?: string;
     phone?: string;

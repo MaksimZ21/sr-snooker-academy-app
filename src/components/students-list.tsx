@@ -309,7 +309,7 @@ function StudentRow({
             )}
           </div>
           <p className="text-xs text-muted-foreground truncate">
-            {[s.college_name, s.subscription_type].filter(Boolean).join(" · ") || s.email || "\u00a0"}
+            {[s.college_name, s.payment_method || s.subscription_type].filter(Boolean).join(" · ") || s.email || "\u00a0"}
           </p>
         </div>
       </Link>

@@ -2,18 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/requireUser";
 import { updatePaymentDetails } from "@/lib/sheets/payments";
+import { PaymentBodyShape } from "@/lib/sheets/payment-body";
 
-const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-
-const Body = z.object({
-  payment_method: z.string().trim().max(60).nullable().optional(),
-  payment_amount: z.number().int().min(0).max(100000).nullable().optional(),
-  last_payment_date: IsoDate.nullable().optional(),
-  next_payment_date: IsoDate.nullable().optional(),
-  first_training_date: IsoDate.nullable().optional(),
-  payment_notes: z.string().max(500).optional(),
-  payment_frozen: z.boolean().optional(),
-});
+const Body = z.object(PaymentBodyShape);
 
 // Edits a student's payment details from the finance tab.
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {

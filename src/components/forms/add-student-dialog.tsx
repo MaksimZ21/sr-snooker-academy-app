@@ -18,6 +18,12 @@ import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import type { College } from "@/lib/sheets/colleges";
 import { useSkillLevels } from "@/components/use-skill-levels";
+import {
+  EMPTY_PAYMENT,
+  PaymentFieldsEditor,
+  paymentDraftInvalid,
+  paymentDraftToBody,
+} from "@/components/forms/payment-fields-editor";
 
 export function AddStudentDialog() {
   const [open, setOpen] = useState(false);
@@ -26,10 +32,9 @@ export function AddStudentDialog() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [collegeName, setCollegeName] = useState("__none__");
-  const [subscriptionType, setSubscriptionType] = useState("");
   const [notes, setNotes] = useState("");
   const [birthDate, setBirthDate] = useState("");
-  const [lastPaymentDate, setLastPaymentDate] = useState("");
+  const [payment, setPayment] = useState(EMPTY_PAYMENT);
   const [skillLevel, setSkillLevel] = useState("__none__");
   const [skillLevel9, setSkillLevel9] = useState("__none__");
   const qc = useQueryClient();
@@ -51,10 +56,9 @@ export function AddStudentDialog() {
     setPhone("");
     setEmail("");
     setCollegeName("__none__");
-    setSubscriptionType("");
     setNotes("");
     setBirthDate("");
-    setLastPaymentDate("");
+    setPayment(EMPTY_PAYMENT);
     setSkillLevel("__none__");
     setSkillLevel9("__none__");
   };
@@ -70,12 +74,11 @@ export function AddStudentDialog() {
           phone,
           email,
           college_name: collegeName === "__none__" ? "" : collegeName,
-          subscription_type: subscriptionType,
           general_notes: notes,
           birth_date: birthDate || null,
-          last_payment_date: lastPaymentDate || null,
           skill_level: skillLevel === "__none__" ? null : skillLevel,
           skill_level_9ft: skillLevel9 === "__none__" ? null : skillLevel9,
+          ...paymentDraftToBody(payment),
         }),
       });
       if (!r.ok) {
@@ -93,7 +96,7 @@ export function AddStudentDialog() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "שגיאה בהוספת מתאמן"),
   });
 
-  const canSubmit = (firstName.trim().length > 0 || lastName.trim().length > 0) && !mut.isPending;
+  const canSubmit = (firstName.trim().length > 0 || lastName.trim().length > 0) && !mut.isPending && !paymentDraftInvalid(payment);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -137,16 +140,8 @@ export function AddStudentDialog() {
             </Select>
           </div>
           <div>
-            <Label>סוג מנוי</Label>
-            <Input value={subscriptionType} onChange={(e) => setSubscriptionType(e.target.value)} />
-          </div>
-          <div>
             <Label>תאריך לידה</Label>
             <Input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
-          </div>
-          <div>
-            <Label>תאריך תשלום אחרון</Label>
-            <Input type="date" value={lastPaymentDate} onChange={(e) => setLastPaymentDate(e.target.value)} />
           </div>
           <div>
             <Label>סיווג 9-10 פיט</Label>
@@ -175,6 +170,10 @@ export function AddStudentDialog() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="rounded-xl border bg-muted/30 p-3">
+            <p className="mb-2 font-display text-sm font-extrabold">תשלום</p>
+            <PaymentFieldsEditor value={payment} onChange={setPayment} />
           </div>
           <div>
             <Label>הערות כלליות</Label>

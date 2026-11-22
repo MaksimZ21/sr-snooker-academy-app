@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CountUp } from "@/components/motion/count-up";
 import { StudentPaymentDialog } from "@/components/student-payment-dialog";
+import { PaidOnDialog } from "@/components/paid-on-dialog";
 import { cn } from "@/lib/utils";
 import { todayIsoTel, weekRangeFor } from "@/lib/date";
 import { paymentStatus, summarizePayments, type PaymentStatus } from "@/lib/sheets/payments-logic";
@@ -103,18 +104,21 @@ export function StudentPaymentsView() {
     });
   }, [visible, today, weekEnd]);
 
+  // The row whose "שולם" was pressed — asks for the payment date first.
+  const [paying, setPaying] = useState<PaymentBoardRow | null>(null);
   const markPaid = useMutation({
-    mutationFn: async (row: PaymentBoardRow) => {
+    mutationFn: async ({ row, paidOn }: { row: PaymentBoardRow; paidOn: string }) => {
       const r = await fetch("/api/admin/payments", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ student_id: row.id }),
+        body: JSON.stringify({ student_id: row.id, paid_on: paidOn }),
       });
       if (!r.ok) throw new Error("failed");
       return (await r.json()) as { payment_id: string; first_training_date: string | null };
     },
-    onSuccess: ({ payment_id, first_training_date }, row) => {
-      toast.success(`נרשם תשלום של ${row.first_name}`, {
+    onSuccess: ({ payment_id, first_training_date }, { row, paidOn }) => {
+      setPaying(null);
+      toast.success(`נרשם תשלום של ${row.first_name} ב-${ddmm(paidOn)}`, {
         description: first_training_date ? `אימון ראשון: ${ddmm(first_training_date)}` : undefined,
         action: {
           label: "בטל",
@@ -308,7 +312,7 @@ export function StudentPaymentsView() {
                 {groupRows.map((r) => {
                   const status = statusOf(r);
                   const st = STATUS_STYLE[status];
-                  const pending = markPaid.isPending && markPaid.variables?.id === r.id;
+                  const pending = markPaid.isPending && markPaid.variables?.row.id === r.id;
                   return (
                     <div key={r.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center">
                       <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -339,7 +343,7 @@ export function StudentPaymentsView() {
                         {status !== "frozen" && r.payment_method && (
                           <Button
                             size="sm"
-                            onClick={() => markPaid.mutate(r)}
+                            onClick={() => setPaying(r)}
                             disabled={pending}
                             className={cn(
                               "h-8 px-3",
@@ -363,6 +367,12 @@ export function StudentPaymentsView() {
         })
       )}
 
+      <PaidOnDialog
+        row={paying}
+        pending={markPaid.isPending}
+        onClose={() => setPaying(null)}
+        onConfirm={(paidOn) => paying && markPaid.mutate({ row: paying, paidOn })}
+      />
       <StudentPaymentDialog row={editing} onClose={() => setEditing(null)} />
     </div>
   );

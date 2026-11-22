@@ -108,6 +108,8 @@ async function findFirstTraining(studentId: string, fromIso: string): Promise<st
 export async function recordPayment(
   studentId: string,
   markedBy: string,
+  // The day the money came in; today when not given.
+  paidOnIso?: string,
 ): Promise<{ paymentId: string; firstTraining: string | null }> {
   const { data: student, error } = await db
     .from("students")
@@ -117,7 +119,7 @@ export async function recordPayment(
   if (error) throw new Error(error.message);
   if (!student) throw new Error("student not found");
 
-  const today = todayIsoTel();
+  const today = paidOnIso ?? todayIsoTel();
   const covered = (student.next_payment_date as string | null) ?? null;
   const firstTraining = await findFirstTraining(studentId, today);
   const { data: payment, error: insertError } = await db

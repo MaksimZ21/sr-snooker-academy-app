@@ -23,14 +23,17 @@ export async function GET() {
   }
 }
 
-const RecordBody = z.object({ student_id: z.string().min(1) });
+const RecordBody = z.object({
+  student_id: z.string().min(1),
+  paid_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
 
 // "שולם" — records a payment and moves the renewal date a month on.
 export async function POST(req: Request) {
   try {
     const user = await requireAdmin();
-    const { student_id } = RecordBody.parse(await req.json());
-    const { paymentId, firstTraining } = await recordPayment(student_id, user.email);
+    const { student_id, paid_on } = RecordBody.parse(await req.json());
+    const { paymentId, firstTraining } = await recordPayment(student_id, user.email, paid_on);
     return NextResponse.json({ ok: true, payment_id: paymentId, first_training_date: firstTraining });
   } catch (e) {
     if (e instanceof Response) return e;

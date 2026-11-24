@@ -10,6 +10,7 @@ import { LiveTicker } from "@/components/broadcast";
 import { HeroBackdrop } from "@/components/motion/hero-backdrop";
 import { IspaBrand } from "@/components/ispa-brand";
 import { PublicBreaksPanel } from "@/components/public-breaks-panel";
+import { TournamentHandicapTables } from "@/components/tournament-handicap-tables";
 
 // Polled instead of a one-time server fetch so a spectator watching results
 // come in sees them without manually refreshing the page. 15s keeps it
@@ -322,6 +323,9 @@ export function PublicTournamentView({
         {tournament.houses.length === 0 && tournament.knockoutMatches.length === 0 && (
           <p className="text-center text-sm text-muted-foreground py-10">הטורניר טרם החל</p>
         )}
+
+        {/* Academy tournaments on 9-10 ft tables: the handicap between levels. */}
+        {!tournament.multiLocation && tournament.tableSize === "9-10" && <TournamentHandicapTables />}
 
         {!tournament.multiLocation && (
           <p className="text-center text-xs text-muted-foreground/60 pt-2">

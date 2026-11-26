@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { ArrowRight, UserPlus, User, Users, Banknote, Pencil, FileText, Check, X, MessageCircle, Trash2 } from "lucide-react";
+import { ArrowRight, UserPlus, User, Users, Banknote, Pencil, FileText, Check, X, MessageCircle, Trash2, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -162,6 +162,23 @@ export function IntroEventDetailView({
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["intro-event", introEventId] }),
     onError: () => toast.error("שגיאה בשמירה"),
+  });
+
+  const phoneMut = useMutation({
+    mutationFn: async ({ participantId, phone }: { participantId: string; phone: string }) => {
+      const r = await fetch(`/api/intro-events/${introEventId}/participants/${participantId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const body = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) throw new Error(body.error ?? "שגיאה בשמירה");
+    },
+    onSuccess: () => {
+      toast.success("הטלפון נשמר");
+      qc.invalidateQueries({ queryKey: ["intro-event", introEventId] });
+    },
+    onError: (e) => toast.error(e.message),
   });
 
   if (isLoading) {
@@ -328,13 +345,21 @@ export function IntroEventDetailView({
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {participants.map((p) => (
                 <div key={p.id} className="rounded-2xl border border-border/60 bg-card p-4 flex flex-col gap-3">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
                     <span className="font-medium">
                       {[p.student.first_name, p.student.last_name].filter(Boolean).join(" ")}
                     </span>
                     <div className="flex items-center gap-1">
-                      {p.student.phone && (
-                        <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">{p.student.phone}</span>
+                      {isAdmin ? (
+                        <ParticipantPhone
+                          phone={p.student.phone}
+                          saving={phoneMut.isPending}
+                          onSave={(phone) => phoneMut.mutateAsync({ participantId: p.id, phone })}
+                        />
+                      ) : (
+                        p.student.phone && (
+                          <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">{p.student.phone}</span>
+                        )
                       )}
                       {isAdmin && (
                         <Button
@@ -427,6 +452,78 @@ export function IntroEventDetailView({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// The participant's phone, editable in place: "הוסף טלפון" when missing,
+// a pencil next to it otherwise.
+function ParticipantPhone({
+  phone,
+  saving,
+  onSave,
+}: {
+  phone: string;
+  saving: boolean;
+  onSave: (phone: string) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(phone ?? "");
+
+  if (!editing) {
+    return phone ? (
+      <button
+        type="button"
+        onClick={() => { setValue(phone); setEditing(true); }}
+        className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums hover:text-foreground transition-colors"
+        title="עריכת טלפון"
+      >
+        <span dir="ltr">{phone}</span>
+        <Pencil size={11} />
+      </button>
+    ) : (
+      <button
+        type="button"
+        onClick={() => { setValue(""); setEditing(true); }}
+        className="flex items-center gap-1 rounded-full border border-dashed border-amber-500/60 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition-colors"
+      >
+        <Phone size={11} />
+        הוסף טלפון
+      </button>
+    );
+  }
+
+  const save = async () => {
+    if (!value.trim()) return;
+    try {
+      await onSave(value.trim());
+      setEditing(false);
+    } catch {
+      // the toast already shows the error; keep the field open
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") save();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        placeholder="05X-XXXXXXX"
+        dir="ltr"
+        inputMode="tel"
+        className="h-7 w-32 text-xs"
+      />
+      <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={save} disabled={saving || !value.trim()} aria-label="שמירה">
+        <Check size={14} />
+      </Button>
+      <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(false)} aria-label="ביטול">
+        <X size={14} />
+      </Button>
     </div>
   );
 }

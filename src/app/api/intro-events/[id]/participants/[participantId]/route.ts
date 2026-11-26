@@ -13,6 +13,7 @@ import {
 const UpdateSchema = z.object({
   experience_level: z.enum(INTRO_EXPERIENCE_LEVELS).nullable().optional(),
   goal: z.enum(INTRO_GOALS).nullable().optional(),
+  phone: z.string().max(20).optional(),
 });
 
 export async function PATCH(

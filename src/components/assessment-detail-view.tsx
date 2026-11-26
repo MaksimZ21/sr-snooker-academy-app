@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { ArrowRight, FileText, Send, CheckCircle2, Circle, XCircle, Minus, Users, Loader2, ChevronDown } from "lucide-react";
+import { ArrowRight, FileText, Send, CheckCircle2, Circle, XCircle, Minus, Users, Loader2, ChevronDown, Pencil, PhoneOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { TECHNIQUE_CRITERIA, normalizeTechniqueRating, type Assessment } from "@/lib/sheets/assessment-types";
@@ -33,6 +33,7 @@ export function AssessmentDetailView({
   backLabel = "חזרה",
   showCoach = false,
   readOnly = false,
+  editHref,
 }: {
   assessmentId: string;
   backHref: string;
@@ -40,6 +41,8 @@ export function AssessmentDetailView({
   showCoach?: boolean;
   // The student's own view: download only, no sending.
   readOnly?: boolean;
+  // Where the "edit report" button leads (staff only).
+  editHref?: string;
 }) {
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [masterGroups, setMasterGroups] = useState<WhatsAppGroup[] | null>(null);
@@ -268,6 +271,26 @@ export function AssessmentDetailView({
 
         {/* Actions */}
         <div className="flex flex-col gap-2 pb-4">
+          {!readOnly && !a.participant_phone && (
+            <div className="flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-sm">
+              <PhoneOff size={15} className="text-amber-600 shrink-0" />
+              <span className="flex-1">אין מספר טלפון בדוח, לכן אי אפשר לשלוח אותו בוואטסאפ אישי.</span>
+              {editHref && (
+                <Link href={editHref} className="font-semibold text-amber-700 dark:text-amber-400 hover:underline shrink-0">
+                  הוסף טלפון
+                </Link>
+              )}
+            </div>
+          )}
+          {!readOnly && editHref && (
+            <Link
+              href={editHref}
+              className="flex items-center justify-center gap-2 rounded-[14px] border bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+            >
+              <Pencil size={15} />
+              ערוך דוח
+            </Link>
+          )}
           <div className="flex items-center gap-2">
             <a
               href={`/api/assessments/${a.id}/pdf`}

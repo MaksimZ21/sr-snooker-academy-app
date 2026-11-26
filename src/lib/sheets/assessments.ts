@@ -47,3 +47,16 @@ export async function createAssessment(
   if (error) throw new Error(error.message);
   return data as Assessment;
 }
+
+export type AssessmentUpdate = Partial<
+  Pick<
+    Assessment,
+    "participant_name" | "participant_phone" | "event_date" | "strong_hand" | "strong_eye" | "technique" | "notes" | "photo_url"
+  >
+>;
+
+export async function updateAssessment(id: string, input: AssessmentUpdate): Promise<Assessment> {
+  const { data, error } = await db.from("assessments").update(input).eq("id", id).select().single();
+  if (error) throw new Error(error.message);
+  return data as Assessment;
+}

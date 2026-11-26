@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Check, Circle, X, Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { TECHNIQUE_CRITERIA, type TechniqueKey, type TechniqueRating } from "@/lib/sheets/assessment-types";
+import {
+  TECHNIQUE_CRITERIA,
+  normalizeTechniqueRating,
+  type Assessment,
+  type TechniqueKey,
+  type TechniqueRating,
+} from "@/lib/sheets/assessment-types";
 import type { Phrase } from "@/lib/sheets/assessment-phrases";
 
 type HandEye = "right" | "left";
@@ -25,28 +31,42 @@ export function AssessmentForm({
   initialName = "",
   initialPhone = "",
   initialDate,
+  existing,
 }: {
   returnPath?: string;
   // Prefilled when opened from an intro event participant.
   initialName?: string;
   initialPhone?: string;
   initialDate?: string;
+  // Editing a saved report: fields start from it and saving updates it.
+  existing?: Assessment;
 }) {
   const router      = useRouter();
+  const qc          = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
 
   /* Photo — stored as base64 data URL, never uploaded to storage */
-  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(existing?.photo_url ?? null);
 
   /* Fields */
-  const [participantName,  setParticipantName]  = useState(initialName);
-  const [participantPhone, setParticipantPhone] = useState(initialPhone);
-  const [eventDate,        setEventDate]        = useState(initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? initialDate : today());
-  const [strongHand,       setStrongHand]       = useState<HandEye | undefined>();
-  const [strongEye,        setStrongEye]        = useState<HandEye | undefined>();
-  const [technique,        setTechnique]        = useState<Partial<Record<TechniqueKey, TechniqueRating>>>({});
-  const [notes,            setNotes]            = useState("");
+  const [participantName,  setParticipantName]  = useState(existing?.participant_name ?? initialName);
+  const [participantPhone, setParticipantPhone] = useState(existing?.participant_phone ?? initialPhone);
+  const [eventDate,        setEventDate]        = useState(
+    existing?.event_date?.slice(0, 10) ??
+      (initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? initialDate : today()),
+  );
+  const [strongHand,       setStrongHand]       = useState<HandEye | undefined>(existing?.strong_hand ?? undefined);
+  const [strongEye,        setStrongEye]        = useState<HandEye | undefined>(existing?.strong_eye ?? undefined);
+  const [technique,        setTechnique]        = useState<Partial<Record<TechniqueKey, TechniqueRating>>>(() => {
+    const out: Partial<Record<TechniqueKey, TechniqueRating>> = {};
+    for (const c of TECHNIQUE_CRITERIA) {
+      const v = normalizeTechniqueRating(existing?.technique[c.key]);
+      if (v) out[c.key] = v;
+    }
+    return out;
+  });
+  const [notes,            setNotes]            = useState(existing?.notes ?? "");
 
   /* Phrases */
   const [phrasesOpen,       setPhrasesOpen]       = useState(false);
@@ -101,8 +121,8 @@ export function AssessmentForm({
     if (!participantName.trim()) { toast.error("יש להזין שם משתתף"); return; }
     setSaving(true);
     try {
-      const r = await fetch("/api/assessments", {
-        method: "POST",
+      const r = await fetch(existing ? `/api/assessments/${existing.id}` : "/api/assessments", {
+        method: existing ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           participant_name:  participantName.trim(),
@@ -116,7 +136,11 @@ export function AssessmentForm({
         }),
       });
       if (!r.ok) throw new Error("failed");
-      toast.success("הדוח נשמר");
+      toast.success(existing ? "הדוח עודכן" : "הדוח נשמר");
+      if (existing) await qc.invalidateQueries({ queryKey: ["assessment", existing.id] });
+      await qc.invalidateQueries({
+        predicate: (q) => typeof q.queryKey[0] === "string" && q.queryKey[0].startsWith("assessments"),
+      });
       router.push(returnPath);
     } catch {
       toast.error("שגיאה בשמירת הדוח");

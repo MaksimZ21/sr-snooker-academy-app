@@ -10,6 +10,7 @@ export default function AdminAssessmentDetailPage({ params }: { params: Promise<
       backHref="/admin/assessments"
       backLabel="דוחות אבחון"
       showCoach
+      editHref={`/admin/assessments/${id}/edit`}
     />
   );
 }

@@ -173,17 +173,26 @@ export async function addIntroEventParticipant(
 export async function updateIntroEventParticipant(
   introEventId: string,
   participantId: string,
-  input: { experience_level?: IntroExperienceLevel | null; goal?: IntroGoal | null },
+  input: { experience_level?: IntroExperienceLevel | null; goal?: IntroGoal | null; phone?: string },
 ): Promise<void> {
   const { data: participant } = await db
     .from("intro_event_participants")
-    .select("id, intro_event_id")
+    .select("id, intro_event_id, student_id")
     .eq("id", participantId)
     .maybeSingle();
   if (!participant || participant.intro_event_id !== introEventId) throw new Error("participant not found");
 
-  const { error } = await db.from("intro_event_participants").update(input).eq("id", participantId);
-  if (error) throw new Error(error.message);
+  const { phone, ...fields } = input;
+  // The phone lives on the student record (used for the follow-up message
+  // and to match the participant's assessment report).
+  if (phone !== undefined) {
+    const { updateStudent } = await import("./students");
+    await updateStudent(participant.student_id as string, { phone: phone.trim() });
+  }
+  if (Object.keys(fields).length > 0) {
+    const { error } = await db.from("intro_event_participants").update(fields).eq("id", participantId);
+    if (error) throw new Error(error.message);
+  }
 }
 
 export async function removeIntroEventParticipant(introEventId: string, participantId: string): Promise<void> {

@@ -94,6 +94,11 @@ export function AssessmentSendMenu({ assessment: a }: { assessment: Assessment }
           className="absolute left-0 top-full mt-1.5 w-72 bg-popover border border-border/60 rounded-2xl shadow-lg overflow-hidden z-50"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
         >
+          {!a.participant_phone && (
+            <p className="text-xs text-muted-foreground px-4 py-3">
+              אין טלפון בדוח — פתח את הדוח ולחץ "ערוך דוח" כדי להוסיף
+            </p>
+          )}
           {a.participant_phone && (
             <button
               type="button"

@@ -19,25 +19,14 @@ async function fetchMasterClassGroups(): Promise<WhatsAppGroup[]> {
 
 async function sendToParticipant(a: Assessment) {
   if (!a.participant_phone) return;
+  const toastId = toast.loading("שולח למשתתף...");
   try {
-    const tokenRes = await fetch(`/api/assessments/${a.id}/share-token`);
-    if (!tokenRes.ok) throw new Error();
-    const { token } = (await tokenRes.json()) as { token: string };
-    const pdfUrl = `${window.location.origin}/api/assessments/${a.id}/pdf?token=${token}`;
-    const r = await fetch("/api/whatsapp/send", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        phone: a.participant_phone,
-        urlFile: pdfUrl,
-        fileName: `דוח אבחון - ${a.participant_name}.pdf`,
-        caption: `שלום ${a.participant_name}, דוח האבחון שלך נמצא כאן`,
-      }),
-    });
+    // Through Meta's approved "assessment_report" template (the PDF attached).
+    const r = await fetch(`/api/assessments/${a.id}/send-whatsapp`, { method: "POST" });
     if (!r.ok) throw new Error();
-    toast.success("נשלח ב-WhatsApp");
+    toast.success("הדוח נשלח למשתתף ב-WhatsApp", { id: toastId });
   } catch {
-    toast.error("שגיאה בשליחה");
+    toast.error("שגיאה בשליחה", { id: toastId });
   }
 }
 

@@ -38,6 +38,6 @@ describe("introFollowupTemplate", () => {
   });
 
   it("never sends an empty name (Meta rejects it)", () => {
-    expect(introFollowupTemplate("").components[0].parameters[0].text).toBe("שחקן יקר");
+    expect(introFollowupTemplate("").components[0].parameters[0]).toMatchObject({ text: "שחקן יקר" });
   });
 });

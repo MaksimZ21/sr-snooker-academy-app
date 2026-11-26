@@ -7,7 +7,9 @@ function formatPhone(phone: string): string {
   return digits.startsWith("972") ? digits : `972${digits.replace(/^0/, "")}`;
 }
 
-type TemplateParameter = { type: "text"; text: string; parameter_name?: string };
+type TemplateParameter =
+  | { type: "text"; text: string; parameter_name?: string }
+  | { type: "document"; document: { link: string; filename: string } };
 export type TemplateMessage = {
   name: string;
   language: { code: string };
@@ -67,6 +69,32 @@ export function introFollowupTemplate(customerName: string): TemplateMessage {
 
 export async function sendIntroFollowupTemplate(phone: string, customerName: string): Promise<void> {
   await sendTemplate(phone, introFollowupTemplate(customerName));
+}
+
+// "assessment_report" Utility template: the report PDF is the header
+// document (Meta downloads it from the signed link), the body greets the
+// player by name ({{customer_name}}). No buttons.
+export function assessmentReportTemplate(customerName: string, pdfUrl: string, fileName: string): TemplateMessage {
+  return {
+    name: "assessment_report",
+    language: { code: "he" },
+    components: [
+      { type: "header", parameters: [{ type: "document", document: { link: pdfUrl, filename: fileName } }] },
+      {
+        type: "body",
+        parameters: [{ type: "text", parameter_name: "customer_name", text: customerName.trim() || "שחקן יקר" }],
+      },
+    ],
+  };
+}
+
+export async function sendAssessmentReportTemplate(
+  phone: string,
+  customerName: string,
+  pdfUrl: string,
+  fileName: string,
+): Promise<void> {
+  await sendTemplate(phone, assessmentReportTemplate(customerName, pdfUrl, fileName));
 }
 
 // "payments_weekly_summary" Utility template, sent every Sunday to the

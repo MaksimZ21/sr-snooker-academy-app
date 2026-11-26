@@ -20,22 +20,11 @@ function formatDate(d: string) {
 
 async function sendWhatsApp(a: Assessment) {
   if (!a.participant_phone) { toast.error("אין מספר טלפון"); return; }
-  const tokenRes = await fetch(`/api/assessments/${a.id}/share-token`);
-  if (!tokenRes.ok) { toast.error("שגיאה ביצירת קישור"); return; }
-  const { token } = (await tokenRes.json()) as { token: string };
-  const pdfUrl = `${window.location.origin}/api/assessments/${a.id}/pdf?token=${token}`;
-  const r = await fetch("/api/whatsapp/send", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      phone: a.participant_phone,
-      urlFile: pdfUrl,
-      fileName: `דוח אבחון - ${a.participant_name}.pdf`,
-      caption: `שלום ${a.participant_name}, דוח האבחון שלך נמצא כאן`,
-    }),
-  });
-  if (r.ok) toast.success("נשלח ב-WhatsApp");
-  else toast.error("שגיאה בשליחה");
+  const toastId = toast.loading("שולח למשתתף...");
+  // Through Meta's approved "assessment_report" template (the PDF attached).
+  const r = await fetch(`/api/assessments/${a.id}/send-whatsapp`, { method: "POST" });
+  if (r.ok) toast.success("הדוח נשלח למשתתף ב-WhatsApp", { id: toastId });
+  else toast.error("שגיאה בשליחה", { id: toastId });
 }
 
 export function AssessmentDetailView({
